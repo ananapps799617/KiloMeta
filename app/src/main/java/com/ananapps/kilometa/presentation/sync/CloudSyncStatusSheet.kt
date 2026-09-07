@@ -50,6 +50,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import com.ananapps.kilometa.domain.model.SyncPreferences
+import com.ananapps.kilometa.presentation.sync.components.SyncPreferencesView
+
 // ------------------------------------------------------------------------------
 // BLOQUE 1: MODAL BOTTOM SHEET DE ESTADO DE SINCRONIZACIÓN
 // ------------------------------------------------------------------------------
@@ -61,6 +64,9 @@ fun CloudSyncStatusSheet(
     userSession: UserSession?,
     connectionDiagnostic: ConnectionDiagnostic? = null,
     isPinging: Boolean = false,
+    syncPreferences: SyncPreferences = SyncPreferences(),
+    onToggleAutoSync: (Boolean) -> Unit = {},
+    onSelectWifiOnly: (Boolean) -> Unit = {},
     onDismiss: () -> Unit,
     onSyncNow: () -> Unit,
     onTestConnection: () -> Unit = {},
@@ -156,6 +162,13 @@ fun CloudSyncStatusSheet(
                     Text(text = syncStatus.errorMessage, style = MaterialTheme.typography.labelSmall, color = StatusRed)
                 }
             }
+
+            // Panel de Preferencias de Sincronización en Segundo Plano (WorkManager)
+            SyncPreferencesView(
+                preferences = syncPreferences,
+                onToggleAutoSync = onToggleAutoSync,
+                onSelectWifiOnly = onSelectWifiOnly
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 

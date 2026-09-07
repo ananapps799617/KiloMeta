@@ -20,6 +20,7 @@ import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.RestoreProgress
 import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
+import com.ananapps.kilometa.domain.model.SyncPreferences
 import com.ananapps.kilometa.domain.model.SyncState
 import com.ananapps.kilometa.domain.model.SyncStatus
 import com.ananapps.kilometa.domain.model.UserSession
@@ -36,6 +37,7 @@ import com.ananapps.kilometa.domain.usecase.RegisterExpenseUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterFuelingUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterTripUseCase
 import com.ananapps.kilometa.domain.usecase.RestoreDataUseCase
+import com.ananapps.kilometa.domain.usecase.SchedulePeriodicSyncUseCase
 import com.ananapps.kilometa.domain.usecase.SyncDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,8 +70,17 @@ class HomeViewModel @Inject constructor(
     private val syncDataUseCase: SyncDataUseCase,
     private val restoreDataUseCase: RestoreDataUseCase,
     private val authenticateUserUseCase: AuthenticateUserUseCase,
-    private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase
+    private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase,
+    private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase
 ) : ViewModel() {
+
+    private val _syncPreferences = MutableStateFlow(SyncPreferences())
+    val syncPreferences: StateFlow<SyncPreferences> = _syncPreferences.asStateFlow()
+
+    init {
+        // Política de red híbrida por defecto (Datos Móviles + Wi-Fi) para sincronización continua
+        schedulePeriodicSyncUseCase(_syncPreferences.value)
+    }
 
     val syncStatus: StateFlow<SyncStatus> = syncRepository.observeSyncStatus()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), SyncStatus(SyncState.IDLE))
@@ -108,7 +119,8 @@ class HomeViewModel @Inject constructor(
                 weeklyProgress = weeklyProgress,
                 isOffline = userSession.value == null,
                 connectionDiagnostic = _connectionDiagnostic.value,
-                isPingingCloud = _isPingingCloud.value
+                isPingingCloud = _isPingingCloud.value,
+                syncPreferences = _syncPreferences.value
             )
         } else {
             val totalAccumulated = pastShiftsAccumulated + maxOf(0.0, activeSummary.netProfit)
@@ -131,7 +143,8 @@ class HomeViewModel @Inject constructor(
                 biFuelMetrics = biFuelMetrics,
                 isOffline = userSession.value == null,
                 connectionDiagnostic = _connectionDiagnostic.value,
-                isPingingCloud = _isPingingCloud.value
+                isPingingCloud = _isPingingCloud.value,
+                syncPreferences = _syncPreferences.value
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState.Loading)
@@ -213,6 +226,18 @@ class HomeViewModel @Inject constructor(
 
     fun signOut() {
         viewModelScope.launch { authenticateUserUseCase.signOut() }
+    }
+
+    fun onToggleAutoSync(enabled: Boolean) {
+        val updated = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)
+        _syncPreferences.value = updated
+        schedulePeriodicSyncUseCase(updated)
+    }
+
+    fun onSelectNetworkPreference(requireWifiOnly: Boolean) {
+        val updated = _syncPreferences.value.copy(requireWifiOnly = requireWifiOnly)
+        _syncPreferences.value = updated
+        schedulePeriodicSyncUseCase(updated)
     }
 
     private fun getWeeklyCycleStartMillis(): Long {

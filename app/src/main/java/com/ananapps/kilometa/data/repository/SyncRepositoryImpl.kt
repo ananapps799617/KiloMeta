@@ -112,8 +112,19 @@ class SyncRepositoryImpl @Inject constructor(
             val remoteFuelings = firestoreDataSource.getFuelings(user.uid).getOrThrow().toFuelingEntityList()
             val remoteExpenses = firestoreDataSource.getExpenses(user.uid).getOrThrow().toExpenseEntityList()
 
-            // Inserción en orden topológico (Primero padres, luego hijos con FK)
-            for (shift in remoteShifts) { shiftDao.insertShift(shift) }
+            // Inserción en orden topológico (Primero padres con resolución LWW, luego hijos con FK)
+            for (remoteShift in remoteShifts) {
+                val localShift = shiftDao.getShiftById(remoteShift.id)
+                if (localShift == null) {
+                    shiftDao.insertShift(remoteShift)
+                } else if (remoteShift.status == "COMPLETED" && localShift.status == "ACTIVE") {
+                    // Conflicto LWW: El remoto finalizó la jornada, actualiza estado local
+                    shiftDao.updateShift(remoteShift)
+                } else if (remoteShift.endOdometer != null && localShift.endOdometer == null) {
+                    shiftDao.updateShift(remoteShift)
+                }
+                // En caso contrario, se preserva el estado local del conductor
+            }
             for (trip in remoteTrips) { tripDao.insertTrip(trip) }
             for (fueling in remoteFuelings) { fuelingDao.insertFueling(fueling) }
             for (expense in remoteExpenses) { expenseDao.insertExpense(expense) }

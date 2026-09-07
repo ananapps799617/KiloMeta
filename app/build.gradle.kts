@@ -92,6 +92,11 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
+    // Tareas Programadas en Segundo Plano: WorkManager con Hilt Integration
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.work.compiler)
+
     // Respaldo en la Nube y Recuperación de Desastres: Firebase SDK
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
