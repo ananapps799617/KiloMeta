@@ -71,11 +71,15 @@ class HomeViewModel @Inject constructor(
     private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase,
     private val getAccountingAuditDashboardUseCase: GetAccountingAuditDashboardUseCase,
     private val scheduleWeeklyCutoffNotificationsUseCase: ScheduleWeeklyCutoffNotificationsUseCase,
-    private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase
+    private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase,
+    private val driverProfileRepository: com.ananapps.kilometa.domain.repository.DriverProfileRepository
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
     val syncPreferences: StateFlow<SyncPreferences> = _syncPreferences.asStateFlow()
+
+    val driverProfile: StateFlow<com.ananapps.kilometa.domain.model.DriverProfile> = driverProfileRepository.getProfile()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), com.ananapps.kilometa.domain.model.DriverProfile())
 
     init {
         // 1. Sincronización híbrida por defecto (Móviles + Wi-Fi)

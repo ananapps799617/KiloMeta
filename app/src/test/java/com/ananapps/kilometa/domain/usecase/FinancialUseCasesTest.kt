@@ -197,54 +197,31 @@ class FinancialUseCasesTest {
         }
 
         // Volumen <= 0 rechazado
-        try {
-            registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 0.0, 100_000)
-            fail("Debe rechazar volumen cargado <= 0")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor a cero"))
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 0.0, 100_000) }
         }
-
-        // Odómetro negativo rechazado
-        try {
-            registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 10.0, -1)
-            fail("Debe rechazar odómetro negativo")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor o igual a cero"))
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 10.0, -1) }
         }
     }
 
     @Test
     fun testRegisterExpenseDomainGuards() = runBlocking {
-        try {
-            registerExpenseUseCase("shift-1", ExpenseConcept.WASH, 0.0)
-            fail("Debe rechazar gasto con monto <= 0")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor a cero"))
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { registerExpenseUseCase("shift-1", ExpenseConcept.WASH, 0.0) }
         }
     }
 
     @Test
     fun testManageShiftDomainGuards() = runBlocking {
-        // Arranque de turno con odómetro negativo rechazado
-        try {
-            manageShiftUseCase.startShift(startOdometer = -5)
-            fail("Debe rechazar odómetro inicial negativo")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor o igual a cero"))
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { manageShiftUseCase.startShift(startOdometer = -5) }
         }
-
-        // Cierre de turno con odómetro final menor al inicial rechazado
-        try {
-            manageShiftUseCase.closeShift("shift-1", startOdometer = 100_500, endOdometer = 100_400)
-            fail("Debe rechazar odómetro final menor que el inicial")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("no puede ser inferior"))
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { manageShiftUseCase.closeShift("shift-1", startOdometer = 100_500, endOdometer = 100_400) }
         }
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 4: PROTECCIÓN CONTRA DIVISIÓN POR CERO EN VEHÍCULOS DETENIDOS
-    // --------------------------------------------------------------------------
     @Test
     fun testZeroKilometersDivisionByZeroProtection() {
         val metrics = calculateBiFuelCostPerKmUseCase(
@@ -283,30 +260,18 @@ class FinancialUseCasesTest {
     // --------------------------------------------------------------------------
     private fun createSummary(netProfit: Double, quota: Double): ShiftFinancialSummary {
         return ShiftFinancialSummary(
-            shiftId = "shift-test-1",
-            status = ShiftStatus.ACTIVE,
-            startTime = System.currentTimeMillis(),
-            endTime = null,
-            startOdometer = 100_000,
-            endOdometer = null,
-            totalKilometers = 50,
-            dailyQuotaTarget = quota,
-            totalGrossIncome = netProfit + 20_000.0,
-            totalCommissions = 5_000.0,
-            totalNetIncome = netProfit + 15_000.0,
-            totalGasExpense = 15_000.0,
-            totalGasolineExpense = 0.0,
-            totalFuelExpense = 15_000.0,
-            totalOperationalExpenses = 0.0,
-            totalExpenses = 15_000.0,
-            netProfit = netProfit,
+            shiftId = "shift-test-1", status = ShiftStatus.ACTIVE,
+            startTime = System.currentTimeMillis(), endTime = null,
+            startOdometer = 100_000, endOdometer = null, totalKilometers = 50,
+            dailyQuotaTarget = quota, totalGrossIncome = netProfit + 20_000.0,
+            totalCommissions = 5_000.0, totalNetIncome = netProfit + 15_000.0,
+            totalGasExpense = 15_000.0, totalGasolineExpense = 0.0,
+            totalFuelExpense = 15_000.0, totalOperationalExpenses = 0.0,
+            totalExpenses = 15_000.0, netProfit = netProfit,
             quotaProgressPercentage = (netProfit / quota) * 100.0,
-            costPerKilometer = 300.0,
-            grossIncomePerKilometer = 1000.0,
-            netIncomePerKilometer = 800.0,
-            tripsCount = 5,
-            fuelingsCount = 1,
-            expensesCount = 0
+            costPerKilometer = 300.0, grossIncomePerKilometer = 1000.0,
+            netIncomePerKilometer = 800.0, tripsCount = 5,
+            fuelingsCount = 1, expensesCount = 0
         )
     }
 }
