@@ -8,8 +8,10 @@
 
 package com.ananapps.kilometa.domain.repository
 
+import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
+import com.ananapps.kilometa.domain.model.Trip
 import kotlinx.coroutines.flow.Flow
 
 // ------------------------------------------------------------------------------
@@ -34,6 +36,21 @@ interface ShiftRepository {
      * Emite el histórico completo de turnos ordenados cronológicamente descendente.
      */
     fun getAllShifts(): Flow<List<Shift>>
+
+    /**
+     * Emite el histórico completo de turnos finalizados (COMPLETED) con sus resúmenes financieros.
+     */
+    fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>>
+
+    /**
+     * Emite todas las carreras históricas registradas en el sistema.
+     */
+    fun getAllTrips(): Flow<List<Trip>>
+
+    /**
+     * Emite todos los abastecimientos de combustible históricos registrados en el sistema.
+     */
+    fun getAllFuelings(): Flow<List<Fueling>>
 
     /**
      * Inicia una nueva jornada laboral.

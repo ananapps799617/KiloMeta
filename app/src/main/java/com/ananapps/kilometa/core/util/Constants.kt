@@ -38,6 +38,16 @@ object Constants {
      */
     const val AMBER_THRESHOLD_PERCENTAGE: Double = 0.85
 
+    /**
+     * Rendimiento de referencia de vehículo promedio a gasolina en ciclo urbano (km/galón).
+     */
+    const val GASOLINE_REFERENCE_KM_PER_GALLON: Double = 35.0
+
+    /**
+     * Precio promedio de referencia por galón de gasolina corriente en Colombia (COP).
+     */
+    const val GASOLINE_REFERENCE_PRICE_COP: Double = 15_800.0
+
     // --------------------------------------------------------------------------
     // BLOQUE 2: ERGONOMÍA DE CABINA Y ACCESIBILIDAD
     // --------------------------------------------------------------------------

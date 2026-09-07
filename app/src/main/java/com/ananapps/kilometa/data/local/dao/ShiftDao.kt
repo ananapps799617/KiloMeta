@@ -51,6 +51,10 @@ interface ShiftDao {
     @Query("SELECT * FROM shifts ORDER BY start_time DESC")
     fun getAllShiftsWithDetails(): Flow<List<ShiftWithDetails>>
 
+    @Transaction
+    @Query("SELECT * FROM shifts WHERE status = 'COMPLETED' ORDER BY start_time DESC")
+    fun getCompletedShiftsWithDetails(): Flow<List<ShiftWithDetails>>
+
     @Query("DELETE FROM shifts WHERE id = :shiftId")
     suspend fun deleteShift(shiftId: String)
 

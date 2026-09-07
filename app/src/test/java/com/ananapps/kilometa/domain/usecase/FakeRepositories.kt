@@ -56,9 +56,17 @@ class FakeExpenseRepository : ExpenseRepository {
 // ------------------------------------------------------------------------------
 class FakeShiftRepository : ShiftRepository {
     val shifts = mutableListOf<Shift>()
+    val completedSummaries = mutableListOf<ShiftFinancialSummary>()
+    val allTripsList = mutableListOf<Trip>()
+    val allFuelingsList = mutableListOf<Fueling>()
+
     override fun getActiveShift(): Flow<Shift?> = flowOf(shifts.find { it.isActive })
     override fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?> = flowOf(null)
     override fun getAllShifts(): Flow<List<Shift>> = flowOf(shifts)
+    override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> = flowOf(completedSummaries)
+    override fun getAllTrips(): Flow<List<Trip>> = flowOf(allTripsList)
+    override fun getAllFuelings(): Flow<List<Fueling>> = flowOf(allFuelingsList)
+
     override suspend fun startShift(shift: Shift) { shifts.add(shift) }
     override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {
         val idx = shifts.indexOfFirst { it.id == shiftId }
