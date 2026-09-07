@@ -8,7 +8,6 @@
 
 package com.ananapps.kilometa.core.di
 
-import com.ananapps.kilometa.core.dispatcher.AppDispatchers
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
 import com.ananapps.kilometa.core.dispatcher.DefaultDispatcher
 import com.ananapps.kilometa.core.dispatcher.IoDispatcher

@@ -174,7 +174,12 @@ class HomeViewModel @Inject constructor(
     fun closeShift(endOdometer: Int, notes: String? = null) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
         viewModelScope.launch {
-            manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, notes)
+            manageShiftUseCase.closeShift(
+                shiftId = state.summary.shiftId,
+                startOdometer = state.summary.startOdometer,
+                endOdometer = endOdometer,
+                notes = notes
+            )
             // Evaluación de hitos de cuota con política DataGuard (cero dinero líquido en pantalla)
             notifyQuotaMilestoneUseCase.checkAndNotifyShiftMilestone(state.summary)
             notifyQuotaMilestoneUseCase.checkAndNotifyWeeklyMilestone(state.weeklyProgress)

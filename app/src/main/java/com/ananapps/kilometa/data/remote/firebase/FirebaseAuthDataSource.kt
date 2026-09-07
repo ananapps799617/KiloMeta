@@ -26,17 +26,10 @@ import javax.inject.Singleton
 // ------------------------------------------------------------------------------
 @Singleton
 class FirebaseAuthDataSource @Inject constructor(
-    private val injectedAuth: FirebaseAuth? = null
+    private val auth: FirebaseAuth
 ) {
 
-    private fun getAuthSafe(): FirebaseAuth? {
-        if (injectedAuth != null) return injectedAuth
-        return try {
-            FirebaseAuth.getInstance()
-        } catch (_: Exception) {
-            null
-        }
-    }
+    private fun getAuthSafe(): FirebaseAuth? = auth
 
     private fun FirebaseUser.toUserSession(): UserSession = UserSession(
         uid = this.uid,

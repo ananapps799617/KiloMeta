@@ -98,7 +98,7 @@ fun ActiveShiftCockpitView(state: HomeUiState.ActiveShift) {
         } else {
             WeeklyQuotaCard(progress = state.weeklyProgress)
         }
-        CockpitKpisCard(summary = state.summary, biFuelMetrics = state.biFuelMetrics)
+        CockpitKpisCard(summary = state.summary, metrics = state.biFuelMetrics)
         Spacer(modifier = Modifier.height(64.dp))
     }
 }

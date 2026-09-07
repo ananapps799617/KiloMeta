@@ -26,17 +26,10 @@ import javax.inject.Singleton
 // ------------------------------------------------------------------------------
 @Singleton
 class FirestoreDataSource @Inject constructor(
-    private val injectedDb: FirebaseFirestore? = null
+    private val firestore: FirebaseFirestore
 ) {
 
-    private fun getFirestoreSafe(): FirebaseFirestore? {
-        if (injectedDb != null) return injectedDb
-        return try {
-            FirebaseFirestore.getInstance()
-        } catch (_: Exception) {
-            null
-        }
-    }
+    private fun getFirestoreSafe(): FirebaseFirestore? = firestore
 
     // --------------------------------------------------------------------------
     // BLOQUE 2: ESCRITURA EN LA NUBE (PUSH POR ENTIDAD)
