@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
+  ARCHIVO: app/src/main/res/values/strings.xml
+  DESCRIPCIÓN PEDAGÓGICA: Recursos de cadenas de texto de la aplicación en español.
+  Centraliza textos del semáforo financiero, estado de cabina y acciones del conductor.
+-->
+<resources>
+    <string name="app_name">KiloMeta</string>
+    <string name="status_offline_banner">Modo 100% Offline • Datos Locales Seguros</string>
+    <string name="semaphore_title">Semáforo Financiero</string>
+    <string name="semaphore_green_label">META CUMPLIDA</string>
+    <string name="semaphore_green_desc">Cuota y combustible cubiertos. Ganancia neta activa.</string>
+    <string name="semaphore_amber_label">EN RUTA A META</string>
+    <string name="semaphore_amber_desc">Combustible cubierto. En progreso para cubrir cuota.</string>
+    <string name="semaphore_red_label">EN DÉFICIT</string>
+    <string name="semaphore_red_desc">Ingresos insuficientes para costos operativos y cuota.</string>
+    <string name="btn_quick_income">Ingreso Rápido (+)</string>
+    <string name="btn_quick_expense">Gasto Rápido (-)</string>
+    <string name="quota_label">Cuota Semanal</string>
+    <string name="fuel_label">Combustible</string>
+</resources>

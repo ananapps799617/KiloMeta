@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
+  ARCHIVO: app/src/main/res/values/colors.xml
+  DESCRIPCIÓN PEDAGÓGICA: Paleta de colores XML de respaldo para temas y recursos nativos.
+  Refleja la paleta 'Deep Obsidian Cockpit' para alto contraste nocturno y diurno.
+-->
+<resources>
+    <color name="obsidian_background">#0D1117</color>
+    <color name="obsidian_surface">#161B22</color>
+    <color name="obsidian_surface_variant">#21262D</color>
+    <color name="status_red">#FF4D4D</color>
+    <color name="status_amber">#FFB800</color>
+    <color name="status_green">#00E676</color>
+    <color name="fuel_gas">#00B0FF</color>
+    <color name="fuel_gasoline">#FF9100</color>
+    <color name="text_primary">#F0F6FC</color>
+    <color name="text_secondary">#8B949E</color>
+</resources>
