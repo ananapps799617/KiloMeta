@@ -45,10 +45,12 @@ fun HomeCockpitModals(
 
     if (showFuelingSheet) {
         val currentOdo = (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer ?: 100_000
+        val profile = viewModel.driverProfile.value
         RegisterFuelingSheet(
             currentOdometer = currentOdo,
             sheetState = fuelSheetState,
             onDismiss = onDismissFuelingSheet,
+            propulsionType = profile.propulsionType,
             onConfirmFueling = { fuelType, amount, volume, odo ->
                 viewModel.registerFueling(fuelType, amount, volume, odo)
             }

@@ -30,7 +30,9 @@ enum class PlatformType(val displayName: String) {
  */
 enum class FuelType(val displayName: String, val unitLabel: String) {
     GAS("Gas Natural Vehicular", "m³"),
-    GASOLINE("Gasolina", "Gal")
+    GASOLINE("Gasolina", "Gal"),
+    DIESEL("Diésel (ACPM)", "Gal"),
+    ELECTRICITY("Electricidad (EV)", "kWh")
 }
 
 // ------------------------------------------------------------------------------

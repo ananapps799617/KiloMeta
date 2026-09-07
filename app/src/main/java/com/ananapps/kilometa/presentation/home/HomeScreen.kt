@@ -62,7 +62,8 @@ import com.ananapps.kilometa.presentation.theme.TextPrimary
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    showTopBar: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val syncStatus by viewModel.syncStatus.collectAsState()
@@ -136,39 +137,41 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = stringResource(R.string.status_offline_banner),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = StatusGreen
-                        )
-                    }
-                },
-                actions = {
-                    CockpitCloudBadge(
-                        syncStatus = syncStatus,
-                        userSession = userSession,
-                        onClick = { showSyncSheet = true },
-                        modifier = Modifier.padding(end = 6.dp)
-                    )
-                    if (uiState is HomeUiState.ActiveShift) {
-                        OutlinedButton(
-                            onClick = { showCloseShiftDialog = true },
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Text(text = "Cerrar", color = StatusRed, style = MaterialTheme.typography.labelSmall)
+            if (showTopBar) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.status_offline_banner),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = StatusGreen
+                            )
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepObsidianSurface)
-            )
+                    },
+                    actions = {
+                        CockpitCloudBadge(
+                            syncStatus = syncStatus,
+                            userSession = userSession,
+                            onClick = { showSyncSheet = true },
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                        if (uiState is HomeUiState.ActiveShift) {
+                            OutlinedButton(
+                                onClick = { showCloseShiftDialog = true },
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Text(text = "Cerrar", color = StatusRed, style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepObsidianSurface)
+                )
+            }
         },
         bottomBar = {
             if (uiState is HomeUiState.ActiveShift) {
