@@ -34,9 +34,24 @@ val StatusGreenContainer: Color = Color(0xFF0B331E)
 // ------------------------------------------------------------------------------
 val FuelGas: Color = Color(0xFF00B0FF)         // GNV (Gas Natural Vehicular)
 val FuelGasoline: Color = Color(0xFFFF9100)    // Gasolina Corriente
+val ElectricBluePrimary: Color = Color(0xFF2979FF) // Azul Eléctrico Primario
 
 // ------------------------------------------------------------------------------
-// BLOQUE 4: TIPOGRAFÍA Y TEXTO
+// BLOQUE 4: TOKENS DE AUDITORÍA Y AHORRO BI-COMBUSTIBLE
+// ------------------------------------------------------------------------------
+val CyanSavings: Color = Color(0xFF00E5FF)          // Cian Ahorro GNV
+val CyanSavingsContainer: Color = Color(0xFF002B33) // Fondo cian obsidiana
+
+// ------------------------------------------------------------------------------
+// BLOQUE 5: TOKENS IDENTITARIOS DE PLATAFORMAS DE TRANSPORTE
+// ------------------------------------------------------------------------------
+val PlatformUber: Color = Color(0xFFFFFFFF)         // Uber Blanco
+val PlatformDiDi: Color = Color(0xFFFF7A00)         // DiDi Naranja
+val PlatformInDrive: Color = Color(0xFFB4F309)      // InDrive Verde Lima
+val PlatformPrivate: Color = Color(0xFFAB47BC)      // Particular / Privado Morado
+
+// ------------------------------------------------------------------------------
+// BLOQUE 6: TIPOGRAFÍA Y TEXTO
 // ------------------------------------------------------------------------------
 val TextPrimary: Color = Color(0xFFF0F6FC)
 val TextSecondary: Color = Color(0xFF8B949E)

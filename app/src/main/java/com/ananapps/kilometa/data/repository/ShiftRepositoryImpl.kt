@@ -10,13 +10,17 @@
 package com.ananapps.kilometa.data.repository
 
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
+import com.ananapps.kilometa.data.local.dao.FuelingDao
 import com.ananapps.kilometa.data.local.dao.ShiftDao
+import com.ananapps.kilometa.data.local.dao.TripDao
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
 import com.ananapps.kilometa.data.mapper.toFinancialSummary
+import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.ShiftStatus
+import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -31,6 +35,8 @@ import javax.inject.Singleton
 @Singleton
 class ShiftRepositoryImpl @Inject constructor(
     private val shiftDao: ShiftDao,
+    private val tripDao: TripDao,
+    private val fuelingDao: FuelingDao,
     private val dispatchers: CoroutineDispatchers
 ) : ShiftRepository {
 
@@ -48,6 +54,24 @@ class ShiftRepositoryImpl @Inject constructor(
 
     override fun getAllShifts(): Flow<List<Shift>> {
         return shiftDao.getAllShifts()
+            .map { it.toDomain() }
+            .flowOn(dispatchers.io)
+    }
+
+    override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> {
+        return shiftDao.getCompletedShiftsWithDetails()
+            .map { list -> list.map { it.toFinancialSummary() } }
+            .flowOn(dispatchers.io)
+    }
+
+    override fun getAllTrips(): Flow<List<Trip>> {
+        return tripDao.getAllTrips()
+            .map { it.toDomain() }
+            .flowOn(dispatchers.io)
+    }
+
+    override fun getAllFuelings(): Flow<List<Fueling>> {
+        return fuelingDao.getAllFuelings()
             .map { it.toDomain() }
             .flowOn(dispatchers.io)
     }
