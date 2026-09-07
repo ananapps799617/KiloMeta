@@ -15,8 +15,14 @@
     <string name="semaphore_amber_desc">Combustible cubierto. En progreso para cubrir cuota.</string>
     <string name="semaphore_red_label">EN DÉFICIT</string>
     <string name="semaphore_red_desc">Ingresos insuficientes para costos operativos y cuota.</string>
-    <string name="btn_quick_income">Ingreso Rápido (+)</string>
-    <string name="btn_quick_expense">Gasto Rápido (-)</string>
+    <string name="btn_quick_income">Registrar Carrera (+)</string>
+    <string name="btn_quick_expense">Tanqueo / Gasto (-)</string>
     <string name="quota_label">Cuota Semanal</string>
     <string name="fuel_label">Combustible</string>
+    <string name="weekly_bag_title">Bolsa Semanal (Corte Martes 23:59)</string>
+    <string name="free_shift_achieved">¡TURNO LIBRE LOGRADO!</string>
+    <string name="remaining_to_free_shift">Faltan %s para Turno Libre</string>
+    <string name="surplus_label">Utilidad Neta de Bolsillo: %s</string>
+    <string name="start_shift_btn">Iniciar Jornada</string>
+    <string name="close_shift_btn">Cerrar Turno</string>
 </resources>
