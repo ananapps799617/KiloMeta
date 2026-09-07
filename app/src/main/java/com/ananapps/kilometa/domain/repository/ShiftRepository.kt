@@ -1,0 +1,62 @@
+// ==============================================================================
+// PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
+// ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/repository/ShiftRepository.kt
+// DESCRIPCIÓN PEDAGÓGICA:
+// Contrato de Dominio para la gestión del ciclo de vida y análisis financiero de turnos.
+// Expone flujos reactivos mediante Kotlin Flow y operaciones de mutación asíncronas suspend.
+// ==============================================================================
+
+package com.ananapps.kilometa.domain.repository
+
+import com.ananapps.kilometa.domain.model.Shift
+import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
+import kotlinx.coroutines.flow.Flow
+
+// ------------------------------------------------------------------------------
+// BLOQUE 1: INTERFAZ DEL REPOSITORIO DE TURNOS
+// ------------------------------------------------------------------------------
+/**
+ * Define el acceso a datos y operaciones de negocio sobre turnos de conducción.
+ */
+interface ShiftRepository {
+
+    /**
+     * Emite el turno activo actual, o null si no hay ninguna jornada en curso.
+     */
+    fun getActiveShift(): Flow<Shift?>
+
+    /**
+     * Emite el resumen financiero consolidado en tiempo real del turno activo.
+     */
+    fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?>
+
+    /**
+     * Emite el histórico completo de turnos ordenados cronológicamente descendente.
+     */
+    fun getAllShifts(): Flow<List<Shift>>
+
+    /**
+     * Inicia una nueva jornada laboral.
+     */
+    suspend fun startShift(shift: Shift)
+
+    /**
+     * Finaliza un turno activo registrando el odómetro final y observaciones.
+     */
+    suspend fun closeShift(
+        shiftId: String,
+        endOdometer: Int,
+        endTime: Long,
+        notes: String? = null
+    )
+
+    /**
+     * Actualiza la información de un turno existente.
+     */
+    suspend fun updateShift(shift: Shift)
+
+    /**
+     * Elimina un turno y todas sus entidades dependientes (en cascada).
+     */
+    suspend fun deleteShift(shiftId: String)
+}
