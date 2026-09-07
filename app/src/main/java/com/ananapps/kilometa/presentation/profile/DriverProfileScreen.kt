@@ -83,6 +83,7 @@ fun DriverProfileScreen(
     val isSaved by viewModel.isSaved.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var driverName by remember(currentProfile) { mutableStateOf(currentProfile.driverName) }
     var vehicleName by remember(currentProfile) { mutableStateOf(currentProfile.vehicleName) }
     var vehiclePlate by remember(currentProfile) { mutableStateOf(currentProfile.vehiclePlate) }
     var selectedPropulsion by remember(currentProfile) { mutableStateOf(currentProfile.propulsionType) }
@@ -109,17 +110,24 @@ fun DriverProfileScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 76.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Título
             Text(
                 text = "Mi Perfil & Vehículo",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary
             )
 
-            // Datos del Vehículo
+            // Datos del Conductor y Vehículo
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = driverName,
+                    onValueChange = { driverName = it },
+                    label = { Text("Nombre del Conductor") },
+                    placeholder = { Text("Ej. Andrés López") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
                 OutlinedTextField(
                     value = vehicleName,
                     onValueChange = { vehicleName = it },
@@ -233,6 +241,7 @@ fun DriverProfileScreen(
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 viewModel.updateProfile(
                     DriverProfile(
+                        driverName = driverName.trim(),
                         vehicleName = vehicleName.trim(),
                         vehiclePlate = vehiclePlate.trim(),
                         propulsionType = selectedPropulsion,

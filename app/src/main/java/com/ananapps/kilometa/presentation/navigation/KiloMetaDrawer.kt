@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,11 +49,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.R
 import com.ananapps.kilometa.presentation.theme.CyanSavings
 import com.ananapps.kilometa.presentation.theme.CyanSavingsContainer
-import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
@@ -67,6 +69,7 @@ import com.ananapps.kilometa.presentation.theme.TextSecondary
 @Composable
 fun KiloMetaDrawerContent(
     currentDestination: AppDestination,
+    driverName: String = "",
     driverEmail: String,
     vehiclePlate: String,
     propulsionName: String,
@@ -80,8 +83,10 @@ fun KiloMetaDrawerContent(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(310.dp)
+            .width(320.dp)
             .background(DeepObsidianSurface)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(16.dp)
     ) {
         // Encabezado del Perfil y Vehículo
@@ -99,47 +104,52 @@ fun KiloMetaDrawerContent(
                     .size(54.dp)
                     .clip(RoundedCornerShape(12.dp))
             )
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "KiloMeta Cabina",
+                    text = driverName.ifBlank { "Capitán de Cabina" },
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = driverEmail.ifBlank { "Conductor Registrado" },
+                    text = driverEmail.ifBlank { "conductor@kilometa.co" },
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+                // Nivel 1: Badge de Placa
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(ElectricBluePrimary.copy(alpha = 0.2f))
+                        .border(1.dp, ElectricBluePrimary, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "🚕 ${vehiclePlate.ifBlank { "WMB-789" }}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = ElectricBluePrimary,
+                        maxLines = 1
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    // Badge Placa
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(ElectricBluePrimary.copy(alpha = 0.2f))
-                            .border(1.dp, ElectricBluePrimary, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = vehiclePlate.ifBlank { "WMB-789" },
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = ElectricBluePrimary
-                        )
-                    }
-                    // Badge Propulsión
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(CyanSavingsContainer)
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = propulsionName,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = CyanSavings
-                        )
-                    }
+                // Nivel 2: Badge de Propulsión (sin desbordamiento horizontal)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(CyanSavingsContainer)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "⛽ $propulsionName",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = CyanSavings,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
@@ -148,9 +158,7 @@ fun KiloMetaDrawerContent(
 
         // Lista de Destinos con Touch Target >= 56dp
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             AppDestination.entries.forEach { destination ->
@@ -169,12 +177,10 @@ fun KiloMetaDrawerContent(
 
         HorizontalDivider(color = ObsidianBorder, modifier = Modifier.padding(vertical = 12.dp))
 
-        // Botón Inferior: Cerrar Sesión
+        // Botón Inferior: Cerrar Sesión (Touch target 56dp)
         Button(
             onClick = { showSignOutConfirm = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = DeepObsidianSurfaceVariant),
             border = androidx.compose.foundation.BorderStroke(1.dp, ObsidianBorder)
@@ -200,14 +206,10 @@ fun KiloMetaDrawerContent(
                         onSignOut()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = StatusRed)
-                ) {
-                    Text("Sí, Salir", color = TextPrimary)
-                }
+                ) { Text("Sí, Salir", color = TextPrimary) }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showSignOutConfirm = false }) {
-                    Text("Cancelar")
-                }
+                OutlinedButton(onClick = { showSignOutConfirm = false }) { Text("Cancelar") }
             },
             containerColor = DeepObsidianSurface
         )

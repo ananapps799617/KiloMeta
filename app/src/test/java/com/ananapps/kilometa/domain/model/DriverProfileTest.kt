@@ -22,6 +22,7 @@ class DriverProfileTest {
     fun `driverProfile por defecto inicia con Bi-Combustible, Propio y Cuota Semanal`() {
         val defaultProfile = DriverProfile()
 
+        assertEquals("", defaultProfile.driverName)
         assertEquals("Chevrolet Joy / Spark GT", defaultProfile.vehicleName)
         assertEquals("WMB-789", defaultProfile.vehiclePlate)
         assertEquals(PropulsionType.BI_FUEL, defaultProfile.propulsionType)
@@ -62,6 +63,7 @@ class DriverProfileTest {
     fun `driverProfile copy actualiza campos preservando inmutabilidad`() {
         val original = DriverProfile()
         val modified = original.copy(
+            driverName = "Andrés López",
             vehicleName = "Renault Zoe EV",
             vehiclePlate = "EVX-001",
             propulsionType = PropulsionType.ELECTRIC_100,
@@ -70,6 +72,7 @@ class DriverProfileTest {
             workingDaysPerWeek = 5
         )
 
+        assertEquals("Andrés López", modified.driverName)
         assertEquals("Renault Zoe EV", modified.vehicleName)
         assertEquals("EVX-001", modified.vehiclePlate)
         assertEquals(PropulsionType.ELECTRIC_100, modified.propulsionType)
@@ -78,6 +81,7 @@ class DriverProfileTest {
         assertEquals(5, modified.workingDaysPerWeek)
 
         // El original permanece intacto
+        assertEquals("", original.driverName)
         assertEquals("Chevrolet Joy / Spark GT", original.vehicleName)
         assertEquals(PropulsionType.BI_FUEL, original.propulsionType)
     }

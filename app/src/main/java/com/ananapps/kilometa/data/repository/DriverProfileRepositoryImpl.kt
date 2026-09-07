@@ -42,6 +42,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
 
     companion object {
         private const val PREFS_NAME = "kilometa_driver_profile"
+        private const val KEY_DRIVER_NAME = "driver_name"
         private const val KEY_VEHICLE_NAME = "vehicle_name"
         private const val KEY_VEHICLE_PLATE = "vehicle_plate"
         private const val KEY_PROPULSION_TYPE = "propulsion_type"
@@ -69,6 +70,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
 
         // 1. Persistencia local inmediata (sin bloqueo de UI)
         prefs.edit().apply {
+            putString(KEY_DRIVER_NAME, updatedProfile.driverName)
             putString(KEY_VEHICLE_NAME, updatedProfile.vehicleName)
             putString(KEY_VEHICLE_PLATE, updatedProfile.vehiclePlate)
             putString(KEY_PROPULSION_TYPE, updatedProfile.propulsionType.name)
@@ -88,6 +90,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
         val currentUser = authRepository.getCurrentUser()
         if (currentUser != null) {
             val profileMap = mapOf<String, Any>(
+                "driverName" to updatedProfile.driverName,
                 "vehicleName" to updatedProfile.vehicleName,
                 "vehiclePlate" to updatedProfile.vehiclePlate,
                 "propulsionType" to updatedProfile.propulsionType.name,
@@ -107,6 +110,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
     // --------------------------------------------------------------------------
     private fun loadProfileFromPrefs(): DriverProfile {
         val defaultProfile = DriverProfile()
+        val driverName = prefs.getString(KEY_DRIVER_NAME, defaultProfile.driverName) ?: defaultProfile.driverName
         val vehicleName = prefs.getString(KEY_VEHICLE_NAME, defaultProfile.vehicleName) ?: defaultProfile.vehicleName
         val vehiclePlate = prefs.getString(KEY_VEHICLE_PLATE, defaultProfile.vehiclePlate) ?: defaultProfile.vehiclePlate
 
@@ -133,6 +137,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
         val updatedAt = prefs.getLong(KEY_UPDATED_AT, defaultProfile.updatedAt)
 
         return DriverProfile(
+            driverName = driverName,
             vehicleName = vehicleName,
             vehiclePlate = vehiclePlate,
             propulsionType = propulsion,

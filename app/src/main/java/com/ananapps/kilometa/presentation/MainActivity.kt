@@ -126,6 +126,7 @@ private fun MainAppHost(
         drawerContent = {
             KiloMetaDrawerContent(
                 currentDestination = currentDestination,
+                driverName = driverProfile.driverName.ifBlank { userSession?.displayName ?: "" },
                 driverEmail = userSession?.email ?: "conductor@kilometa.co",
                 vehiclePlate = driverProfile.vehiclePlate,
                 propulsionName = driverProfile.propulsionType.displayName,

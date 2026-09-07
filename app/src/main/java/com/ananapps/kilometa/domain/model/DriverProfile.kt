@@ -53,6 +53,7 @@ enum class QuotaPeriodicity(val displayName: String) {
 /**
  * Datos del conductor, vehículo, sistema motriz y parámetros operacionales.
  *
+ * @property driverName Nombre del conductor (ej. "Andrés López").
  * @property vehicleName Referencia o modelo del vehículo (ej. "Chevrolet Joy / Spark GT").
  * @property vehiclePlate Placa del vehículo registrada (ej. "WMB-789").
  * @property propulsionType Tipo de motorización y combustible principal.
@@ -64,6 +65,7 @@ enum class QuotaPeriodicity(val displayName: String) {
  * @property updatedAt Marca de tiempo en milisegundos de la última actualización del perfil.
  */
 data class DriverProfile(
+    val driverName: String = "",
     val vehicleName: String = "Chevrolet Joy / Spark GT",
     val vehiclePlate: String = "WMB-789",
     val propulsionType: PropulsionType = PropulsionType.BI_FUEL,
