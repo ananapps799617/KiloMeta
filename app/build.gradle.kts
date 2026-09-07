@@ -100,6 +100,7 @@ dependencies {
     // Respaldo en la Nube y Recuperación de Desastres: Firebase SDK
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
+    implementation(libs.play.services.auth)
     implementation(libs.firebase.firestore.ktx)
 
     // Pruebas Unitarias

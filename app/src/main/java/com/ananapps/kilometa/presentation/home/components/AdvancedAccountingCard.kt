@@ -87,16 +87,24 @@ fun AdvancedAccountingCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "AUDITORÍA DE PRODUCCIÓN",
+                    text = "AUDITORÍA SEMANAL",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = TextPrimary,
+                    modifier = Modifier.weight(1f, fill = false),
+                    maxLines = 1
                 )
 
-                Text(
-                    text = "Corte Martes 23:59",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
-                )
+                androidx.compose.material3.Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = DeepObsidianSurfaceVariant
+                ) {
+                    Text(
+                        text = "Corte Martes 23:59",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))

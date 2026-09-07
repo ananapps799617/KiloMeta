@@ -52,7 +52,7 @@ fun CockpitBottomDock(
         modifier = modifier
             .fillMaxWidth()
             .background(DeepObsidianSurface)
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

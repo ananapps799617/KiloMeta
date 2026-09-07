@@ -16,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
@@ -56,7 +57,8 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         KiloMetaBottomBar(
                             currentDestination = currentDestination,
-                            onNavigate = { currentDestination = it }
+                            onNavigate = { currentDestination = it },
+                            modifier = Modifier.navigationBarsPadding()
                         )
                     },
                     containerColor = DeepObsidianBackground

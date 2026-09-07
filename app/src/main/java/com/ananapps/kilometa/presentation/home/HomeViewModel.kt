@@ -211,16 +211,64 @@ class HomeViewModel @Inject constructor(
         _restoreProgress.value = RestoreProgress.Idle
     }
 
-    fun signInWithGoogle() {
-        viewModelScope.launch { authenticateUserUseCase.signInWithGoogle("mock-google-id-token") }
+    private val _authError = MutableStateFlow<String?>(null)
+    val authError: StateFlow<String?> = _authError.asStateFlow()
+
+    private val _isAuthLoading = MutableStateFlow(false)
+    val isAuthLoading: StateFlow<Boolean> = _isAuthLoading.asStateFlow()
+
+    fun setAuthError(message: String) {
+        _authError.value = message
+    }
+
+    fun clearAuthError() {
+        _authError.value = null
+    }
+
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _isAuthLoading.value = true
+            _authError.value = null
+            val result = authenticateUserUseCase.signInWithGoogle(idToken)
+            if (result.isFailure) {
+                _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error de autenticación con Google"
+            }
+            _isAuthLoading.value = false
+        }
     }
 
     fun signInWithEmail(email: String, pass: String) {
-        viewModelScope.launch { authenticateUserUseCase.signInWithEmail(email, pass) }
+        viewModelScope.launch {
+            _isAuthLoading.value = true
+            _authError.value = null
+            val signInResult = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
+            if (signInResult.isFailure) {
+                val signUpResult = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
+                if (signUpResult.isFailure) {
+                    val rawMsg = signUpResult.exceptionOrNull()?.message ?: ""
+                    _authError.value = when {
+                        rawMsg.contains("badly formatted", ignoreCase = true) -> "Formato de correo no válido."
+                        rawMsg.contains("wrong password", ignoreCase = true) -> "Contraseña incorrecta."
+                        rawMsg.contains("at least", ignoreCase = true) -> "La contraseña debe tener mínimo 6 caracteres."
+                        rawMsg.contains("OPERATION_NOT_ALLOWED", ignoreCase = true) -> "Habilita Correo en Firebase Console."
+                        else -> signUpResult.exceptionOrNull()?.localizedMessage ?: "Error de autenticación"
+                    }
+                }
+            }
+            _isAuthLoading.value = false
+        }
     }
 
     fun signInAnonymously() {
-        viewModelScope.launch { authenticateUserUseCase.signInAnonymously() }
+        viewModelScope.launch {
+            _isAuthLoading.value = true
+            _authError.value = null
+            val result = authenticateUserUseCase.signInAnonymously()
+            if (result.isFailure) {
+                _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error de sesión anónima"
+            }
+            _isAuthLoading.value = false
+        }
     }
 
     fun signOut() {

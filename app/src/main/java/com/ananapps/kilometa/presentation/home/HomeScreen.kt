@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,6 +70,8 @@ fun HomeScreen(
     val restoreProgress by viewModel.restoreProgress.collectAsState()
     val isPingingCloud by viewModel.isPingingCloud.collectAsState()
     val connectionDiagnostic by viewModel.connectionDiagnostic.collectAsState()
+    val authError by viewModel.authError.collectAsState()
+    val isAuthLoading by viewModel.isAuthLoading.collectAsState()
 
     // Solicitud elegante de permisos de notificación vehicular en Android 13+
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -81,6 +84,25 @@ fun HomeScreen(
         }
     }
 
+    // Google Sign-In nativo con play-services-auth
+    val context = LocalContext.current
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+            val idToken = account?.idToken
+            if (!idToken.isNullOrBlank()) {
+                viewModel.signInWithGoogle(idToken)
+            } else {
+                viewModel.setAuthError("No se recibió token de Google.")
+            }
+        } catch (e: Exception) {
+            viewModel.setAuthError("Error Google: ${e.localizedMessage ?: e.message}")
+        }
+    }
+
     var showTripSheet by remember { mutableStateOf(false) }
     var showFuelingSheet by remember { mutableStateOf(false) }
     var showStartShiftDialog by remember { mutableStateOf(false) }
@@ -88,6 +110,12 @@ fun HomeScreen(
     var showSyncSheet by remember { mutableStateOf(false) }
     var showAuthSheet by remember { mutableStateOf(false) }
     var showRecoveryScreen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(userSession) {
+        if (userSession != null && !userSession!!.isAnonymous) {
+            showAuthSheet = false
+        }
+    }
 
     val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -224,19 +252,22 @@ fun HomeScreen(
     if (showAuthSheet) {
         AuthBottomSheet(
             sheetState = authSheetState,
-            onDismiss = { showAuthSheet = false },
+            onDismiss = {
+                viewModel.clearAuthError()
+                showAuthSheet = false
+            },
             onSignInWithGoogle = {
-                viewModel.signInWithGoogle()
-                showAuthSheet = false
+                val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
+                    com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
+                ).requestIdToken(context.getString(R.string.default_web_client_id)).requestEmail().build()
+                com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso).apply {
+                    signOut().addOnCompleteListener { googleSignInLauncher.launch(signInIntent) }
+                }
             },
-            onSignInWithEmail = { email, pass ->
-                viewModel.signInWithEmail(email, pass)
-                showAuthSheet = false
-            },
-            onSignInAnonymously = {
-                viewModel.signInAnonymously()
-                showAuthSheet = false
-            }
+            onSignInWithEmail = { email, pass -> viewModel.signInWithEmail(email, pass) },
+            onSignInAnonymously = { viewModel.signInAnonymously(); showAuthSheet = false },
+            authError = authError,
+            isLoading = isAuthLoading
         )
     }
 }

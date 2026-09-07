@@ -52,7 +52,9 @@ fun AuthBottomSheet(
     onDismiss: () -> Unit,
     onSignInWithGoogle: () -> Unit,
     onSignInWithEmail: (email: String, pass: String) -> Unit,
-    onSignInAnonymously: () -> Unit
+    onSignInAnonymously: () -> Unit,
+    authError: String? = null,
+    isLoading: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     var email by remember { mutableStateOf("") }
@@ -80,8 +82,17 @@ fun AuthBottomSheet(
                 text = "Tus datos financieros estarán protegidos ante robo o cambio de móvil.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
-                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
             )
+
+            if (authError != null) {
+                Text(
+                    text = "⚠️ $authError",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = com.ananapps.kilometa.presentation.theme.StatusRed,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
 
             // Botón Prominente de Google Sign-In (Touch Target >= 56dp)
             Button(
@@ -163,14 +174,18 @@ fun AuthBottomSheet(
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSignInWithEmail(email, password)
                     },
-                    enabled = email.isNotBlank() && password.length >= 6,
+                    enabled = !isLoading && email.isNotBlank() && password.length >= 6,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(Constants.MIN_TOUCH_TARGET_DP.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricBluePrimary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Iniciar Sesión / Registrarse", color = TextPrimary, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isLoading) "Conectando con Firebase..." else "Iniciar Sesión / Registrarse",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 

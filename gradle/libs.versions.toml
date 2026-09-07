@@ -21,8 +21,10 @@ firebaseBom = "33.3.0"
 googleServices = "4.4.2"
 work = "2.9.1"
 hiltWork = "1.2.0"
+playServicesAuth = "21.2.0"
 
 [libraries]
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
 androidx-hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }

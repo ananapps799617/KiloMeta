@@ -70,7 +70,7 @@ fun KiloMetaBottomBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(Constants.MIN_TOUCH_TARGET_DP.dp + 16.dp),
+            .height(Constants.MIN_TOUCH_TARGET_DP.dp + 8.dp),
         color = DeepObsidianSurface,
         tonalElevation = 8.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, ObsidianBorder)
@@ -78,7 +78,7 @@ fun KiloMetaBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
