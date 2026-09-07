@@ -106,3 +106,23 @@ sealed interface RestoreProgress {
         val reason: String
     ) : RestoreProgress
 }
+
+// ------------------------------------------------------------------------------
+// BLOQUE 4: DIAGNÓSTICO DE ENLACE EN VIVO CON LA NUBE
+// ------------------------------------------------------------------------------
+/**
+ * Modela el resultado de la comprobación de conectividad round-trip con Firestore.
+ *
+ * @property isConnected Indica si el ping bidireccional fue exitoso contra el servidor.
+ * @property latencyMs Latencia round-trip en milisegundos calculada en el enlace en vivo.
+ * @property timestampMillis Marca de tiempo Unix en milisegundos de la prueba diagnóstica.
+ * @property message Mensaje descriptivo de estado para visualización en cabina.
+ * @property isPlaceholderConfig Indica si el entorno opera con configuración mock o de desarrollo.
+ */
+data class ConnectionDiagnostic(
+    val isConnected: Boolean,
+    val latencyMs: Long? = null,
+    val timestampMillis: Long = System.currentTimeMillis(),
+    val message: String = "",
+    val isPlaceholderConfig: Boolean = false
+)

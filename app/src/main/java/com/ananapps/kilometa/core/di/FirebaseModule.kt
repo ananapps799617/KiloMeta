@@ -12,8 +12,11 @@ import com.ananapps.kilometa.data.repository.AuthRepositoryImpl
 import com.ananapps.kilometa.data.repository.SyncRepositoryImpl
 import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
@@ -36,4 +39,14 @@ abstract class FirebaseModule {
     abstract fun bindSyncRepository(
         impl: SyncRepositoryImpl
     ): SyncRepository
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+
+        @Provides
+        @Singleton
+        fun provideFirebaseFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+    }
 }

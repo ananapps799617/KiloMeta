@@ -56,6 +56,15 @@ class FakeSyncRepository : SyncRepository {
         }
     }
 
+    override suspend fun checkCloudConnection(): ConnectionDiagnostic {
+        executionLog.add("CHECK_CONNECTION")
+        return ConnectionDiagnostic(
+            isConnected = true,
+            latencyMs = 120L,
+            message = "Conexión simulada exitosa"
+        )
+    }
+
     override fun fullDisasterRecovery(): Flow<RestoreProgress> = flow {
         executionLog.add("RECOVERY_START")
         emit(RestoreProgress.Running("Iniciando", 0, 0.05f))

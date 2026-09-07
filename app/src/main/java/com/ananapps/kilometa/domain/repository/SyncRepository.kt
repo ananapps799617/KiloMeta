@@ -9,6 +9,7 @@
 
 package com.ananapps.kilometa.domain.repository
 
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.RestoreProgress
 import com.ananapps.kilometa.domain.model.SyncStatus
 import kotlinx.coroutines.flow.Flow
@@ -41,4 +42,9 @@ interface SyncRepository {
      * e insertándolas en la base de datos Room respetando la integridad referencial.
      */
     fun fullDisasterRecovery(): Flow<RestoreProgress>
+
+    /**
+     * Realiza una prueba activa de conectividad round-trip con Firestore y calcula la latencia.
+     */
+    suspend fun checkCloudConnection(): ConnectionDiagnostic
 }

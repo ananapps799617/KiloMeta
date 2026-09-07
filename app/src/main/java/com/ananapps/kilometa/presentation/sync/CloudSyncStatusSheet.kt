@@ -3,7 +3,7 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/sync/CloudSyncStatusSheet.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // ModalBottomSheet de cabina que exhibe la telemetría detallada de sincronización,
-// estado de la cuenta del conductor y disparador manual de respaldo en la nube.
+// estado de la cuenta del conductor, botón de prueba en vivo y control de respaldo.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.sync
@@ -34,12 +34,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.core.util.Constants
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.SyncState
 import com.ananapps.kilometa.domain.model.SyncStatus
 import com.ananapps.kilometa.domain.model.UserSession
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
+import com.ananapps.kilometa.presentation.theme.StatusAmber
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.StatusRed
 import com.ananapps.kilometa.presentation.theme.TextPrimary
@@ -57,8 +59,11 @@ fun CloudSyncStatusSheet(
     sheetState: SheetState,
     syncStatus: SyncStatus,
     userSession: UserSession?,
+    connectionDiagnostic: ConnectionDiagnostic? = null,
+    isPinging: Boolean = false,
     onDismiss: () -> Unit,
     onSyncNow: () -> Unit,
+    onTestConnection: () -> Unit = {},
     onOpenAuth: () -> Unit,
     onOpenRecovery: () -> Unit,
     onSignOut: () -> Unit
@@ -74,7 +79,7 @@ fun CloudSyncStatusSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
             Text(
                 text = "Respaldo y Nube (Cloud Sync)",
@@ -83,10 +88,10 @@ fun CloudSyncStatusSheet(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Protección anti-pérdida y sincronización de datos contables",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Telemetría en vivo y sincronización contable",
+                style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
-                modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
+                modifier = Modifier.padding(top = 2.dp, bottom = 14.dp)
             )
 
             // Panel de Cuenta
@@ -94,122 +99,124 @@ fun CloudSyncStatusSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(DeepObsidianSurfaceVariant, RoundedCornerShape(12.dp))
-                    .padding(16.dp)
+                    .padding(12.dp)
             ) {
-                Text(
-                    text = "Cuenta de Conductor",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (userSession != null) {
-                    val accountLabel = userSession.email
-                        ?: if (userSession.isAnonymous) "Sesión Anónima Temporal" else userSession.uid.take(8)
-                    Text(
-                        text = accountLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    Text(
-                        text = "Modo 100% Local (Sin cuenta vinculada)",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = TextSecondary
-                    )
+                Text(text = "Cuenta de Conductor", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                val accountLabel = userSession?.email
+                    ?: if (userSession?.isAnonymous == true) "Sesión Anónima Temporal" else if (userSession != null) userSession.uid.take(8) else "Modo 100% Local (Sin cuenta)"
+                Text(text = accountLabel, style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Panel de Diagnóstico de Enlace en Vivo
+            if (connectionDiagnostic != null) {
+                val pingTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(connectionDiagnostic.timestampMillis))
+                val latencyColor = when {
+                    !connectionDiagnostic.isConnected -> StatusRed
+                    (connectionDiagnostic.latencyMs ?: 0L) < 300 -> StatusGreen
+                    else -> StatusAmber
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(DeepObsidianSurfaceVariant, RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "Prueba en Vivo:", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text(text = pingTime, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = if (connectionDiagnostic.isConnected) "Conectado" else "Sin Enlace", style = MaterialTheme.typography.titleSmall, color = latencyColor, fontWeight = FontWeight.Bold)
+                        val latText = connectionDiagnostic.latencyMs?.let { "${it} ms" } ?: "N/A"
+                        Text(text = "Latencia: $latText", style = MaterialTheme.typography.titleSmall, color = latencyColor, fontWeight = FontWeight.Bold)
+                    }
+                    Text(text = connectionDiagnostic.message, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // Panel de Último Respaldo
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(DeepObsidianSurfaceVariant, RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            ) {
+                val lastSyncStr = syncStatus.lastSyncTimestamp?.let {
+                    SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(it))
+                } ?: "Nunca"
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = "Último Respaldo:", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    Text(text = lastSyncStr, style = MaterialTheme.typography.bodyMedium, color = if (syncStatus.lastSyncTimestamp != null) StatusGreen else TextSecondary, fontWeight = FontWeight.Bold)
+                }
+                if (syncStatus.errorMessage != null) {
+                    Text(text = syncStatus.errorMessage, style = MaterialTheme.typography.labelSmall, color = StatusRed)
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Panel de Última Sincronización
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(DeepObsidianSurfaceVariant, RoundedCornerShape(12.dp))
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Último Respaldo:",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
-                    val lastSyncStr = syncStatus.lastSyncTimestamp?.let {
-                        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(it))
-                    } ?: "Nunca"
-                    Text(
-                        text = lastSyncStr,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (syncStatus.lastSyncTimestamp != null) StatusGreen else TextSecondary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                if (syncStatus.errorMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = syncStatus.errorMessage,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = StatusRed
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Botón de Sincronizar Ahora o Vincular Cuenta
+            // Botones de Acción
             if (userSession != null) {
+                // Botón Probar Conexión en Vivo
+                OutlinedButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onTestConnection()
+                    },
+                    enabled = !isPinging,
+                    modifier = Modifier.fillMaxWidth().height(Constants.MIN_TOUCH_TARGET_DP.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isPinging) {
+                        CircularProgressIndicator(color = ElectricBluePrimary, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(" Probando Enlace...", color = ElectricBluePrimary)
+                    } else {
+                        Text("Probar Conexión en Vivo ⚡", color = ElectricBluePrimary, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Button(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSyncNow()
                     },
                     enabled = syncStatus.state != SyncState.SYNCING,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(Constants.MIN_TOUCH_TARGET_DP.dp),
+                    modifier = Modifier.fillMaxWidth().height(Constants.MIN_TOUCH_TARGET_DP.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricBluePrimary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (syncStatus.state == SyncState.SYNCING) {
-                        CircularProgressIndicator(color = TextPrimary, strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(" Sincronizando...", color = TextPrimary, fontWeight = FontWeight.Bold)
-                    } else {
-                        Text("Sincronizar Ahora ☁️", color = TextPrimary, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        onDismiss()
-                        onOpenRecovery()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(Constants.MIN_TOUCH_TARGET_DP.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Recuperar Base de Datos (Disaster Recovery) 🚨", color = ElectricBluePrimary)
+                    val label = if (syncStatus.state == SyncState.SYNCING) "Sincronizando..." else "Sincronizar Ahora ☁️"
+                    Text(label, color = TextPrimary, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedButton(
                     onClick = {
+                        onDismiss()
+                        onOpenRecovery()
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Recuperar Datos (Disaster Recovery) 🚨", color = TextSecondary)
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedButton(
+                    onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSignOut()
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(Constants.MIN_TOUCH_TARGET_DP.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Cerrar Sesión", color = StatusRed)
@@ -220,17 +227,13 @@ fun CloudSyncStatusSheet(
                         onDismiss()
                         onOpenAuth()
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(Constants.MIN_TOUCH_TARGET_DP.dp),
+                    modifier = Modifier.fillMaxWidth().height(Constants.MIN_TOUCH_TARGET_DP.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricBluePrimary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Vincular Cuenta para Respaldo 🔐", color = TextPrimary, fontWeight = FontWeight.Bold)
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

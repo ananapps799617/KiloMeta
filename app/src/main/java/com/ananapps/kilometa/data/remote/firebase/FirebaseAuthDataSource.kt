@@ -25,9 +25,12 @@ import javax.inject.Singleton
 // BLOQUE 1: FUENTE DE DATOS REMOTA DE AUTENTICACIÓN
 // ------------------------------------------------------------------------------
 @Singleton
-class FirebaseAuthDataSource @Inject constructor() {
+class FirebaseAuthDataSource @Inject constructor(
+    private val injectedAuth: FirebaseAuth? = null
+) {
 
     private fun getAuthSafe(): FirebaseAuth? {
+        if (injectedAuth != null) return injectedAuth
         return try {
             FirebaseAuth.getInstance()
         } catch (_: Exception) {
@@ -64,7 +67,7 @@ class FirebaseAuthDataSource @Inject constructor() {
     }
 
     // --------------------------------------------------------------------------
-    // BLOQUE 3: MÉTODOS DE INGRESO Y REGISTRO
+    // BLOQUE 3: MÉTODOS DE INGRESO Y REGISTRO ASÍNCRONOS
     // --------------------------------------------------------------------------
     suspend fun signInWithEmail(email: String, pass: String): Result<UserSession> = runCatching {
         val auth = getAuthSafe()
