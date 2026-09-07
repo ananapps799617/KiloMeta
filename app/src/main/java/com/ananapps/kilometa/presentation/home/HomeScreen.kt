@@ -178,6 +178,8 @@ fun HomeScreen(
         onDismissCloseShiftDialog = { showCloseShiftDialog = false }
     )
 
+    val syncPreferences by viewModel.syncPreferences.collectAsState()
+
     if (showSyncSheet) {
         CloudSyncStatusSheet(
             sheetState = syncSheetState,
@@ -185,6 +187,9 @@ fun HomeScreen(
             userSession = userSession,
             connectionDiagnostic = connectionDiagnostic,
             isPinging = isPingingCloud,
+            syncPreferences = syncPreferences,
+            onToggleAutoSync = { viewModel.onToggleAutoSync(it) },
+            onSelectWifiOnly = { viewModel.onSelectNetworkPreference(it) },
             onDismiss = { showSyncSheet = false },
             onSyncNow = { viewModel.syncNow() },
             onTestConnection = { viewModel.onTestLiveConnection() },

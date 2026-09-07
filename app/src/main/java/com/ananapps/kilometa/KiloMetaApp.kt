@@ -9,18 +9,29 @@
 package com.ananapps.kilometa
 
 import android.app.Application
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
 // ------------------------------------------------------------------------------
-// BLOQUE 1: INICIALIZACIÓN DE INYECCIÓN DE DEPENDENCIAS (HILT)
+// BLOQUE 1: INICIALIZACIÓN DE INYECCIÓN DE DEPENDENCIAS (HILT) Y WORKMANAGER
 // ------------------------------------------------------------------------------
 /**
  * Clase Application raíz anotada con @HiltAndroidApp.
- * Dispara la generación de código de Hilt que actúa como contenedor de
- * dependencias a nivel de aplicación (SingletonComponent).
+ * Implementa [Configuration.Provider] para delegar la creación de Workers a [HiltWorkerFactory],
+ * permitiendo inyección de dependencias en tareas de segundo plano de WorkManager.
  */
 @HiltAndroidApp
-class KiloMetaApp : Application() {
+class KiloMetaApp : Application(), Configuration.Provider {
+
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     // --------------------------------------------------------------------------
     // BLOQUE 2: CICLO DE VIDA DE LA APLICACIÓN

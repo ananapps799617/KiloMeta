@@ -14,6 +14,7 @@ import com.ananapps.kilometa.domain.model.BiFuelCostMetrics
 import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.FinancialStatus
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
+import com.ananapps.kilometa.domain.model.SyncPreferences
 import com.ananapps.kilometa.domain.model.WeeklyQuotaProgress
 
 // ------------------------------------------------------------------------------
@@ -43,7 +44,8 @@ sealed interface HomeUiState {
         val weeklyProgress: WeeklyQuotaProgress,
         val isOffline: Boolean = true,
         val connectionDiagnostic: ConnectionDiagnostic? = null,
-        val isPingingCloud: Boolean = false
+        val isPingingCloud: Boolean = false,
+        val syncPreferences: SyncPreferences = SyncPreferences()
     ) : HomeUiState
 
     // --------------------------------------------------------------------------
@@ -61,7 +63,8 @@ sealed interface HomeUiState {
         val biFuelMetrics: BiFuelCostMetrics,
         val isOffline: Boolean = true,
         val connectionDiagnostic: ConnectionDiagnostic? = null,
-        val isPingingCloud: Boolean = false
+        val isPingingCloud: Boolean = false,
+        val syncPreferences: SyncPreferences = SyncPreferences()
     ) : HomeUiState
 
     // --------------------------------------------------------------------------

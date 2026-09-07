@@ -126,3 +126,20 @@ data class ConnectionDiagnostic(
     val message: String = "",
     val isPlaceholderConfig: Boolean = false
 )
+
+// ------------------------------------------------------------------------------
+// BLOQUE 5: PREFERENCIAS DE SINCRONIZACIÓN EN SEGUNDO PLANO
+// ------------------------------------------------------------------------------
+/**
+ * Preferencias inmutables de sincronización periódica para el conductor.
+ *
+ * @property isAutoSyncEnabled Activa o desactiva la sincronización periódica en segundo plano.
+ * @property requireWifiOnly Si es true, restringe el sync a conexiones no medidas (Wi-Fi).
+ *                           Por defecto es false: Política híbrida (Wi-Fi + Datos Móviles).
+ * @property syncIntervalMinutes Intervalo periódico de sincronización en minutos (mínimo 15 min según WorkManager).
+ */
+data class SyncPreferences(
+    val isAutoSyncEnabled: Boolean = true,
+    val requireWifiOnly: Boolean = false, // Híbrido por defecto: Wi-Fi + Datos Móviles
+    val syncIntervalMinutes: Long = 15L
+)
