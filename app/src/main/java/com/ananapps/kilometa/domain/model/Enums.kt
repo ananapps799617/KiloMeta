@@ -68,3 +68,15 @@ enum class ShiftStatus(val displayName: String) {
     ACTIVE("En Turno"),
     COMPLETED("Finalizado")
 }
+
+// ------------------------------------------------------------------------------
+// BLOQUE 6: VENTANAS DE CORTE TEMPORAL PARA REPORTES E HISTORIAL
+// ------------------------------------------------------------------------------
+/**
+ * Opciones de corte temporal para la agregación de métricas y exportación contable.
+ */
+enum class HistoryFilterPeriod(val displayName: String) {
+    WEEK("Esta Semana"),
+    MONTH("Este Mes"),
+    ALL("Todo")
+}

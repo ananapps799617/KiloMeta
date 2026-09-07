@@ -49,6 +49,7 @@ class FakeExpenseRepository : ExpenseRepository {
     override fun getExpensesByShift(shiftId: String): Flow<List<Expense>> = flowOf(savedExpenses)
     override suspend fun addExpense(expense: Expense) { savedExpenses.add(expense) }
     override suspend fun deleteExpense(expenseId: String) { savedExpenses.removeAll { it.id == expenseId } }
+    override fun getAllExpenses(): Flow<List<Expense>> = flowOf(savedExpenses)
 }
 
 // ------------------------------------------------------------------------------
