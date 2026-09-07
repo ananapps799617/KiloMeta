@@ -9,6 +9,10 @@
 
 package com.ananapps.kilometa.presentation.home
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +27,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +69,17 @@ fun HomeScreen(
     val restoreProgress by viewModel.restoreProgress.collectAsState()
     val isPingingCloud by viewModel.isPingingCloud.collectAsState()
     val connectionDiagnostic by viewModel.connectionDiagnostic.collectAsState()
+
+    // Solicitud elegante de permisos de notificación vehicular en Android 13+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> /* Degradación elegante: KiloMeta sigue operando localmente */ }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     var showTripSheet by remember { mutableStateOf(false) }
     var showFuelingSheet by remember { mutableStateOf(false) }

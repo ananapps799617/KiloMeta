@@ -52,7 +52,11 @@ fun NoActiveShiftView(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        WeeklyQuotaCard(progress = state.weeklyProgress)
+        if (state.accountingAuditSummary != null) {
+            AdvancedAccountingCard(auditSummary = state.accountingAuditSummary)
+        } else {
+            WeeklyQuotaCard(progress = state.weeklyProgress)
+        }
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
@@ -89,7 +93,11 @@ fun ActiveShiftCockpitView(state: HomeUiState.ActiveShift) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         SemaphoreCard(status = state.status)
-        WeeklyQuotaCard(progress = state.weeklyProgress)
+        if (state.accountingAuditSummary != null) {
+            AdvancedAccountingCard(auditSummary = state.accountingAuditSummary)
+        } else {
+            WeeklyQuotaCard(progress = state.weeklyProgress)
+        }
         CockpitKpisCard(summary = state.summary, biFuelMetrics = state.biFuelMetrics)
         Spacer(modifier = Modifier.height(64.dp))
     }
