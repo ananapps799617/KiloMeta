@@ -91,6 +91,11 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
+    // Respaldo en la Nube y Recuperación de Desastres: Firebase SDK
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.firestore.ktx)
+
     // Pruebas Unitarias
     testImplementation(libs.junit)
     testImplementation(libs.androidx.room.testing)
