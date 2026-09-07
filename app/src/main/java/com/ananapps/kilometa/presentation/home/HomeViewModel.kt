@@ -3,22 +3,21 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/HomeViewModel.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // ViewModel principal de cabina (@HiltViewModel).
-// Orquesta flujos locales, operaciones de captura express, Cloud Sync Engine
-// y pruebas de diagnóstico de latencia en vivo con Google Cloud Firestore.
+// Orquesta flujos locales, operaciones de captura express, Cloud Sync Engine,
+// auditoría contable de ciclo semanal y alertas vehiculares de corte de cuota.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ananapps.kilometa.core.util.Constants
+import com.ananapps.kilometa.domain.model.AccountingAuditSummary
 import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.ExpenseConcept
 import com.ananapps.kilometa.domain.model.FuelType
 import com.ananapps.kilometa.domain.model.PaymentMethod
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.RestoreProgress
-import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.SyncPreferences
 import com.ananapps.kilometa.domain.model.SyncState
@@ -29,15 +28,17 @@ import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
 import com.ananapps.kilometa.domain.usecase.AuthenticateUserUseCase
 import com.ananapps.kilometa.domain.usecase.CalculateBiFuelCostPerKmUseCase
-import com.ananapps.kilometa.domain.usecase.CalculateDailyQuotaUseCase
 import com.ananapps.kilometa.domain.usecase.CheckCloudConnectionUseCase
+import com.ananapps.kilometa.domain.usecase.GetAccountingAuditDashboardUseCase
 import com.ananapps.kilometa.domain.usecase.GetShiftFinancialStatusUseCase
 import com.ananapps.kilometa.domain.usecase.ManageShiftUseCase
+import com.ananapps.kilometa.domain.usecase.NotifyQuotaMilestoneUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterExpenseUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterFuelingUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterTripUseCase
 import com.ananapps.kilometa.domain.usecase.RestoreDataUseCase
 import com.ananapps.kilometa.domain.usecase.SchedulePeriodicSyncUseCase
+import com.ananapps.kilometa.domain.usecase.ScheduleWeeklyCutoffNotificationsUseCase
 import com.ananapps.kilometa.domain.usecase.SyncDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,9 +48,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.ZoneId
 import javax.inject.Inject
 
 // ------------------------------------------------------------------------------
@@ -58,7 +56,6 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val shiftRepository: ShiftRepository,
-    private val calculateDailyQuotaUseCase: CalculateDailyQuotaUseCase,
     private val getShiftFinancialStatusUseCase: GetShiftFinancialStatusUseCase,
     private val calculateBiFuelCostPerKmUseCase: CalculateBiFuelCostPerKmUseCase,
     private val registerTripUseCase: RegisterTripUseCase,
@@ -71,15 +68,20 @@ class HomeViewModel @Inject constructor(
     private val restoreDataUseCase: RestoreDataUseCase,
     private val authenticateUserUseCase: AuthenticateUserUseCase,
     private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase,
-    private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase
+    private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase,
+    private val getAccountingAuditDashboardUseCase: GetAccountingAuditDashboardUseCase,
+    private val scheduleWeeklyCutoffNotificationsUseCase: ScheduleWeeklyCutoffNotificationsUseCase,
+    private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
     val syncPreferences: StateFlow<SyncPreferences> = _syncPreferences.asStateFlow()
 
     init {
-        // Política de red híbrida por defecto (Datos Móviles + Wi-Fi) para sincronización continua
+        // 1. Sincronización híbrida por defecto (Móviles + Wi-Fi)
         schedulePeriodicSyncUseCase(_syncPreferences.value)
+        // 2. Programación de alarmas de corte vehicular (Martes 18:00 y 23:59)
+        scheduleWeeklyCutoffNotificationsUseCase()
     }
 
     val syncStatus: StateFlow<SyncStatus> = syncRepository.observeSyncStatus()
@@ -102,32 +104,21 @@ class HomeViewModel @Inject constructor(
     // --------------------------------------------------------------------------
     val uiState: StateFlow<HomeUiState> = combine(
         shiftRepository.getActiveShiftFinancialSummary(),
-        shiftRepository.getAllShifts()
-    ) { activeSummary: ShiftFinancialSummary?, allShifts: List<Shift> ->
-        val cycleStartMillis = getWeeklyCycleStartMillis()
-        val pastShiftsAccumulated = allShifts
-            .filter { it.startTime >= cycleStartMillis && it.endTime != null }
-            .sumOf { it.dailyQuotaTarget }
+        getAccountingAuditDashboardUseCase()
+    ) { activeSummary: ShiftFinancialSummary?, auditSummary: AccountingAuditSummary ->
+        val weeklyProgress = auditSummary.quotaProgress
 
         if (activeSummary == null) {
-            val weeklyProgress = calculateDailyQuotaUseCase(
-                weeklyTarget = Constants.DEFAULT_WEEKLY_QUOTA_DOUBLE,
-                accumulatedSoFar = pastShiftsAccumulated
-            )
             HomeUiState.NoActiveShift(
                 suggestedDailyQuota = weeklyProgress.suggestedDailyQuota,
                 weeklyProgress = weeklyProgress,
                 isOffline = userSession.value == null,
                 connectionDiagnostic = _connectionDiagnostic.value,
                 isPingingCloud = _isPingingCloud.value,
-                syncPreferences = _syncPreferences.value
+                syncPreferences = _syncPreferences.value,
+                accountingAuditSummary = auditSummary
             )
         } else {
-            val totalAccumulated = pastShiftsAccumulated + maxOf(0.0, activeSummary.netProfit)
-            val weeklyProgress = calculateDailyQuotaUseCase(
-                weeklyTarget = Constants.DEFAULT_WEEKLY_QUOTA_DOUBLE,
-                accumulatedSoFar = totalAccumulated
-            )
             val financialStatus = getShiftFinancialStatusUseCase(
                 summary = activeSummary,
                 targetQuota = weeklyProgress.suggestedDailyQuota
@@ -144,7 +135,8 @@ class HomeViewModel @Inject constructor(
                 isOffline = userSession.value == null,
                 connectionDiagnostic = _connectionDiagnostic.value,
                 isPingingCloud = _isPingingCloud.value,
-                syncPreferences = _syncPreferences.value
+                syncPreferences = _syncPreferences.value,
+                accountingAuditSummary = auditSummary
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState.Loading)
@@ -152,10 +144,10 @@ class HomeViewModel @Inject constructor(
     // --------------------------------------------------------------------------
     // BLOQUE 3: OPERACIONES DE CABINA Y CAPTURA EXPRESS
     // --------------------------------------------------------------------------
-    fun registerTrip(platformType: PlatformType, gross: Double, commission: Double, payment: PaymentMethod) {
+    fun registerTrip(platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
         viewModelScope.launch {
-            registerTripUseCase(state.summary.shiftId, platformType, gross, commission, payment)
+            registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment)
         }
     }
 
@@ -183,6 +175,9 @@ class HomeViewModel @Inject constructor(
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
         viewModelScope.launch {
             manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, notes)
+            // Evaluación de hitos de cuota con política DataGuard (cero dinero líquido en pantalla)
+            notifyQuotaMilestoneUseCase.checkAndNotifyShiftMilestone(state.summary)
+            notifyQuotaMilestoneUseCase.checkAndNotifyWeeklyMilestone(state.weeklyProgress)
         }
     }
 
@@ -196,8 +191,7 @@ class HomeViewModel @Inject constructor(
     fun onTestLiveConnection() {
         viewModelScope.launch {
             _isPingingCloud.value = true
-            val diagnostic = checkCloudConnectionUseCase()
-            _connectionDiagnostic.value = diagnostic
+            _connectionDiagnostic.value = checkCloudConnectionUseCase()
             _isPingingCloud.value = false
         }
     }
@@ -238,12 +232,5 @@ class HomeViewModel @Inject constructor(
         val updated = _syncPreferences.value.copy(requireWifiOnly = requireWifiOnly)
         _syncPreferences.value = updated
         schedulePeriodicSyncUseCase(updated)
-    }
-
-    private fun getWeeklyCycleStartMillis(): Long {
-        val now = Instant.now().atZone(ZoneId.systemDefault())
-        var current = now
-        while (current.dayOfWeek != DayOfWeek.WEDNESDAY) { current = current.minusDays(1) }
-        return current.toLocalDate().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 }

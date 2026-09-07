@@ -10,6 +10,7 @@
 
 package com.ananapps.kilometa.presentation.home
 
+import com.ananapps.kilometa.domain.model.AccountingAuditSummary
 import com.ananapps.kilometa.domain.model.BiFuelCostMetrics
 import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.FinancialStatus
@@ -45,7 +46,8 @@ sealed interface HomeUiState {
         val isOffline: Boolean = true,
         val connectionDiagnostic: ConnectionDiagnostic? = null,
         val isPingingCloud: Boolean = false,
-        val syncPreferences: SyncPreferences = SyncPreferences()
+        val syncPreferences: SyncPreferences = SyncPreferences(),
+        val accountingAuditSummary: AccountingAuditSummary? = null
     ) : HomeUiState
 
     // --------------------------------------------------------------------------
@@ -64,7 +66,8 @@ sealed interface HomeUiState {
         val isOffline: Boolean = true,
         val connectionDiagnostic: ConnectionDiagnostic? = null,
         val isPingingCloud: Boolean = false,
-        val syncPreferences: SyncPreferences = SyncPreferences()
+        val syncPreferences: SyncPreferences = SyncPreferences(),
+        val accountingAuditSummary: AccountingAuditSummary? = null
     ) : HomeUiState
 
     // --------------------------------------------------------------------------
