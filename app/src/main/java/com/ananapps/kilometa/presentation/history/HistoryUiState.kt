@@ -3,29 +3,21 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/history/HistoryUiState.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Estado de UI sellado y tipado de forma exhaustiva para la pantalla de Historial y Analíticas.
-// Representa los cuatro estados canónicos: Loading, Success, Empty y Error.
+// Representa los cuatro estados canónicos: Loading, Success, Empty y Error,
+// y el estado desacoplado de exportación de reportes (CSV y Mensajería).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.history
 
 import com.ananapps.kilometa.domain.model.BiFuelSavingsMetrics
+import com.ananapps.kilometa.domain.model.CsvReport
+import com.ananapps.kilometa.domain.model.HistoryFilterPeriod
 import com.ananapps.kilometa.domain.model.PlatformAnalytics
+import com.ananapps.kilometa.domain.model.ShareableSummary
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 
 // ------------------------------------------------------------------------------
-// BLOQUE 1: PERÍODOS DE FILTRADO TEMPORAL
-// ------------------------------------------------------------------------------
-/**
- * Opciones de corte temporal para la agregación de métricas analíticas.
- */
-enum class HistoryFilterPeriod(val displayName: String) {
-    WEEK("Esta Semana"),
-    MONTH("Este Mes"),
-    ALL("Todo")
-}
-
-// ------------------------------------------------------------------------------
-// BLOQUE 2: ESTADO SELLADO DE LA INTERFAZ DE HISTORIAL
+// BLOQUE 1: ESTADO SELLADO DE LA INTERFAZ DE HISTORIAL
 // ------------------------------------------------------------------------------
 /**
  * Jerarquía sellada inmutable para el renderizado reactivo del módulo de Historial.
@@ -75,4 +67,38 @@ sealed interface HistoryUiState {
     data class Error(
         val message: String
     ) : HistoryUiState
+}
+
+// ------------------------------------------------------------------------------
+// BLOQUE 2: ESTADO SELLADO PARA EXPORTACIÓN Y MENSAJERÍA
+// ------------------------------------------------------------------------------
+/**
+ * Modela el ciclo de vida asíncrono de compilación y compartición de reportes.
+ */
+sealed interface ExportUiState {
+
+    /**
+     * Estado inactivo sin tareas de exportación en progreso.
+     */
+    data object Idle : ExportUiState
+
+    /**
+     * Estado de progreso mientras se compila el reporte tabular en hilo de fondo.
+     */
+    data object Exporting : ExportUiState
+
+    /**
+     * Reporte CSV listo para persistencia con Storage Access Framework (SAF).
+     */
+    data class CsvReady(val report: CsvReport) : ExportUiState
+
+    /**
+     * Resumen de texto estructurado listo para difusión con Intent.ACTION_SEND.
+     */
+    data class ShareReady(val summary: ShareableSummary) : ExportUiState
+
+    /**
+     * Error durante la preparación o lectura de datos para exportación.
+     */
+    data class Error(val message: String) : ExportUiState
 }

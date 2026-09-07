@@ -46,4 +46,10 @@ class ExpenseRepositoryImpl @Inject constructor(
             expenseDao.deleteExpense(expenseId)
         }
     }
+
+    override fun getAllExpenses(): Flow<List<Expense>> {
+        return expenseDao.getAllExpenses()
+            .map { it.toDomain() }
+            .flowOn(dispatchers.io)
+    }
 }
