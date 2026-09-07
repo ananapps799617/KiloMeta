@@ -189,9 +189,7 @@ class HomeViewModel @Inject constructor(
     // --------------------------------------------------------------------------
     // BLOQUE 4: ACCIONES DE SINCRONIZACIÓN Y DIAGNÓSTICO EN VIVO
     // --------------------------------------------------------------------------
-    fun syncNow() {
-        viewModelScope.launch { syncDataUseCase() }
-    }
+    fun syncNow() { viewModelScope.launch { syncDataUseCase() } }
 
     fun onTestLiveConnection() {
         viewModelScope.launch {
@@ -202,14 +200,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun startDisasterRecovery() {
-        viewModelScope.launch {
-            restoreDataUseCase().collect { _restoreProgress.value = it }
-        }
+        viewModelScope.launch { restoreDataUseCase().collect { _restoreProgress.value = it } }
     }
 
-    fun resetRecoveryProgress() {
-        _restoreProgress.value = RestoreProgress.Idle
-    }
+    fun resetRecoveryProgress() { _restoreProgress.value = RestoreProgress.Idle }
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
@@ -217,13 +211,8 @@ class HomeViewModel @Inject constructor(
     private val _isAuthLoading = MutableStateFlow(false)
     val isAuthLoading: StateFlow<Boolean> = _isAuthLoading.asStateFlow()
 
-    fun setAuthError(message: String) {
-        _authError.value = message
-    }
-
-    fun clearAuthError() {
-        _authError.value = null
-    }
+    fun setAuthError(message: String) { _authError.value = message }
+    fun clearAuthError() { _authError.value = null }
 
     fun signInWithGoogle(idToken: String) {
         viewModelScope.launch {
@@ -241,18 +230,11 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isAuthLoading.value = true
             _authError.value = null
-            val signInResult = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
-            if (signInResult.isFailure) {
-                val signUpResult = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
-                if (signUpResult.isFailure) {
-                    val rawMsg = signUpResult.exceptionOrNull()?.message ?: ""
-                    _authError.value = when {
-                        rawMsg.contains("badly formatted", ignoreCase = true) -> "Formato de correo no válido."
-                        rawMsg.contains("wrong password", ignoreCase = true) -> "Contraseña incorrecta."
-                        rawMsg.contains("at least", ignoreCase = true) -> "La contraseña debe tener mínimo 6 caracteres."
-                        rawMsg.contains("OPERATION_NOT_ALLOWED", ignoreCase = true) -> "Habilita Correo en Firebase Console."
-                        else -> signUpResult.exceptionOrNull()?.localizedMessage ?: "Error de autenticación"
-                    }
+            val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
+            if (signIn.isFailure) {
+                val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
+                if (signUp.isFailure) {
+                    _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error de autenticación"
                 }
             }
             _isAuthLoading.value = false
