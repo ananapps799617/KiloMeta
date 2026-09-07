@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/remote/firebase/FirestoreDataSource.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Fuente de datos remota para Google Cloud Firestore. Implementa persistencia por lotes (Batches)
-// bajo la ruta segura 'users/{userId}/[shifts|trips|fuelings|expenses]'.
+// Fuente de datos remota para Google Cloud Firestore. Implementa persistencia por lotes
+// y diagnóstico de enlace round-trip con Source.SERVER para verificación en vivo.
 // Resiliente a caídas y ausencia de servicios de Google Play (Cero crasheos).
 // ==============================================================================
 
@@ -13,8 +13,10 @@ import com.ananapps.kilometa.data.remote.dto.ExpenseDto
 import com.ananapps.kilometa.data.remote.dto.FuelingDto
 import com.ananapps.kilometa.data.remote.dto.ShiftDto
 import com.ananapps.kilometa.data.remote.dto.TripDto
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,9 +25,12 @@ import javax.inject.Singleton
 // BLOQUE 1: FUENTE DE DATOS REMOTA FIRESTORE
 // ------------------------------------------------------------------------------
 @Singleton
-class FirestoreDataSource @Inject constructor() {
+class FirestoreDataSource @Inject constructor(
+    private val injectedDb: FirebaseFirestore? = null
+) {
 
     private fun getFirestoreSafe(): FirebaseFirestore? {
+        if (injectedDb != null) return injectedDb
         return try {
             FirebaseFirestore.getInstance()
         } catch (_: Exception) {
@@ -141,5 +146,56 @@ class FirestoreDataSource @Inject constructor() {
             .await()
 
         snapshot.toObjects(ExpenseDto::class.java)
+    }
+
+    // --------------------------------------------------------------------------
+    // BLOQUE 4: DIAGNÓSTICO DE ENLACE EN VIVO (ROUND-TRIP TEST)
+    // --------------------------------------------------------------------------
+    suspend fun pingDiagnostic(userId: String): ConnectionDiagnostic {
+        val startTime = System.currentTimeMillis()
+        return try {
+            val db = getFirestoreSafe()
+                ?: return ConnectionDiagnostic(
+                    isConnected = false,
+                    latencyMs = null,
+                    timestampMillis = System.currentTimeMillis(),
+                    message = "⚠️ PENDIENTE DE CONEXIÓN REAL: Firestore no configurado",
+                    isPlaceholderConfig = true
+                )
+
+            val pingRef = db.collection("users")
+                .document(userId)
+                .collection("diagnostic")
+                .document("ping")
+
+            val payload = mapOf(
+                "timestamp" to startTime,
+                "platform" to "Android",
+                "status" to "OK"
+            )
+
+            // 1. Escritura en servidor remoto
+            pingRef.set(payload).await()
+
+            // 2. Lectura directa desde el servidor (sin caché local)
+            pingRef.get(Source.SERVER).await()
+
+            val latency = System.currentTimeMillis() - startTime
+            ConnectionDiagnostic(
+                isConnected = true,
+                latencyMs = latency,
+                timestampMillis = System.currentTimeMillis(),
+                message = "Enlace en vivo confirmado con Cloud Firestore",
+                isPlaceholderConfig = false
+            )
+        } catch (e: Exception) {
+            ConnectionDiagnostic(
+                isConnected = false,
+                latencyMs = null,
+                timestampMillis = System.currentTimeMillis(),
+                message = e.localizedMessage ?: "Error de comunicación con Firestore",
+                isPlaceholderConfig = true
+            )
+        }
     }
 }

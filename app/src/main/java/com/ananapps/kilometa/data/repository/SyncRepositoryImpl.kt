@@ -23,6 +23,7 @@ import com.ananapps.kilometa.data.remote.mapper.toShiftDtoList
 import com.ananapps.kilometa.data.remote.mapper.toShiftEntityList
 import com.ananapps.kilometa.data.remote.mapper.toTripDtoList
 import com.ananapps.kilometa.data.remote.mapper.toTripEntityList
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.RestoreProgress
 import com.ananapps.kilometa.domain.model.SyncState
 import com.ananapps.kilometa.domain.model.SyncStatus
@@ -182,4 +183,21 @@ class SyncRepositoryImpl @Inject constructor(
             emit(RestoreProgress.Failed(e.localizedMessage ?: "Fallo inesperado al restaurar base de datos"))
         }
     }.flowOn(dispatchers.io)
+
+    // --------------------------------------------------------------------------
+    // BLOQUE 5: DIAGNÓSTICO DE ENLACE EN VIVO
+    // --------------------------------------------------------------------------
+    override suspend fun checkCloudConnection(): ConnectionDiagnostic = withContext(dispatchers.io) {
+        val user = authRepository.getCurrentUser()
+        if (user == null) {
+            return@withContext ConnectionDiagnostic(
+                isConnected = false,
+                latencyMs = null,
+                timestampMillis = System.currentTimeMillis(),
+                message = "Sin sesión activa para verificar enlace",
+                isPlaceholderConfig = false
+            )
+        }
+        firestoreDataSource.pingDiagnostic(user.uid)
+    }
 }

@@ -5,12 +5,13 @@
 // Jerarquía sellada del estado de la Interfaz de Usuario para la pantalla Home de cabina.
 // Representa reactivamente los estados del ciclo operativo: carga inicial (Loading),
 // conductor disponible sin turno abierto (NoActiveShift) y jornada activa en ruta (ActiveShift)
-// con métricas de semáforo, bolsa semanal prorrateada y rendimiento bi-combustible.
+// con telemetría de diagnóstico en vivo para la nube.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home
 
 import com.ananapps.kilometa.domain.model.BiFuelCostMetrics
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.FinancialStatus
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.WeeklyQuotaProgress
@@ -35,33 +36,21 @@ sealed interface HomeUiState {
     // BLOQUE 3: ESTADO SIN TURNO ACTIVO (EN BASE / STANDBY)
     // --------------------------------------------------------------------------
     /**
-     * Representa al conductor listo para iniciar jornada, mostrando el prorrateo
-     * semanal sugerido para alcanzar los $500.000 COP antes del corte del martes.
-     *
-     * @property suggestedDailyQuota Cuota sugerida para la jornada entrante.
-     * @property weeklyProgress Avance acumulado de la bolsa semanal.
-     * @property isOffline Estado de operación 100% desconectada y local.
+     * Representa al conductor listo para iniciar jornada, mostrando el prorrateo semanal.
      */
     data class NoActiveShift(
         val suggestedDailyQuota: Double,
         val weeklyProgress: WeeklyQuotaProgress,
-        val isOffline: Boolean = true
+        val isOffline: Boolean = true,
+        val connectionDiagnostic: ConnectionDiagnostic? = null,
+        val isPingingCloud: Boolean = false
     ) : HomeUiState
 
     // --------------------------------------------------------------------------
     // BLOQUE 4: ESTADO DE TURNO ACTIVO (EN CABINA / OPERANDO)
     // --------------------------------------------------------------------------
     /**
-     * Cabina operativa completa: Semáforo dinámico en tiempo real, KPIs bi-combustible
-     * y seguimiento a la cuota diaria hasta alcanzar el Turno Libre.
-     *
-     * @property summary Resumen contable consolidado del turno.
-     * @property status Estado cromático del Semáforo Financiero ([FinancialStatus]).
-     * @property dailyQuotaTarget Meta en COP asignada a la jornada actual.
-     * @property amountRemainingForFreeShift Saldo faltante para entrar en Turno Libre ($0 si logrado).
-     * @property weeklyProgress Progreso hacia la meta semanal de los martes.
-     * @property biFuelMetrics Análisis de costo por kilómetro segmentado GNV vs Gasolina.
-     * @property isOffline Indicador de garantía local y resiliencia offline.
+     * Cabina operativa completa con métricas financieras y telemetría de enlace.
      */
     data class ActiveShift(
         val summary: ShiftFinancialSummary,
@@ -70,7 +59,9 @@ sealed interface HomeUiState {
         val amountRemainingForFreeShift: Double,
         val weeklyProgress: WeeklyQuotaProgress,
         val biFuelMetrics: BiFuelCostMetrics,
-        val isOffline: Boolean = true
+        val isOffline: Boolean = true,
+        val connectionDiagnostic: ConnectionDiagnostic? = null,
+        val isPingingCloud: Boolean = false
     ) : HomeUiState
 
     // --------------------------------------------------------------------------

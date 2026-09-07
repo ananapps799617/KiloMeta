@@ -3,8 +3,8 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/HomeViewModel.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // ViewModel principal de cabina (@HiltViewModel).
-// Orquesta reactivamente flujos locales, operaciones de captura express y el Cloud Sync Engine
-// para telemetría en tiempo real y recuperación ante desastres (Disaster Recovery).
+// Orquesta flujos locales, operaciones de captura express, Cloud Sync Engine
+// y pruebas de diagnóstico de latencia en vivo con Google Cloud Firestore.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home
@@ -12,6 +12,7 @@ package com.ananapps.kilometa.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.core.util.Constants
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.ExpenseConcept
 import com.ananapps.kilometa.domain.model.FuelType
 import com.ananapps.kilometa.domain.model.PaymentMethod
@@ -28,6 +29,7 @@ import com.ananapps.kilometa.domain.repository.SyncRepository
 import com.ananapps.kilometa.domain.usecase.AuthenticateUserUseCase
 import com.ananapps.kilometa.domain.usecase.CalculateBiFuelCostPerKmUseCase
 import com.ananapps.kilometa.domain.usecase.CalculateDailyQuotaUseCase
+import com.ananapps.kilometa.domain.usecase.CheckCloudConnectionUseCase
 import com.ananapps.kilometa.domain.usecase.GetShiftFinancialStatusUseCase
 import com.ananapps.kilometa.domain.usecase.ManageShiftUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterExpenseUseCase
@@ -65,7 +67,8 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val syncDataUseCase: SyncDataUseCase,
     private val restoreDataUseCase: RestoreDataUseCase,
-    private val authenticateUserUseCase: AuthenticateUserUseCase
+    private val authenticateUserUseCase: AuthenticateUserUseCase,
+    private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase
 ) : ViewModel() {
 
     val syncStatus: StateFlow<SyncStatus> = syncRepository.observeSyncStatus()
@@ -76,6 +79,12 @@ class HomeViewModel @Inject constructor(
 
     private val _restoreProgress = MutableStateFlow<RestoreProgress>(RestoreProgress.Idle)
     val restoreProgress: StateFlow<RestoreProgress> = _restoreProgress.asStateFlow()
+
+    private val _isPingingCloud = MutableStateFlow(false)
+    val isPingingCloud: StateFlow<Boolean> = _isPingingCloud.asStateFlow()
+
+    private val _connectionDiagnostic = MutableStateFlow<ConnectionDiagnostic?>(null)
+    val connectionDiagnostic: StateFlow<ConnectionDiagnostic?> = _connectionDiagnostic.asStateFlow()
 
     // --------------------------------------------------------------------------
     // BLOQUE 2: COMBINACIÓN REACTIVA DEL ESTADO DE UI
@@ -97,7 +106,9 @@ class HomeViewModel @Inject constructor(
             HomeUiState.NoActiveShift(
                 suggestedDailyQuota = weeklyProgress.suggestedDailyQuota,
                 weeklyProgress = weeklyProgress,
-                isOffline = userSession.value == null
+                isOffline = userSession.value == null,
+                connectionDiagnostic = _connectionDiagnostic.value,
+                isPingingCloud = _isPingingCloud.value
             )
         } else {
             val totalAccumulated = pastShiftsAccumulated + maxOf(0.0, activeSummary.netProfit)
@@ -118,7 +129,9 @@ class HomeViewModel @Inject constructor(
                 amountRemainingForFreeShift = financialStatus.remainingAmount,
                 weeklyProgress = weeklyProgress,
                 biFuelMetrics = biFuelMetrics,
-                isOffline = userSession.value == null
+                isOffline = userSession.value == null,
+                connectionDiagnostic = _connectionDiagnostic.value,
+                isPingingCloud = _isPingingCloud.value
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState.Loading)
@@ -161,10 +174,19 @@ class HomeViewModel @Inject constructor(
     }
 
     // --------------------------------------------------------------------------
-    // BLOQUE 4: ACCIONES DE SINCRONIZACIÓN Y AUTENTICACIÓN
+    // BLOQUE 4: ACCIONES DE SINCRONIZACIÓN Y DIAGNÓSTICO EN VIVO
     // --------------------------------------------------------------------------
     fun syncNow() {
         viewModelScope.launch { syncDataUseCase() }
+    }
+
+    fun onTestLiveConnection() {
+        viewModelScope.launch {
+            _isPingingCloud.value = true
+            val diagnostic = checkCloudConnectionUseCase()
+            _connectionDiagnostic.value = diagnostic
+            _isPingingCloud.value = false
+        }
     }
 
     fun startDisasterRecovery() {
