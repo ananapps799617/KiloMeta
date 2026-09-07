@@ -10,7 +10,6 @@
 package com.ananapps.kilometa
 
 import com.ananapps.kilometa.core.util.Constants
-import com.ananapps.kilometa.data.repository.RepositoryPlaceholder
 import com.ananapps.kilometa.domain.model.FinancialStatus
 import com.ananapps.kilometa.presentation.home.HomeUiState
 import org.junit.Assert.assertEquals
@@ -64,16 +63,10 @@ class ArchitectureTest {
     }
 
     // --------------------------------------------------------------------------
-    // BLOQUE 3: VALIDACIÓN DE CERO MENTIRAS TÉCNICAS (PLACEHOLDERS)
+    // BLOQUE 3: VALIDACIÓN DE CERO MENTIRAS TÉCNICAS (UI PLACEHOLDERS)
     // --------------------------------------------------------------------------
     @Test
     fun testZeroTechnicalLiesVerification() {
-        // Validación del repositorio provisional
-        assertTrue(
-            "El repositorio provisional debe advertir explícitamente su estado",
-            RepositoryPlaceholder.STATUS.contains("⚠️ PENDIENTE DE CONEXIÓN REAL")
-        )
-
         // Validación del estado de UI provisional
         val uiState = HomeUiState.StandbyPlaceholder()
         assertTrue(

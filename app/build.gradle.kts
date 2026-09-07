@@ -61,6 +61,13 @@ android {
     }
 }
 
+// ------------------------------------------------------------------------------
+// CONFIGURACIÓN KSP: EXPORTACIÓN DE ESQUEMAS DDL DE ROOM
+// ------------------------------------------------------------------------------
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     // AndroidX & Core
     implementation(libs.androidx.core.ktx)
@@ -75,12 +82,19 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
+    // Persistencia Relacional Local: Room SQLite con KSP
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
     // Inyección de Dependencias: Dagger Hilt con KSP
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
     // Pruebas Unitarias
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     // Debug tooling
     debugImplementation(libs.androidx.compose.ui.tooling)
