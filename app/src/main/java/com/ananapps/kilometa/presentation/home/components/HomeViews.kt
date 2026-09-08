@@ -105,6 +105,7 @@ fun ActiveShiftCockpitView(
             WeeklyQuotaCard(progress = state.weeklyProgress)
         }
         CockpitKpisCard(summary = state.summary, metrics = state.biFuelMetrics)
+        state.cashSettlement?.let { CockpitCashSettlementCard(settlement = it) }
 
         Spacer(modifier = Modifier.height(8.dp))
 

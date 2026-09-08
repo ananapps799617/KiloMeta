@@ -67,7 +67,8 @@ sealed interface HomeUiState {
         val connectionDiagnostic: ConnectionDiagnostic? = null,
         val isPingingCloud: Boolean = false,
         val syncPreferences: SyncPreferences = SyncPreferences(),
-        val accountingAuditSummary: AccountingAuditSummary? = null
+        val accountingAuditSummary: AccountingAuditSummary? = null,
+        val cashSettlement: com.ananapps.kilometa.domain.model.CashSettlementSummary? = null
     ) : HomeUiState
 
     // --------------------------------------------------------------------------

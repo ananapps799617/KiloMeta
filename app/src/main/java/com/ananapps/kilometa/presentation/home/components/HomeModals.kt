@@ -37,8 +37,8 @@ fun HomeCockpitModals(
         RegisterTripSheet(
             sheetState = tripSheetState,
             onDismiss = onDismissTripSheet,
-            onConfirmTrip = { platform, gross, commission, payment ->
-                viewModel.registerTrip(platform, gross, commission, payment)
+            onConfirmTrip = { platform, gross, commission, payment, destination ->
+                viewModel.registerTrip(platform, gross, commission, payment, destination)
             }
         )
     }

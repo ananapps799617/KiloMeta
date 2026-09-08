@@ -3,12 +3,13 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/mapper/TripMapper.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Mapeadores de extensión bidireccionales entre TripEntity y Trip (Dominio).
-// Asegura la conversión consistente de enumeraciones PlatformType y PaymentMethod.
+// Asegura la conversión consistente de enumeraciones PlatformType, PaymentMethod y PaymentDestination.
 // ==============================================================================
 
 package com.ananapps.kilometa.data.mapper
 
 import com.ananapps.kilometa.data.local.entity.TripEntity
+import com.ananapps.kilometa.domain.model.PaymentDestination
 import com.ananapps.kilometa.domain.model.PaymentMethod
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.Trip
@@ -29,6 +30,12 @@ fun TripEntity.toDomain(): Trip {
         PaymentMethod.CASH
     }
 
+    val destination = try {
+        PaymentDestination.valueOf(this.paymentDestination)
+    } catch (_: IllegalArgumentException) {
+        PaymentDestination.CASH_IN_HAND
+    }
+
     return Trip(
         id = this.id,
         shiftId = this.shiftId,
@@ -37,6 +44,7 @@ fun TripEntity.toDomain(): Trip {
         commissionAmount = this.commissionAmount,
         netAmount = this.netAmount,
         paymentMethod = payment,
+        paymentDestination = destination,
         timestamp = this.timestamp
     )
 }
@@ -50,6 +58,7 @@ fun Trip.toEntity(): TripEntity {
         commissionAmount = this.commissionAmount,
         netAmount = this.netAmount,
         paymentMethod = this.paymentMethod.name,
+        paymentDestination = this.paymentDestination.name,
         timestamp = this.timestamp
     )
 }

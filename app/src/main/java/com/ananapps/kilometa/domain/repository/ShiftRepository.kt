@@ -33,6 +33,11 @@ interface ShiftRepository {
     fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?>
 
     /**
+     * Emite la liquidación de doble bolsillo (efectivo en mano vs saldo en app) del turno activo.
+     */
+    fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?>
+
+    /**
      * Emite el histórico completo de turnos ordenados cronológicamente descendente.
      */
     fun getAllShifts(): Flow<List<Shift>>

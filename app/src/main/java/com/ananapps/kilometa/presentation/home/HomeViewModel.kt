@@ -108,8 +108,9 @@ class HomeViewModel @Inject constructor(
     // --------------------------------------------------------------------------
     val uiState: StateFlow<HomeUiState> = combine(
         shiftRepository.getActiveShiftFinancialSummary(),
-        getAccountingAuditDashboardUseCase()
-    ) { activeSummary: ShiftFinancialSummary?, auditSummary: AccountingAuditSummary ->
+        getAccountingAuditDashboardUseCase(),
+        shiftRepository.getActiveShiftCashSettlement()
+    ) { activeSummary, auditSummary, cashSettlement ->
         val weeklyProgress = auditSummary.quotaProgress
 
         if (activeSummary == null) {
@@ -140,7 +141,8 @@ class HomeViewModel @Inject constructor(
                 connectionDiagnostic = _connectionDiagnostic.value,
                 isPingingCloud = _isPingingCloud.value,
                 syncPreferences = _syncPreferences.value,
-                accountingAuditSummary = auditSummary
+                accountingAuditSummary = auditSummary,
+                cashSettlement = cashSettlement
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState.Loading)
@@ -148,10 +150,16 @@ class HomeViewModel @Inject constructor(
     // --------------------------------------------------------------------------
     // BLOQUE 3: OPERACIONES DE CABINA Y CAPTURA EXPRESS
     // --------------------------------------------------------------------------
-    fun registerTrip(platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod) {
+    fun registerTrip(
+        platform: PlatformType,
+        gross: Double,
+        commission: Double,
+        payment: PaymentMethod,
+        destination: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND
+    ) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
         viewModelScope.launch {
-            registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment)
+            registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment, destination)
         }
     }
 
@@ -218,58 +226,39 @@ class HomeViewModel @Inject constructor(
     fun setAuthError(message: String) { _authError.value = message }
     fun clearAuthError() { _authError.value = null }
 
-    fun signInWithGoogle(idToken: String) {
-        viewModelScope.launch {
-            _isAuthLoading.value = true
-            _authError.value = null
-            val result = authenticateUserUseCase.signInWithGoogle(idToken)
-            if (result.isFailure) {
-                _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error de autenticación con Google"
-            }
-            _isAuthLoading.value = false
-        }
+    fun signInWithGoogle(idToken: String) = viewModelScope.launch {
+        _isAuthLoading.value = true; _authError.value = null
+        val result = authenticateUserUseCase.signInWithGoogle(idToken)
+        if (result.isFailure) _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google"
+        _isAuthLoading.value = false
     }
 
-    fun signInWithEmail(email: String, pass: String) {
-        viewModelScope.launch {
-            _isAuthLoading.value = true
-            _authError.value = null
-            val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
-            if (signIn.isFailure) {
-                val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
-                if (signUp.isFailure) {
-                    _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error de autenticación"
-                }
-            }
-            _isAuthLoading.value = false
+    fun signInWithEmail(email: String, pass: String) = viewModelScope.launch {
+        _isAuthLoading.value = true; _authError.value = null
+        val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
+        if (signIn.isFailure) {
+            val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
+            if (signUp.isFailure) _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error auth"
         }
+        _isAuthLoading.value = false
     }
 
-    fun signInAnonymously() {
-        viewModelScope.launch {
-            _isAuthLoading.value = true
-            _authError.value = null
-            val result = authenticateUserUseCase.signInAnonymously()
-            if (result.isFailure) {
-                _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error de sesión anónima"
-            }
-            _isAuthLoading.value = false
-        }
+    fun signInAnonymously() = viewModelScope.launch {
+        _isAuthLoading.value = true; _authError.value = null
+        val result = authenticateUserUseCase.signInAnonymously()
+        if (result.isFailure) _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error sesión"
+        _isAuthLoading.value = false
     }
 
-    fun signOut() {
-        viewModelScope.launch { authenticateUserUseCase.signOut() }
-    }
+    fun signOut() = viewModelScope.launch { authenticateUserUseCase.signOut() }
 
     fun onToggleAutoSync(enabled: Boolean) {
-        val updated = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)
-        _syncPreferences.value = updated
-        schedulePeriodicSyncUseCase(updated)
+        _syncPreferences.value = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)
+        schedulePeriodicSyncUseCase(_syncPreferences.value)
     }
 
     fun onSelectNetworkPreference(requireWifiOnly: Boolean) {
-        val updated = _syncPreferences.value.copy(requireWifiOnly = requireWifiOnly)
-        _syncPreferences.value = updated
-        schedulePeriodicSyncUseCase(updated)
+        _syncPreferences.value = _syncPreferences.value.copy(requireWifiOnly = requireWifiOnly)
+        schedulePeriodicSyncUseCase(_syncPreferences.value)
     }
 }

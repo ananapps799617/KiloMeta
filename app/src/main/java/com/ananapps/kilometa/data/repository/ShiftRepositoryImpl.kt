@@ -16,6 +16,8 @@ import com.ananapps.kilometa.data.local.dao.TripDao
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
 import com.ananapps.kilometa.data.mapper.toFinancialSummary
+import com.ananapps.kilometa.data.mapper.toCashSettlement
+import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
@@ -49,6 +51,12 @@ class ShiftRepositoryImpl @Inject constructor(
     override fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?> {
         return shiftDao.getActiveShiftWithDetails()
             .map { it?.toFinancialSummary() }
+            .flowOn(dispatchers.io)
+    }
+
+    override fun getActiveShiftCashSettlement(): Flow<CashSettlementSummary?> {
+        return shiftDao.getActiveShiftWithDetails()
+            .map { it?.toCashSettlement() }
             .flowOn(dispatchers.io)
     }
 

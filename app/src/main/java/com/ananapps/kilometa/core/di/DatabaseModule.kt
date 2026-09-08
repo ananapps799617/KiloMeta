@@ -30,6 +30,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE trips ADD COLUMN payment_destination TEXT NOT NULL DEFAULT 'CASH_IN_HAND'")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideKiloMetaDatabase(
@@ -40,6 +46,7 @@ object DatabaseModule {
             KiloMetaDatabase::class.java,
             KiloMetaDatabase.DATABASE_NAME
         )
+            .addMigrations(MIGRATION_1_2)
             .fallbackToDestructiveMigration()
             .build()
     }
