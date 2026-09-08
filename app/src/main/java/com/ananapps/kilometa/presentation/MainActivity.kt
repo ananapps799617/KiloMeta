@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.presentation.auth.LoginScreen
 import com.ananapps.kilometa.presentation.history.HistoryScreen
 import com.ananapps.kilometa.presentation.home.HomeScreen
+import com.ananapps.kilometa.presentation.home.HomeUiState
 import com.ananapps.kilometa.presentation.home.HomeViewModel
 import com.ananapps.kilometa.presentation.navigation.AppDestination
 import com.ananapps.kilometa.presentation.navigation.KiloMetaDrawerContent
@@ -94,6 +95,8 @@ private fun MainAppHost(
     }
 
     // 2. Sesión activa: Cockpit vehicular con Hamburguesa / Drawer (100% alto disponible)
+    val uiState by viewModel.uiState.collectAsState()
+    val isShiftActive = uiState is HomeUiState.ActiveShift
     val syncStatus by viewModel.syncStatus.collectAsState()
     val driverProfile by viewModel.driverProfile.collectAsState()
     val syncPreferences by viewModel.syncPreferences.collectAsState()
@@ -104,6 +107,7 @@ private fun MainAppHost(
     var currentDestination by rememberSaveable { mutableStateOf(AppDestination.COCKPIT) }
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }
     var showRecoveryScreen by rememberSaveable { mutableStateOf(false) }
+    var triggerCloseShift by rememberSaveable { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val syncSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -152,6 +156,11 @@ private fun MainAppHost(
                     currentDestination = currentDestination,
                     syncStatus = syncStatus,
                     userSession = userSession,
+                    isShiftActive = isShiftActive,
+                    onCloseShift = {
+                        currentDestination = AppDestination.COCKPIT
+                        triggerCloseShift = true
+                    },
                     onOpenDrawer = { scope.launch { drawerState.open() } },
                     onOpenSyncSheet = { showSyncSheet = true }
                 )
@@ -165,7 +174,12 @@ private fun MainAppHost(
                     .padding(innerPadding)
             ) {
                 when (currentDestination) {
-                    AppDestination.COCKPIT -> HomeScreen(viewModel = viewModel, showTopBar = false)
+                    AppDestination.COCKPIT -> HomeScreen(
+                        viewModel = viewModel,
+                        showTopBar = false,
+                        triggerCloseShift = triggerCloseShift,
+                        onResetCloseShiftTrigger = { triggerCloseShift = false }
+                    )
                     AppDestination.HISTORY -> HistoryScreen()
                     AppDestination.PROFILE -> DriverProfileScreen()
                     AppDestination.BACKUP -> HomeScreen(viewModel = viewModel, showTopBar = false)

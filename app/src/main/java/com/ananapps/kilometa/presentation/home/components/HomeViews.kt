@@ -8,6 +8,7 @@
 
 package com.ananapps.kilometa.presentation.home.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.presentation.home.HomeUiState
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
+import com.ananapps.kilometa.presentation.theme.StatusRed
+import com.ananapps.kilometa.presentation.theme.StatusRedContainer
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
 
@@ -84,7 +87,10 @@ fun NoActiveShiftView(
 // BLOQUE 2: VISTA DE CABINA CON TURNO ACTIVO
 // ------------------------------------------------------------------------------
 @Composable
-fun ActiveShiftCockpitView(state: HomeUiState.ActiveShift) {
+fun ActiveShiftCockpitView(
+    state: HomeUiState.ActiveShift,
+    onCloseShiftClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -99,6 +105,29 @@ fun ActiveShiftCockpitView(state: HomeUiState.ActiveShift) {
             WeeklyQuotaCard(progress = state.weeklyProgress)
         }
         CockpitKpisCard(summary = state.summary, metrics = state.biFuelMetrics)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Botón vehicular de alta visibilidad para finalizar jornada (Touch target 56dp)
+        Button(
+            onClick = onCloseShiftClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = StatusRedContainer,
+                contentColor = StatusRed
+            ),
+            border = BorderStroke(1.5.dp, StatusRed),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text(
+                text = "⏹ Finalizar Jornada / Cerrar Turno",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = StatusRed
+            )
+        }
+
         Spacer(modifier = Modifier.height(64.dp))
     }
 }

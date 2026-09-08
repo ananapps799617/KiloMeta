@@ -63,7 +63,9 @@ import com.ananapps.kilometa.presentation.theme.TextPrimary
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
-    showTopBar: Boolean = false
+    showTopBar: Boolean = false,
+    triggerCloseShift: Boolean = false,
+    onResetCloseShiftTrigger: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val syncStatus by viewModel.syncStatus.collectAsState()
@@ -112,6 +114,13 @@ fun HomeScreen(
     var showAuthSheet by remember { mutableStateOf(false) }
     var showRecoveryScreen by remember { mutableStateOf(false) }
 
+    LaunchedEffect(triggerCloseShift) {
+        if (triggerCloseShift) {
+            showCloseShiftDialog = true
+            onResetCloseShiftTrigger()
+        }
+    }
+
     LaunchedEffect(userSession) {
         if (userSession != null && !userSession!!.isAnonymous) {
             showAuthSheet = false
@@ -136,43 +145,6 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = {
-            if (showTopBar) {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = TextPrimary
-                            )
-                            Text(
-                                text = stringResource(R.string.status_offline_banner),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = StatusGreen
-                            )
-                        }
-                    },
-                    actions = {
-                        CockpitCloudBadge(
-                            syncStatus = syncStatus,
-                            userSession = userSession,
-                            onClick = { showSyncSheet = true },
-                            modifier = Modifier.padding(end = 6.dp)
-                        )
-                        if (uiState is HomeUiState.ActiveShift) {
-                            OutlinedButton(
-                                onClick = { showCloseShiftDialog = true },
-                                modifier = Modifier.padding(end = 8.dp)
-                            ) {
-                                Text(text = "Cerrar", color = StatusRed, style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepObsidianSurface)
-                )
-            }
-        },
         bottomBar = {
             if (uiState is HomeUiState.ActiveShift) {
                 CockpitBottomDock(
@@ -201,7 +173,10 @@ fun HomeScreen(
                     )
                 }
                 is HomeUiState.ActiveShift -> {
-                    ActiveShiftCockpitView(state = state)
+                    ActiveShiftCockpitView(
+                        state = state,
+                        onCloseShiftClick = { showCloseShiftDialog = true }
+                    )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
                     StandbyPlaceholderView(state = state)

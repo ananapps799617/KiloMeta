@@ -8,14 +8,18 @@
 
 package com.ananapps.kilometa.presentation.navigation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -32,11 +36,13 @@ import com.ananapps.kilometa.domain.model.UserSession
 import com.ananapps.kilometa.presentation.common.CockpitCloudBadge
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
+import com.ananapps.kilometa.presentation.theme.StatusRed
+import com.ananapps.kilometa.presentation.theme.StatusRedContainer
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
 
 // ------------------------------------------------------------------------------
-// BLOQUE 1: TOP APP BAR CANÓNICA CON MENÚ HAMBURGUESA
+// BLOQUE 1: TOP APP BAR CANÓNICA CON MENÚ HAMBURGUESA Y CIERRE DE TURNO
 // ------------------------------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +50,8 @@ fun KiloMetaTopBar(
     currentDestination: AppDestination,
     syncStatus: SyncStatus,
     userSession: UserSession?,
+    isShiftActive: Boolean = false,
+    onCloseShift: (() -> Unit)? = null,
     onOpenDrawer: () -> Unit,
     onOpenSyncSheet: () -> Unit,
     modifier: Modifier = Modifier
@@ -85,6 +93,28 @@ fun KiloMetaTopBar(
             }
         },
         actions = {
+            if (isShiftActive && onCloseShift != null) {
+                OutlinedButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCloseShift()
+                    },
+                    border = BorderStroke(1.dp, StatusRed),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = StatusRedContainer.copy(alpha = 0.6f),
+                        contentColor = StatusRed
+                    ),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text(
+                        text = "⏹ Cerrar Turno",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = StatusRed
+                    )
+                }
+            }
             CockpitCloudBadge(
                 syncStatus = syncStatus,
                 userSession = userSession,
