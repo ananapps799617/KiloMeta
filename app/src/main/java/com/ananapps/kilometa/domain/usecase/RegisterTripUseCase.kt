@@ -44,6 +44,7 @@ class RegisterTripUseCase @Inject constructor(
         grossAmount: Double,
         commissionAmount: Double,
         paymentMethod: PaymentMethod,
+        paymentDestination: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND,
         timestamp: Long = System.currentTimeMillis()
     ): Trip {
         // Domain Guards: Validaciones de consistencia contable
@@ -64,6 +65,7 @@ class RegisterTripUseCase @Inject constructor(
             commissionAmount = commissionAmount,
             netAmount = netAmount,
             paymentMethod = paymentMethod,
+            paymentDestination = paymentDestination,
             timestamp = timestamp
         )
 

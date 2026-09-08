@@ -3,8 +3,7 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/local/entity/TripEntity.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Entidad Room para la tabla 'trips'. Modela servicios realizados en plataformas.
-// Configura clave foránea referenciando 'shifts(id)' con borrado en cascada (CASCADE)
-// e indexación obligatoria en 'shift_id' para prevenir escaneos de tabla completa.
+// Incorpora columna 'payment_destination' con valor por defecto CASH_IN_HAND.
 // ==============================================================================
 
 package com.ananapps.kilometa.data.local.entity
@@ -15,9 +14,6 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: DEFINICIÓN DE TABLA, CLAVES FORÁNEAS E ÍNDICES
-// ------------------------------------------------------------------------------
 @Entity(
     tableName = "trips",
     foreignKeys = [
@@ -54,6 +50,9 @@ data class TripEntity(
 
     @ColumnInfo(name = "payment_method")
     val paymentMethod: String,
+
+    @ColumnInfo(name = "payment_destination", defaultValue = "CASH_IN_HAND")
+    val paymentDestination: String = "CASH_IN_HAND",
 
     @ColumnInfo(name = "timestamp")
     val timestamp: Long

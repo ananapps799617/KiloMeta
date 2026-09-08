@@ -32,7 +32,7 @@ import com.ananapps.kilometa.data.local.entity.TripEntity
         FuelingEntity::class,
         ExpenseEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -62,20 +62,24 @@ import java.util.Locale
 fun RegisterTripSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onConfirmTrip: (platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod) -> Unit
+    onConfirmTrip: (
+        platform: PlatformType,
+        gross: Double,
+        commission: Double,
+        payment: PaymentMethod,
+        destination: com.ananapps.kilometa.domain.model.PaymentDestination
+    ) -> Unit
 ) {
     var selectedPlatform by remember { mutableStateOf(PlatformType.UBER) }
     var grossText by remember { mutableStateOf("15000") }
     var selectedPayment by remember { mutableStateOf(PaymentMethod.CASH) }
+    var selectedDestination by remember {
+        mutableStateOf(com.ananapps.kilometa.domain.model.PlatformConfig.getRule(PlatformType.UBER).defaultDestination)
+    }
 
     val grossNumeric = grossText.toDoubleOrNull() ?: 0.0
-    val defaultCommissionRate = when (selectedPlatform) {
-        PlatformType.UBER -> 0.25
-        PlatformType.DIDI -> 0.20
-        PlatformType.INDRIVE -> 0.10
-        PlatformType.PRIVATE -> 0.00
-    }
-    val calculatedCommission = grossNumeric * defaultCommissionRate
+    val rule = com.ananapps.kilometa.domain.model.PlatformConfig.getRule(selectedPlatform)
+    val calculatedCommission = grossNumeric * (rule.defaultCommissionPct / 100.0)
     val calculatedNet = grossNumeric - calculatedCommission
 
     ModalBottomSheet(
@@ -89,7 +93,7 @@ fun RegisterTripSheet(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .padding(bottom = 24.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
                 text = "REGISTRAR CARRERA EXPRESS",
@@ -97,17 +101,58 @@ fun RegisterTripSheet(
                 color = ElectricBluePrimary
             )
 
-            // Selector de Plataforma en Grilla 2x2 (Erradica desbordamiento "Particula / r")
+            // Selector de Plataforma en Grilla 2x2
             Text(text = "Plataforma de Servicio", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PlatformChipItem(PlatformType.UBER, selectedPlatform == PlatformType.UBER, Modifier.weight(1f)) { selectedPlatform = PlatformType.UBER }
-                    PlatformChipItem(PlatformType.DIDI, selectedPlatform == PlatformType.DIDI, Modifier.weight(1f)) { selectedPlatform = PlatformType.DIDI }
+                    PlatformChipItem(PlatformType.UBER, selectedPlatform == PlatformType.UBER, Modifier.weight(1f)) {
+                        selectedPlatform = PlatformType.UBER
+                        selectedDestination = com.ananapps.kilometa.domain.model.PlatformConfig.getRule(PlatformType.UBER).defaultDestination
+                    }
+                    PlatformChipItem(PlatformType.DIDI, selectedPlatform == PlatformType.DIDI, Modifier.weight(1f)) {
+                        selectedPlatform = PlatformType.DIDI
+                        selectedDestination = com.ananapps.kilometa.domain.model.PlatformConfig.getRule(PlatformType.DIDI).defaultDestination
+                    }
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PlatformChipItem(PlatformType.INDRIVE, selectedPlatform == PlatformType.INDRIVE, Modifier.weight(1f)) { selectedPlatform = PlatformType.INDRIVE }
-                    PlatformChipItem(PlatformType.PRIVATE, selectedPlatform == PlatformType.PRIVATE, Modifier.weight(1f)) { selectedPlatform = PlatformType.PRIVATE }
+                    PlatformChipItem(PlatformType.INDRIVE, selectedPlatform == PlatformType.INDRIVE, Modifier.weight(1f)) {
+                        selectedPlatform = PlatformType.INDRIVE
+                        selectedDestination = com.ananapps.kilometa.domain.model.PlatformConfig.getRule(PlatformType.INDRIVE).defaultDestination
+                    }
+                    PlatformChipItem(PlatformType.PRIVATE, selectedPlatform == PlatformType.PRIVATE, Modifier.weight(1f)) {
+                        selectedPlatform = PlatformType.PRIVATE
+                        selectedDestination = com.ananapps.kilometa.domain.model.PlatformConfig.getRule(PlatformType.PRIVATE).defaultDestination
+                    }
                 }
+            }
+
+            // Segmentador Binario: Efectivo en Mano vs Saldo Retenido en App
+            Text(text = "Destino del Ingreso", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val isCash = selectedDestination == com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND
+                FilterChip(
+                    selected = isCash,
+                    onClick = { selectedDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND },
+                    label = { Text("💵 En Mano", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = StatusGreen,
+                        selectedLabelColor = DeepObsidianBackground
+                    )
+                )
+                FilterChip(
+                    selected = !isCash,
+                    onClick = { selectedDestination = com.ananapps.kilometa.domain.model.PaymentDestination.APP_RETAINED },
+                    label = { Text("📱 En App (${rule.disbursementDay})", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = ElectricBluePrimary,
+                        selectedLabelColor = DeepObsidianBackground
+                    )
+                )
             }
 
             // Monto Bruto Híbrido: Campo editable con leadingIcon "$"
@@ -133,12 +178,12 @@ fun RegisterTripSheet(
             }
 
             // Selector de Modalidad de Pago
-            Text(text = "Modalidad de Pago", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+            Text(text = "Medio de Recaudo", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(
                     PaymentMethod.CASH to "Efectivo",
                     PaymentMethod.NEQUI to "Nequi",
-                    PaymentMethod.APP_WALLET to "Billetera"
+                    PaymentMethod.APP_WALLET to "App Wallet"
                 ).forEach { (method, label) ->
                     FilterChip(
                         selected = selectedPayment == method,
@@ -157,16 +202,16 @@ fun RegisterTripSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "Comisión: -${formatCop(calculatedCommission)}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                Text(text = "Neto a Caja: +${formatCop(calculatedNet)}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = StatusGreen)
+                Text(text = "Neto: +${formatCop(calculatedNet)}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = StatusGreen)
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             // Botón de Confirmación Ergonómico (>= 56dp)
             Button(
                 onClick = {
                     if (grossNumeric > 0.0) {
-                        onConfirmTrip(selectedPlatform, grossNumeric, calculatedCommission, selectedPayment)
+                        onConfirmTrip(selectedPlatform, grossNumeric, calculatedCommission, selectedPayment, selectedDestination)
                         onDismiss()
                     }
                 },
