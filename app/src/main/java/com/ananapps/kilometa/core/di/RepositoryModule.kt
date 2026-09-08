@@ -58,4 +58,10 @@ abstract class RepositoryModule {
     abstract fun bindDriverProfileRepository(
         impl: com.ananapps.kilometa.data.repository.DriverProfileRepositoryImpl
     ): com.ananapps.kilometa.domain.repository.DriverProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMaintenanceRepository(
+        impl: com.ananapps.kilometa.data.repository.MaintenanceRepositoryImpl
+    ): com.ananapps.kilometa.domain.repository.MaintenanceRepository
 }

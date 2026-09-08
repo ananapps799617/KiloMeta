@@ -19,6 +19,8 @@ enum class AppDestination(
 ) {
     COCKPIT("Cabina en Vivo", "En Turno"),
     HISTORY("Historial & Analíticas", "Auditoría Contable"),
+    MAINTENANCE("Mantenimientos", "Alertas Drivvo & Odómetro"),
+    EXPENSES("Gastos en Ruta", "Lavadas, Despinchadas & Comida"),
     PROFILE("Mi Perfil & Vehículo", "Configuración Técnica"),
     BACKUP("Respaldo Nube", "Cloud Sync & Firestore")
 }

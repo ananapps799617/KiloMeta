@@ -53,11 +53,13 @@ enum class PaymentMethod(val displayName: String) {
 /**
  * Clasificación de egresos incidentales u operativos durante la jornada.
  */
-enum class ExpenseConcept(val displayName: String) {
-    WASH("Lavado / Aseo"),
-    TOLL("Peajes"),
-    FOOD("Alimentación"),
-    OTHER("Otros imprevistos")
+enum class ExpenseConcept(val displayName: String, val icon: String = "📦") {
+    WASH("Lavado / Aseo", "🧼"),
+    PUNCTURE("Despinchada / Llantas", "🛞"),
+    FOOD("Alimentación", "🍽️"),
+    TOLL("Peajes", "🛣️"),
+    PARKING("Parqueadero", "🅿️"),
+    OTHER("Otros imprevistos", "📦")
 }
 
 // ------------------------------------------------------------------------------

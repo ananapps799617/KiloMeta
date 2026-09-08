@@ -225,18 +225,13 @@ private fun DrawerItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val icon = when (destination) {
-        AppDestination.COCKPIT -> "⚡"
-        AppDestination.HISTORY -> "📊"
-        AppDestination.PROFILE -> "🚗"
-        AppDestination.BACKUP -> "☁️"
-    }
-
-    val activeColor = when (destination) {
-        AppDestination.COCKPIT -> StatusGreen
-        AppDestination.HISTORY -> CyanSavings
-        AppDestination.PROFILE -> ElectricBluePrimary
-        AppDestination.BACKUP -> Color(0xFFB388FF)
+    val (icon, activeColor) = when (destination) {
+        AppDestination.COCKPIT -> "⚡" to StatusGreen
+        AppDestination.HISTORY -> "📊" to CyanSavings
+        AppDestination.MAINTENANCE -> "🛠️" to ElectricBluePrimary
+        AppDestination.EXPENSES -> "💸" to StatusRed
+        AppDestination.PROFILE -> "🚗" to ElectricBluePrimary
+        AppDestination.BACKUP -> "☁️" to Color(0xFFB388FF)
     }
 
     Box(
