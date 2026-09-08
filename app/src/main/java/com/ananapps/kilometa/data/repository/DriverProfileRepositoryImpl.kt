@@ -2,10 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/repository/DriverProfileRepositoryImpl.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Implementación concreta de DriverProfileRepository.
-// Utiliza SharedPreferences para persistencia local inmediata (cero latencia en cabina)
-// y emite reactivamente vía StateFlow, ejecutando sincronización oportunista hacia
-// Google Cloud Firestore (/users/{userId}/profile/current) si hay sesión activa.
+// Implementación concreta con persistencia SharedPreferences y sincronización Cloud.
 // ==============================================================================
 
 package com.ananapps.kilometa.data.repository
@@ -15,9 +12,11 @@ import android.content.SharedPreferences
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
 import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
 import com.ananapps.kilometa.domain.model.DriverProfile
+import com.ananapps.kilometa.domain.model.Gender
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.PropulsionType
 import com.ananapps.kilometa.domain.model.QuotaPeriodicity
+import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.VehicleTenure
 import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.DriverProfileRepository
@@ -29,9 +28,6 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: REPOSITORIO DE PERFIL DE CONDUCTOR Y VEHÍCULO
-// ------------------------------------------------------------------------------
 @Singleton
 class DriverProfileRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -42,14 +38,24 @@ class DriverProfileRepositoryImpl @Inject constructor(
 
     companion object {
         private const val PREFS_NAME = "kilometa_driver_profile"
+        private const val KEY_DRIVER_ID = "driver_id"
         private const val KEY_DRIVER_NAME = "driver_name"
-        private const val KEY_VEHICLE_NAME = "vehicle_name"
+        private const val KEY_EMAIL = "driver_email"
+        private const val KEY_PHONE = "driver_phone"
+        private const val KEY_GENDER = "driver_gender"
+        private const val KEY_ACTIVE_VEHICLE_ID = "active_vehicle_id"
+
         private const val KEY_VEHICLE_PLATE = "vehicle_plate"
+        private const val KEY_BRAND = "vehicle_brand"
+        private const val KEY_MODEL = "vehicle_model"
         private const val KEY_PROPULSION_TYPE = "propulsion_type"
-        private const val KEY_VEHICLE_TENURE = "vehicle_tenure"
-        private const val KEY_TARGET_QUOTA = "target_quota_amount"
+        private const val KEY_TENURE_TYPE = "tenure_type"
         private const val KEY_QUOTA_PERIODICITY = "quota_periodicity"
-        private const val KEY_WORKING_DAYS = "working_days_per_week"
+        private const val KEY_QUOTA_AMOUNT = "quota_amount"
+        private const val KEY_WORK_DAYS_WEEK = "work_days_week"
+        private const val KEY_CUTOFF_DAY = "quota_cutoff_day"
+        private const val KEY_CUTOFF_HOUR = "quota_cutoff_hour"
+
         private const val KEY_ACTIVE_PLATFORMS = "active_platforms"
         private const val KEY_UPDATED_AT = "updated_at"
     }
@@ -58,95 +64,127 @@ class DriverProfileRepositoryImpl @Inject constructor(
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
-    private val _profileFlow = MutableStateFlow(loadProfileFromPrefs())
+    private val _driverFlow = MutableStateFlow(loadDriverFromPrefs())
+    private val _vehicleFlow = MutableStateFlow(loadVehicleFromPrefs())
 
-    override fun getProfile(): Flow<DriverProfile> = _profileFlow.asStateFlow()
+    override fun getProfile(): Flow<DriverProfile> = _driverFlow.asStateFlow()
+    override fun getVehicleProfile(): Flow<VehicleProfile> = _vehicleFlow.asStateFlow()
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 2: GUARDADO LOCAL Y SINCRONIZACIÓN OPORTUNISTA A CLOUD
-    // --------------------------------------------------------------------------
     override suspend fun saveProfile(profile: DriverProfile) = withContext(dispatchers.io) {
-        val updatedProfile = profile.copy(updatedAt = System.currentTimeMillis())
-
-        // 1. Persistencia local inmediata (sin bloqueo de UI)
+        val updated = profile.copy(updatedAt = System.currentTimeMillis())
         prefs.edit().apply {
-            putString(KEY_DRIVER_NAME, updatedProfile.driverName)
-            putString(KEY_VEHICLE_NAME, updatedProfile.vehicleName)
-            putString(KEY_VEHICLE_PLATE, updatedProfile.vehiclePlate)
-            putString(KEY_PROPULSION_TYPE, updatedProfile.propulsionType.name)
-            putString(KEY_VEHICLE_TENURE, updatedProfile.vehicleTenure.name)
-            putFloat(KEY_TARGET_QUOTA, updatedProfile.targetQuotaAmount.toFloat())
-            putString(KEY_QUOTA_PERIODICITY, updatedProfile.quotaPeriodicity.name)
-            putInt(KEY_WORKING_DAYS, updatedProfile.workingDaysPerWeek)
-            putStringSet(KEY_ACTIVE_PLATFORMS, updatedProfile.activePlatforms.map { it.name }.toSet())
-            putLong(KEY_UPDATED_AT, updatedProfile.updatedAt)
+            putString(KEY_DRIVER_ID, updated.id)
+            putString(KEY_DRIVER_NAME, updated.driverName)
+            putString(KEY_EMAIL, updated.email)
+            putString(KEY_PHONE, updated.phone)
+            putString(KEY_GENDER, updated.gender.name)
+            putString(KEY_ACTIVE_VEHICLE_ID, updated.activeVehicleId)
+            putString(KEY_VEHICLE_PLATE, updated.vehiclePlate)
+            putString(KEY_PROPULSION_TYPE, updated.propulsionType.name)
+            putStringSet(KEY_ACTIVE_PLATFORMS, updated.activePlatforms.map { it.name }.toSet())
+            putLong(KEY_UPDATED_AT, updated.updatedAt)
             apply()
         }
-
-        // 2. Emisión reactiva al StateFlow
-        _profileFlow.value = updatedProfile
-
-        // 3. Sincronización oportunista hacia Google Cloud Firestore si hay sesión
-        val currentUser = authRepository.getCurrentUser()
-        if (currentUser != null) {
-            val profileMap = mapOf<String, Any>(
-                "driverName" to updatedProfile.driverName,
-                "vehicleName" to updatedProfile.vehicleName,
-                "vehiclePlate" to updatedProfile.vehiclePlate,
-                "propulsionType" to updatedProfile.propulsionType.name,
-                "vehicleTenure" to updatedProfile.vehicleTenure.name,
-                "targetQuotaAmount" to updatedProfile.targetQuotaAmount,
-                "quotaPeriodicity" to updatedProfile.quotaPeriodicity.name,
-                "workingDaysPerWeek" to updatedProfile.workingDaysPerWeek,
-                "activePlatforms" to updatedProfile.activePlatforms.map { it.name },
-                "updatedAt" to updatedProfile.updatedAt
-            )
-            firestoreDataSource.saveDriverProfile(currentUser.uid, profileMap)
-        }
+        _driverFlow.value = updated
+        syncToCloudIfAuthenticated(updated, _vehicleFlow.value)
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 3: LECTURA Y DESERIALIZACIÓN DESDE SHAREDPREFERENCES
-    // --------------------------------------------------------------------------
-    private fun loadProfileFromPrefs(): DriverProfile {
-        val defaultProfile = DriverProfile()
-        val driverName = prefs.getString(KEY_DRIVER_NAME, defaultProfile.driverName) ?: defaultProfile.driverName
-        val vehicleName = prefs.getString(KEY_VEHICLE_NAME, defaultProfile.vehicleName) ?: defaultProfile.vehicleName
-        val vehiclePlate = prefs.getString(KEY_VEHICLE_PLATE, defaultProfile.vehiclePlate) ?: defaultProfile.vehiclePlate
-
-        val propulsionName = prefs.getString(KEY_PROPULSION_TYPE, defaultProfile.propulsionType.name)
-        val propulsion = runCatching { PropulsionType.valueOf(propulsionName ?: "") }.getOrDefault(defaultProfile.propulsionType)
-
-        val tenureName = prefs.getString(KEY_VEHICLE_TENURE, defaultProfile.vehicleTenure.name)
-        val tenure = runCatching { VehicleTenure.valueOf(tenureName ?: "") }.getOrDefault(defaultProfile.vehicleTenure)
-
-        val targetQuota = prefs.getFloat(KEY_TARGET_QUOTA, defaultProfile.targetQuotaAmount.toFloat()).toDouble()
-
-        val periodicityName = prefs.getString(KEY_QUOTA_PERIODICITY, defaultProfile.quotaPeriodicity.name)
-        val periodicity = runCatching { QuotaPeriodicity.valueOf(periodicityName ?: "") }.getOrDefault(defaultProfile.quotaPeriodicity)
-
-        val workingDays = prefs.getInt(KEY_WORKING_DAYS, defaultProfile.workingDaysPerWeek)
-
-        val platformStrings = prefs.getStringSet(KEY_ACTIVE_PLATFORMS, null)
-        val platforms = if (platformStrings != null) {
-            platformStrings.mapNotNull { name -> runCatching { PlatformType.valueOf(name) }.getOrNull() }.toSet()
-        } else {
-            defaultProfile.activePlatforms
+    override suspend fun saveVehicleProfile(vehicle: VehicleProfile) = withContext(dispatchers.io) {
+        val updated = vehicle.copy(updatedAt = System.currentTimeMillis())
+        prefs.edit().apply {
+            putString(KEY_VEHICLE_PLATE, updated.vehiclePlate)
+            putString(KEY_BRAND, updated.brand)
+            putString(KEY_MODEL, updated.model)
+            putString(KEY_PROPULSION_TYPE, updated.propulsionType.name)
+            putString(KEY_TENURE_TYPE, updated.tenureType.name)
+            putString(KEY_QUOTA_PERIODICITY, updated.quotaPeriodicity.name)
+            putFloat(KEY_QUOTA_AMOUNT, updated.quotaAmount.toFloat())
+            putInt(KEY_WORK_DAYS_WEEK, updated.workDaysWeek)
+            putInt(KEY_CUTOFF_DAY, updated.quotaCutoffDay)
+            putInt(KEY_CUTOFF_HOUR, updated.quotaCutoffHour)
+            putLong(KEY_UPDATED_AT, updated.updatedAt)
+            apply()
         }
+        _vehicleFlow.value = updated
+        val currentDriver = _driverFlow.value
+        _driverFlow.value = currentDriver.copy(
+            vehiclePlate = updated.vehiclePlate,
+            propulsionType = updated.propulsionType
+        )
+        syncToCloudIfAuthenticated(_driverFlow.value, updated)
+    }
 
-        val updatedAt = prefs.getLong(KEY_UPDATED_AT, defaultProfile.updatedAt)
+    override suspend fun saveFullProfile(driver: DriverProfile, vehicle: VehicleProfile) = withContext(dispatchers.io) {
+        saveVehicleProfile(vehicle)
+        saveProfile(driver.copy(vehiclePlate = vehicle.vehiclePlate, propulsionType = vehicle.propulsionType))
+    }
+
+    private fun loadDriverFromPrefs(): DriverProfile {
+        val def = DriverProfile()
+        val genderName = prefs.getString(KEY_GENDER, def.gender.name)
+        val gender = runCatching { Gender.valueOf(genderName ?: "") }.getOrDefault(def.gender)
+        val propName = prefs.getString(KEY_PROPULSION_TYPE, def.propulsionType.name)
+        val prop = runCatching { PropulsionType.valueOf(propName ?: "") }.getOrDefault(def.propulsionType)
+        val platforms = prefs.getStringSet(KEY_ACTIVE_PLATFORMS, null)?.mapNotNull {
+            runCatching { PlatformType.valueOf(it) }.getOrNull()
+        }?.toSet() ?: def.activePlatforms
 
         return DriverProfile(
-            driverName = driverName,
-            vehicleName = vehicleName,
-            vehiclePlate = vehiclePlate,
-            propulsionType = propulsion,
-            vehicleTenure = tenure,
-            targetQuotaAmount = targetQuota,
-            quotaPeriodicity = periodicity,
-            workingDaysPerWeek = workingDays,
+            id = prefs.getString(KEY_DRIVER_ID, def.id) ?: def.id,
+            driverName = prefs.getString(KEY_DRIVER_NAME, def.driverName) ?: def.driverName,
+            email = prefs.getString(KEY_EMAIL, def.email) ?: def.email,
+            phone = prefs.getString(KEY_PHONE, def.phone) ?: def.phone,
+            gender = gender,
+            activeVehicleId = prefs.getString(KEY_ACTIVE_VEHICLE_ID, def.activeVehicleId) ?: def.activeVehicleId,
+            vehiclePlate = prefs.getString(KEY_VEHICLE_PLATE, def.vehiclePlate) ?: def.vehiclePlate,
+            propulsionType = prop,
             activePlatforms = platforms,
-            updatedAt = updatedAt
+            updatedAt = prefs.getLong(KEY_UPDATED_AT, def.updatedAt)
         )
+    }
+
+    private fun loadVehicleFromPrefs(): VehicleProfile {
+        val def = VehicleProfile()
+        val propName = prefs.getString(KEY_PROPULSION_TYPE, def.propulsionType.name)
+        val prop = runCatching { PropulsionType.valueOf(propName ?: "") }.getOrDefault(def.propulsionType)
+        val tenureName = prefs.getString(KEY_TENURE_TYPE, def.tenureType.name)
+        val tenure = runCatching { VehicleTenure.valueOf(tenureName ?: "") }.getOrDefault(def.tenureType)
+        val periodName = prefs.getString(KEY_QUOTA_PERIODICITY, def.quotaPeriodicity.name)
+        val period = runCatching { QuotaPeriodicity.valueOf(periodName ?: "") }.getOrDefault(def.quotaPeriodicity)
+
+        return VehicleProfile(
+            id = prefs.getString(KEY_ACTIVE_VEHICLE_ID, def.id) ?: def.id,
+            vehiclePlate = prefs.getString(KEY_VEHICLE_PLATE, def.vehiclePlate) ?: def.vehiclePlate,
+            brand = prefs.getString(KEY_BRAND, def.brand) ?: def.brand,
+            model = prefs.getString(KEY_MODEL, def.model) ?: def.model,
+            propulsionType = prop,
+            tenureType = tenure,
+            quotaPeriodicity = period,
+            quotaAmount = prefs.getFloat(KEY_QUOTA_AMOUNT, def.quotaAmount.toFloat()).toDouble(),
+            workDaysWeek = prefs.getInt(KEY_WORK_DAYS_WEEK, def.workDaysWeek),
+            quotaCutoffDay = prefs.getInt(KEY_CUTOFF_DAY, def.quotaCutoffDay),
+            quotaCutoffHour = prefs.getInt(KEY_CUTOFF_HOUR, def.quotaCutoffHour),
+            updatedAt = prefs.getLong(KEY_UPDATED_AT, def.updatedAt)
+        )
+    }
+
+    private suspend fun syncToCloudIfAuthenticated(driver: DriverProfile, vehicle: VehicleProfile) {
+        val currentUser = authRepository.getCurrentUser() ?: return
+        val map = mapOf<String, Any>(
+            "driverName" to driver.driverName,
+            "email" to driver.email,
+            "phone" to driver.phone,
+            "gender" to driver.gender.name,
+            "vehiclePlate" to vehicle.vehiclePlate,
+            "brand" to vehicle.brand,
+            "model" to vehicle.model,
+            "propulsionType" to vehicle.propulsionType.name,
+            "tenureType" to vehicle.tenureType.name,
+            "quotaPeriodicity" to vehicle.quotaPeriodicity.name,
+            "quotaAmount" to vehicle.quotaAmount,
+            "workDaysWeek" to vehicle.workDaysWeek,
+            "updatedAt" to System.currentTimeMillis()
+        )
+        firestoreDataSource.saveDriverProfile(currentUser.uid, map)
     }
 }

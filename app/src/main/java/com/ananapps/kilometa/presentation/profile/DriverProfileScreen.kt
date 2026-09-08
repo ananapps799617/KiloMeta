@@ -2,39 +2,29 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/profile/DriverProfileScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla de configuración del perfil del conductor y especificaciones técnicas
-// de su vehículo (multi-propulsión, tenencia, cuota objetivo y días de trabajo).
-// Diseñada con alta ergonomía en cabina (chips táctiles y botón de guardado >= 56dp).
+// Pantalla de Perfil de Conductor y Vehículo desacoplada en secciones modulares.
+// Implementa navegación reactiva post-guardado, reseteo de clave y catálogo asistido.
+// Regla inquebrantable: Archivo pedagógico < 280 líneas.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -46,227 +36,185 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.domain.model.DriverProfile
+import com.ananapps.kilometa.domain.model.Gender
 import com.ananapps.kilometa.domain.model.PropulsionType
 import com.ananapps.kilometa.domain.model.QuotaPeriodicity
+import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.VehicleTenure
+import com.ananapps.kilometa.presentation.profile.components.DriverPersonalSection
+import com.ananapps.kilometa.presentation.profile.components.PasswordResetDialog
+import com.ananapps.kilometa.presentation.profile.components.VehicleConfigSection
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
-import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
-import com.ananapps.kilometa.presentation.theme.ObsidianBorder
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.TextPrimary
-import com.ananapps.kilometa.presentation.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: PANTALLA PRINCIPAL DE PERFIL Y VEHÍCULO
-// ------------------------------------------------------------------------------
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DriverProfileScreen(
-    viewModel: DriverProfileViewModel = viewModel(),
-    modifier: Modifier = Modifier
+    onNavigateBack: () -> Unit = {},
+    viewModel: DriverProfileViewModel = hiltViewModel()
 ) {
-    val haptic = LocalHapticFeedback.current
-    val currentProfile by viewModel.profile.collectAsState()
+    val initialDriver by viewModel.driverProfile.collectAsState()
+    val initialVehicle by viewModel.vehicleProfile.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    var driverName by remember(currentProfile) { mutableStateOf(currentProfile.driverName) }
-    var vehicleName by remember(currentProfile) { mutableStateOf(currentProfile.vehicleName) }
-    var vehiclePlate by remember(currentProfile) { mutableStateOf(currentProfile.vehiclePlate) }
-    var selectedPropulsion by remember(currentProfile) { mutableStateOf(currentProfile.propulsionType) }
-    var selectedTenure by remember(currentProfile) { mutableStateOf(currentProfile.vehicleTenure) }
-    var quotaAmount by remember(currentProfile) { mutableDoubleStateOf(currentProfile.targetQuotaAmount) }
-    var quotaPeriodicity by remember(currentProfile) { mutableStateOf(currentProfile.quotaPeriodicity) }
-    var workingDaysCount by remember(currentProfile) { mutableIntStateOf(currentProfile.workingDaysPerWeek) }
+    val haptic = LocalHapticFeedback.current
+    val snackbarHostState = remember { SnackbarHostStateState() }
+    val scope = rememberCoroutineScope()
 
+    var showPasswordResetDialog by remember { mutableStateOf(false) }
+
+    // Estados locales para edición fluida
+    var driverName by remember(initialDriver.driverName) { mutableStateOf(initialDriver.driverName) }
+    var phone by remember(initialDriver.phone) { mutableStateOf(initialDriver.phone) }
+    var gender by remember(initialDriver.gender) { mutableStateOf(initialDriver.gender) }
+
+    var vehiclePlate by remember(initialVehicle.vehiclePlate) { mutableStateOf(initialVehicle.vehiclePlate) }
+    var brand by remember(initialVehicle.brand) { mutableStateOf(initialVehicle.brand) }
+    var model by remember(initialVehicle.model) { mutableStateOf(initialVehicle.model) }
+    var propulsionType by remember(initialVehicle.propulsionType) { mutableStateOf(initialVehicle.propulsionType) }
+    var tenureType by remember(initialVehicle.tenureType) { mutableStateOf(initialVehicle.tenureType) }
+    var quotaAmount by remember(initialVehicle.quotaAmount) { mutableDoubleStateOf(initialVehicle.quotaAmount) }
+    var quotaPeriodicity by remember(initialVehicle.quotaPeriodicity) { mutableStateOf(initialVehicle.quotaPeriodicity) }
+    var workDaysWeek by remember(initialVehicle.workDaysWeek) { mutableIntStateOf(initialVehicle.workDaysWeek) }
+
+    // Retorno reactivo post-guardado exitoso
     LaunchedEffect(isSaved) {
         if (isSaved) {
-            snackbarHostState.showSnackbar("Configuración vehicular guardada exitosamente.")
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.resetSavedNotification()
+            delay(300)
+            onNavigateBack()
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(DeepObsidianBackground)
-            .padding(16.dp)
-    ) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        containerColor = DeepObsidianBackground
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 76.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Mi Perfil & Vehículo",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = TextPrimary
-            )
-
-            // Datos del Conductor y Vehículo
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = driverName,
-                    onValueChange = { driverName = it },
-                    label = { Text("Nombre del Conductor") },
-                    placeholder = { Text("Ej. Andrés López") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = vehicleName,
-                    onValueChange = { vehicleName = it },
-                    label = { Text("Modelo / Referencia del Vehículo") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = vehiclePlate,
-                    onValueChange = { vehiclePlate = it.uppercase() },
-                    label = { Text("Placa del Vehículo") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-            }
-
-            // Sistema de Propulsión (5 opciones)
-            Text(text = "Sistema de Propulsión", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Tarjeta 1: Conductor
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                PropulsionType.entries.forEach { propulsion ->
-                    FilterChip(
-                        selected = selectedPropulsion == propulsion,
-                        onClick = { selectedPropulsion = propulsion },
-                        label = { Text(propulsion.displayName) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ElectricBluePrimary,
-                            selectedLabelColor = DeepObsidianBackground
-                        )
-                    )
-                }
+                DriverPersonalSection(
+                    driverName = driverName,
+                    onDriverNameChange = { driverName = it },
+                    email = initialDriver.email.ifBlank { "conductor@kilometa.co" },
+                    phone = phone,
+                    onPhoneChange = { phone = it },
+                    gender = gender,
+                    onGenderChange = { gender = it },
+                    onRequestPasswordReset = { showPasswordResetDialog = true },
+                    modifier = Modifier.padding(16.dp)
+                )
             }
 
-            // Régimen de Tenencia
-            Text(text = "Régimen de Tenencia", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                VehicleTenure.entries.forEach { tenure ->
-                    FilterChip(
-                        selected = selectedTenure == tenure,
-                        onClick = { selectedTenure = tenure },
-                        label = { Text(tenure.displayName) },
-                        modifier = Modifier.weight(1f),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = StatusGreen,
-                            selectedLabelColor = DeepObsidianBackground
-                        )
-                    )
-                }
+            // Tarjeta 2: Vehículo
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                VehicleConfigSection(
+                    vehiclePlate = vehiclePlate,
+                    onVehiclePlateChange = { vehiclePlate = it },
+                    brand = brand,
+                    onBrandChange = { brand = it },
+                    model = model,
+                    onModelChange = { model = it },
+                    propulsionType = propulsionType,
+                    onPropulsionChange = { propulsionType = it },
+                    tenureType = tenureType,
+                    onTenureChange = { tenureType = it },
+                    quotaAmount = quotaAmount,
+                    onQuotaAmountChange = { quotaAmount = it },
+                    quotaPeriodicity = quotaPeriodicity,
+                    onQuotaPeriodicityChange = { quotaPeriodicity = it },
+                    workDaysWeek = workDaysWeek,
+                    onWorkDaysWeekChange = { workDaysWeek = it },
+                    modifier = Modifier.padding(16.dp)
+                )
             }
 
-            // Periodicidad y Meta de Cuota
-            Text(text = "Meta Financiera Objetivo", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuotaPeriodicity.entries.forEach { periodicity ->
-                    FilterChip(
-                        selected = quotaPeriodicity == periodicity,
-                        onClick = { quotaPeriodicity = periodicity },
-                        label = { Text(periodicity.displayName) },
-                        modifier = Modifier.weight(1f),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ElectricBluePrimary,
-                            selectedLabelColor = DeepObsidianBackground
-                        )
+            // Botón Guardar Perfil (56dp Touch Target)
+            Button(
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    val updatedDriver = initialDriver.copy(
+                        driverName = driverName.trim(),
+                        phone = phone.trim(),
+                        gender = gender,
+                        vehiclePlate = vehiclePlate.trim().uppercase(),
+                        propulsionType = propulsionType
                     )
-                }
+                    val updatedVehicle = initialVehicle.copy(
+                        vehiclePlate = vehiclePlate.trim().uppercase(),
+                        brand = brand.trim(),
+                        model = model.trim(),
+                        propulsionType = propulsionType,
+                        tenureType = tenureType,
+                        quotaAmount = quotaAmount,
+                        quotaPeriodicity = quotaPeriodicity,
+                        workDaysWeek = workDaysWeek
+                    )
+                    viewModel.saveFullProfile(updatedDriver, updatedVehicle)
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text(
+                    text = "💾 Guardar Perfil y Regresar",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = DeepObsidianBackground
+                )
             }
-            OutlinedTextField(
-                value = quotaAmount.toInt().toString(),
-                onValueChange = { quotaAmount = it.filter { ch -> ch.isDigit() }.toDoubleOrNull() ?: 0.0 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                leadingIcon = { Text("$", color = ElectricBluePrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
-                label = { Text("Monto de Cuota (${quotaPeriodicity.displayName})") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
 
-            // Días Laborados por Semana (7 toggles circulares L M M J V S D)
-            Text(text = "Días Laborados: $workingDaysCount días/semana", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                val daysLabels = listOf("L", "M", "M", "J", "V", "S", "D")
-                daysLabels.forEachIndexed { index, label ->
-                    val isDayActive = index < workingDaysCount
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(if (isDayActive) ElectricBluePrimary else DeepObsidianSurface)
-                            .border(1.dp, if (isDayActive) ElectricBluePrimary else ObsidianBorder, CircleShape)
-                            .clickable {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                workingDaysCount = index + 1
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            color = if (isDayActive) DeepObsidianBackground else TextSecondary
-                        )
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    if (showPasswordResetDialog) {
+        PasswordResetDialog(
+            initialEmail = initialDriver.email.ifBlank { "conductor@kilometa.co" },
+            onConfirm = { emailToReset ->
+                showPasswordResetDialog = false
+                viewModel.sendPasswordResetEmail(emailToReset) { success, errorMsg ->
+                    scope.launch {
+                        if (success) {
+                            snackbarHostState.showSnackbar("Enlace de restablecimiento enviado a $emailToReset")
+                        } else {
+                            snackbarHostState.showSnackbar(errorMsg ?: "No fue posible enviar el enlace.")
+                        }
                     }
                 }
-            }
-        }
-
-        // Botón Ergonómico Flotante "Guardar Configuración" (>= 56dp)
-        Button(
-            onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                viewModel.updateProfile(
-                    DriverProfile(
-                        driverName = driverName.trim(),
-                        vehicleName = vehicleName.trim(),
-                        vehiclePlate = vehiclePlate.trim(),
-                        propulsionType = selectedPropulsion,
-                        vehicleTenure = selectedTenure,
-                        targetQuotaAmount = quotaAmount,
-                        quotaPeriodicity = quotaPeriodicity,
-                        workingDaysPerWeek = workingDaysCount,
-                        activePlatforms = currentProfile.activePlatforms
-                    )
-                )
             },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = StatusGreen)
-        ) {
-            Text(
-                text = "💾 Guardar Configuración",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = DeepObsidianBackground
-            )
-        }
-
-        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+            onDismiss = { showPasswordResetDialog = false }
+        )
     }
 }
+
+// Helper para instanciar el estado de Snackbar
+@Composable
+private fun SnackbarHostStateState(): SnackbarHostState = remember { SnackbarHostState() }
