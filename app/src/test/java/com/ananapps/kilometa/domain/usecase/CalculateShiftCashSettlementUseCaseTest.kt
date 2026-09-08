@@ -97,8 +97,8 @@ class CalculateShiftCashSettlementUseCaseTest {
                 id = "f1",
                 shiftId = "s1",
                 fuelType = FuelType.GAS,
-                costCop = 15_000.0,
-                litersOrM3 = 5.0,
+                amountPaid = 15_000.0,
+                volume = 5.0,
                 odometer = 100_050,
                 timestamp = 1500L
             )
@@ -108,8 +108,8 @@ class CalculateShiftCashSettlementUseCaseTest {
             Expense(
                 id = "e1",
                 shiftId = "s1",
-                concept = ExpenseConcept.MEAL,
-                amountCop = 8_000.0,
+                concept = ExpenseConcept.FOOD,
+                amount = 8_000.0,
                 timestamp = 1600L
             )
         )

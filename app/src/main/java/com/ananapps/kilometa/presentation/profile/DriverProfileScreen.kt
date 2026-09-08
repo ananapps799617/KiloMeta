@@ -70,7 +70,7 @@ fun DriverProfileScreen(
     val isSaved by viewModel.isSaved.collectAsState()
 
     val haptic = LocalHapticFeedback.current
-    val snackbarHostState = remember { SnackbarHostStateState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     var showPasswordResetDialog by remember { mutableStateOf(false) }

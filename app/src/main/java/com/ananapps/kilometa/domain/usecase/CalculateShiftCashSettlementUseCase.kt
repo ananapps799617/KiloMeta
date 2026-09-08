@@ -41,8 +41,8 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         val totalGross = cashGross + digitalGross
         val totalNet = totalGross - totalCommission
 
-        val totalFueling = fuelings.sumOf { it.costCop }
-        val totalExpenses = expenses.sumOf { it.amountCop }
+        val totalFueling = fuelings.sumOf { it.amountPaid }
+        val totalExpenses = expenses.sumOf { it.amount }
 
         // El combustible y los gastos en ruta se descuentan de la caja física disponible
         val cashAvailable = cashGross - totalFueling - totalExpenses

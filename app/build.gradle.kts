@@ -91,6 +91,7 @@ dependencies {
     // Inyección de Dependencias: Dagger Hilt con KSP
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Tareas Programadas en Segundo Plano: WorkManager con Hilt Integration
     implementation(libs.androidx.work.runtime.ktx)

@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -44,7 +45,7 @@ class MaintenanceViewModel @Inject constructor(
         driverProfileRepository.getProfile(),
         shiftRepository.getActiveShift(),
         _currentOdo
-    ) { dashboard, profile, activeShift, manualOdo ->
+    ) { dashboard: com.ananapps.kilometa.domain.usecase.MaintenanceDashboardData, profile: com.ananapps.kilometa.domain.model.DriverProfile, activeShift: com.ananapps.kilometa.domain.model.Shift?, manualOdo: Int ->
         val effectiveOdo = activeShift?.startOdometer ?: manualOdo
         val alerts = getVehicleMaintenanceAlertsUseCase(effectiveOdo)
 
@@ -66,7 +67,7 @@ class MaintenanceViewModel @Inject constructor(
         customNextDueOdo: Int? = null
     ) {
         viewModelScope.launch {
-            val profile = driverProfileRepository.getProfileSync()
+            val profile = driverProfileRepository.getProfile().first()
             val vehicleId = profile.activeVehicleId.ifBlank { "default_vehicle" }
             registerMaintenanceUseCase(
                 vehicleId = vehicleId,
