@@ -3,14 +3,16 @@
 // ARCHIVO: app/src/test/java/com/ananapps/kilometa/data/repository/DriverProfileRepositoryTest.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Suite de pruebas unitarias para el contrato y comportamiento de DriverProfileRepository.
-// Verifica la emisión reactiva de perfiles y la persistencia de cambios en memoria.
+// Verifica la emisión reactiva de perfiles de conductor y vehículo segregados.
 // ==============================================================================
 
 package com.ananapps.kilometa.data.repository
 
 import com.ananapps.kilometa.domain.model.DriverProfile
+import com.ananapps.kilometa.domain.model.Gender
 import com.ananapps.kilometa.domain.model.PropulsionType
 import com.ananapps.kilometa.domain.model.QuotaPeriodicity
+import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.VehicleTenure
 import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import kotlinx.coroutines.flow.Flow
@@ -26,12 +28,24 @@ import org.junit.Test
 // BLOQUE 1: REPOSITORIO FAKE PARA PRUEBAS UNITARIAS
 // ------------------------------------------------------------------------------
 private class FakeDriverProfileRepository : DriverProfileRepository {
-    private val profileFlow = MutableStateFlow(DriverProfile())
+    private val driverFlow = MutableStateFlow(DriverProfile())
+    private val vehicleFlow = MutableStateFlow(VehicleProfile())
 
-    override fun getProfile(): Flow<DriverProfile> = profileFlow.asStateFlow()
+    override fun getProfile(): Flow<DriverProfile> = driverFlow.asStateFlow()
 
     override suspend fun saveProfile(profile: DriverProfile) {
-        profileFlow.value = profile.copy(updatedAt = System.currentTimeMillis())
+        driverFlow.value = profile.copy(updatedAt = System.currentTimeMillis())
+    }
+
+    override fun getVehicleProfile(): Flow<VehicleProfile> = vehicleFlow.asStateFlow()
+
+    override suspend fun saveVehicleProfile(vehicle: VehicleProfile) {
+        vehicleFlow.value = vehicle.copy(updatedAt = System.currentTimeMillis())
+    }
+
+    override suspend fun saveFullProfile(driver: DriverProfile, vehicle: VehicleProfile) {
+        saveVehicleProfile(vehicle)
+        saveProfile(driver.copy(vehiclePlate = vehicle.vehiclePlate, propulsionType = vehicle.propulsionType))
     }
 }
 
@@ -48,33 +62,47 @@ class DriverProfileRepositoryTest {
     }
 
     @Test
-    fun `getProfile emite perfil por defecto inicial`() = runBlocking {
-        val initialProfile = repository.getProfile().first()
+    fun `getProfile y getVehicleProfile emiten perfiles iniciales consistentes`() = runBlocking {
+        val initialDriver = repository.getProfile().first()
+        val initialVehicle = repository.getVehicleProfile().first()
 
-        assertEquals("Chevrolet Joy / Spark GT", initialProfile.vehicleName)
-        assertEquals(PropulsionType.BI_FUEL, initialProfile.propulsionType)
-        assertEquals(VehicleTenure.OWNED, initialProfile.vehicleTenure)
+        assertEquals("WMB-789", initialDriver.vehiclePlate)
+        assertEquals(PropulsionType.BI_FUEL, initialDriver.propulsionType)
+        assertEquals("Chevrolet", initialVehicle.brand)
+        assertEquals("Joy", initialVehicle.model)
+        assertEquals(VehicleTenure.OWNED, initialVehicle.tenureType)
     }
 
     @Test
-    fun `saveProfile actualiza y emite reactivamente la nueva configuracion del vehiculo`() = runBlocking {
-        val newProfile = DriverProfile(
-            vehicleName = "Kia Niro EV",
+    fun `saveFullProfile actualiza y emite reactivamente ambos perfiles`() = runBlocking {
+        val newDriver = DriverProfile(
+            driverName = "Andrés López",
+            phone = "3101234567",
+            gender = Gender.MALE
+        )
+        val newVehicle = VehicleProfile(
             vehiclePlate = "ZAB-123",
-            propulsionType = PropulsionType.ELECTRIC_100,
-            vehicleTenure = VehicleTenure.RENTED,
-            targetQuotaAmount = 600_000.0,
+            brand = "Renault",
+            model = "Kwid",
+            propulsionType = PropulsionType.GASOLINE_ONLY,
+            tenureType = VehicleTenure.RENTED,
+            quotaAmount = 600_000.0,
             quotaPeriodicity = QuotaPeriodicity.WEEKLY,
-            workingDaysPerWeek = 6
+            workDaysWeek = 6
         )
 
-        repository.saveProfile(newProfile)
+        repository.saveFullProfile(newDriver, newVehicle)
 
-        val updated = repository.getProfile().first()
-        assertEquals("Kia Niro EV", updated.vehicleName)
-        assertEquals("ZAB-123", updated.vehiclePlate)
-        assertEquals(PropulsionType.ELECTRIC_100, updated.propulsionType)
-        assertEquals(VehicleTenure.RENTED, updated.vehicleTenure)
-        assertEquals(600_000.0, updated.targetQuotaAmount, 0.001)
+        val updatedDriver = repository.getProfile().first()
+        val updatedVehicle = repository.getVehicleProfile().first()
+
+        assertEquals("Andrés López", updatedDriver.driverName)
+        assertEquals(Gender.MALE, updatedDriver.gender)
+        assertEquals("ZAB-123", updatedDriver.vehiclePlate)
+
+        assertEquals("Renault", updatedVehicle.brand)
+        assertEquals("Kwid", updatedVehicle.model)
+        assertEquals(VehicleTenure.RENTED, updatedVehicle.tenureType)
+        assertEquals(600_000.0, updatedVehicle.quotaAmount, 0.001)
     }
 }

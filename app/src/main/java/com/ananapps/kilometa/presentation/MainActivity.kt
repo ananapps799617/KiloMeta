@@ -4,8 +4,7 @@
 // DESCRIPCIÓN PEDAGÓGICA:
 // Actividad principal única (Single Activity Architecture) de KiloMeta.
 // Gestiona el flujo de autenticación obligatoria (LoginScreen) y la navegación
-// de cabina mediante Menú Lateral Hamburguesa (KiloMetaDrawer) y TopBar.
-// Otorga el 100% del espacio vertical inferior al Cockpit (cero bottom bars).
+// de cabina mediante Menú Lateral Hamburguesa (KiloMetaDrawer) y TopBar descongestionada.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation
@@ -35,7 +34,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.presentation.auth.LoginScreen
 import com.ananapps.kilometa.presentation.history.HistoryScreen
 import com.ananapps.kilometa.presentation.home.HomeScreen
-import com.ananapps.kilometa.presentation.home.HomeUiState
 import com.ananapps.kilometa.presentation.home.HomeViewModel
 import com.ananapps.kilometa.presentation.navigation.AppDestination
 import com.ananapps.kilometa.presentation.navigation.KiloMetaDrawerContent
@@ -82,7 +80,6 @@ private fun MainAppHost(
     if (userSession == null) {
         LoginScreen(
             onSignInWithGoogle = {
-                // En producción utiliza el idToken de GoogleSignInClient; aquí se delega al ViewModel
                 viewModel.signInWithGoogle("google-token-auth")
             },
             onSignInWithEmail = { email, pass ->
@@ -95,8 +92,6 @@ private fun MainAppHost(
     }
 
     // 2. Sesión activa: Cockpit vehicular con Hamburguesa / Drawer (100% alto disponible)
-    val uiState by viewModel.uiState.collectAsState()
-    val isShiftActive = uiState is HomeUiState.ActiveShift
     val syncStatus by viewModel.syncStatus.collectAsState()
     val driverProfile by viewModel.driverProfile.collectAsState()
     val syncPreferences by viewModel.syncPreferences.collectAsState()
@@ -107,7 +102,6 @@ private fun MainAppHost(
     var currentDestination by rememberSaveable { mutableStateOf(AppDestination.COCKPIT) }
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }
     var showRecoveryScreen by rememberSaveable { mutableStateOf(false) }
-    var triggerCloseShift by rememberSaveable { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val syncSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -154,18 +148,10 @@ private fun MainAppHost(
             topBar = {
                 KiloMetaTopBar(
                     currentDestination = currentDestination,
-                    syncStatus = syncStatus,
-                    userSession = userSession,
-                    isShiftActive = isShiftActive,
-                    onCloseShift = {
-                        currentDestination = AppDestination.COCKPIT
-                        triggerCloseShift = true
-                    },
                     onOpenDrawer = { scope.launch { drawerState.open() } },
-                    onOpenSyncSheet = { showSyncSheet = true }
+                    onNavigateToProfile = { currentDestination = AppDestination.PROFILE }
                 )
             },
-            // Sin BottomBar para otorgar el 100% de espacio vertical al Cockpit
             containerColor = DeepObsidianBackground
         ) { innerPadding ->
             Box(
@@ -174,21 +160,18 @@ private fun MainAppHost(
                     .padding(innerPadding)
             ) {
                 when (currentDestination) {
-                    AppDestination.COCKPIT -> HomeScreen(
-                        viewModel = viewModel,
-                        showTopBar = false,
-                        triggerCloseShift = triggerCloseShift,
-                        onResetCloseShiftTrigger = { triggerCloseShift = false }
-                    )
+                    AppDestination.COCKPIT -> HomeScreen(viewModel = viewModel, showTopBar = false)
                     AppDestination.HISTORY -> HistoryScreen()
-                    AppDestination.PROFILE -> DriverProfileScreen()
+                    AppDestination.PROFILE -> DriverProfileScreen(
+                        onNavigateBack = { currentDestination = AppDestination.COCKPIT }
+                    )
                     AppDestination.BACKUP -> HomeScreen(viewModel = viewModel, showTopBar = false)
                 }
             }
         }
     }
 
-    // Modal de sincronización en la nube (accesible desde TopBar o Drawer)
+    // Modal de sincronización en la nube (accesible desde Drawer)
     if (showSyncSheet) {
         CloudSyncStatusSheet(
             sheetState = syncSheetState,

@@ -2,24 +2,24 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/navigation/KiloMetaTopBar.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Barra superior canónica (TopAppBar) de KiloMeta con botón de Menú Hamburguesa,
-// título institucional y badge de telemetría de nube (CockpitCloudBadge).
+// Barra superior canónica descongestionada: sin botones operativos redundantes
+// ni badges duplicados. Espacio garantizado para el título institucional y
+// acceso táctil directo al Perfil (Avatar de 48dp).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.navigation
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -30,46 +30,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ananapps.kilometa.domain.model.SyncStatus
-import com.ananapps.kilometa.domain.model.UserSession
-import com.ananapps.kilometa.presentation.common.CockpitCloudBadge
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
+import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
-import com.ananapps.kilometa.presentation.theme.StatusRed
-import com.ananapps.kilometa.presentation.theme.StatusRedContainer
 import com.ananapps.kilometa.presentation.theme.TextPrimary
-import com.ananapps.kilometa.presentation.theme.TextSecondary
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: TOP APP BAR CANÓNICA CON MENÚ HAMBURGUESA Y CIERRE DE TURNO
-// ------------------------------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KiloMetaTopBar(
     currentDestination: AppDestination,
-    syncStatus: SyncStatus,
-    userSession: UserSession?,
-    isShiftActive: Boolean = false,
-    onCloseShift: (() -> Unit)? = null,
     onOpenDrawer: () -> Unit,
-    onOpenSyncSheet: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
 
     TopAppBar(
         title = {
-            Column {
+            Column(modifier = Modifier.padding(start = 4.dp)) {
                 Text(
                     text = "KiloMeta",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = currentDestination.title,
                     style = MaterialTheme.typography.labelSmall,
-                    color = ElectricBluePrimary
+                    color = ElectricBluePrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         },
@@ -93,37 +86,25 @@ fun KiloMetaTopBar(
             }
         },
         actions = {
-            if (isShiftActive && onCloseShift != null) {
-                OutlinedButton(
-                    onClick = {
+            // Avatar de Conductor Ergonómico (48dp Touch Target)
+            Box(
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(DeepObsidianSurfaceVariant)
+                    .border(1.5.dp, ElectricBluePrimary.copy(alpha = 0.6f), CircleShape)
+                    .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onCloseShift()
+                        onNavigateToProfile()
                     },
-                    border = BorderStroke(1.dp, StatusRed),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = StatusRedContainer.copy(alpha = 0.6f),
-                        contentColor = StatusRed
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text(
-                        text = "⏹ Cerrar Turno",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = StatusRed
-                    )
-                }
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "👤",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
-            CockpitCloudBadge(
-                syncStatus = syncStatus,
-                userSession = userSession,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onOpenSyncSheet()
-                },
-                modifier = Modifier.padding(end = 12.dp)
-            )
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepObsidianSurface),
         modifier = modifier
