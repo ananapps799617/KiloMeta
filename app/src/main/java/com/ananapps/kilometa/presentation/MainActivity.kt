@@ -32,9 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.presentation.auth.LoginScreen
+import com.ananapps.kilometa.presentation.expenses.ExpensesScreen
 import com.ananapps.kilometa.presentation.history.HistoryScreen
 import com.ananapps.kilometa.presentation.home.HomeScreen
 import com.ananapps.kilometa.presentation.home.HomeViewModel
+import com.ananapps.kilometa.presentation.maintenance.MaintenanceScreen
 import com.ananapps.kilometa.presentation.navigation.AppDestination
 import com.ananapps.kilometa.presentation.navigation.KiloMetaDrawerContent
 import com.ananapps.kilometa.presentation.navigation.KiloMetaTopBar
@@ -162,6 +164,12 @@ private fun MainAppHost(
                 when (currentDestination) {
                     AppDestination.COCKPIT -> HomeScreen(viewModel = viewModel, showTopBar = false)
                     AppDestination.HISTORY -> HistoryScreen()
+                    AppDestination.MAINTENANCE -> MaintenanceScreen(
+                        onNavigateBack = { currentDestination = AppDestination.COCKPIT }
+                    )
+                    AppDestination.EXPENSES -> ExpensesScreen(
+                        onNavigateBack = { currentDestination = AppDestination.COCKPIT }
+                    )
                     AppDestination.PROFILE -> DriverProfileScreen(
                         onNavigateBack = { currentDestination = AppDestination.COCKPIT }
                     )

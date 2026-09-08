@@ -36,6 +36,30 @@ object DatabaseModule {
         }
     }
 
+    val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `maintenance_records` (
+                    `id` TEXT NOT NULL,
+                    `vehicle_id` TEXT NOT NULL,
+                    `maintenance_type` TEXT NOT NULL,
+                    `odometer` INTEGER NOT NULL,
+                    `cost_cop` REAL NOT NULL,
+                    `notes` TEXT,
+                    `next_due_odometer` INTEGER,
+                    `next_due_date_millis` INTEGER,
+                    `timestamp` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_maintenance_records_vehicle_id` ON `maintenance_records` (`vehicle_id`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_maintenance_records_odometer` ON `maintenance_records` (`odometer`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_maintenance_records_timestamp` ON `maintenance_records` (`timestamp`)")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideKiloMetaDatabase(
@@ -46,7 +70,7 @@ object DatabaseModule {
             KiloMetaDatabase::class.java,
             KiloMetaDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -55,22 +79,19 @@ object DatabaseModule {
     // BLOQUE 2: PROVISIÓN INDIVIDUAL DE DATA ACCESS OBJECTS (DAOS)
     // --------------------------------------------------------------------------
     @Provides
-    fun provideShiftDao(database: KiloMetaDatabase): ShiftDao {
-        return database.shiftDao()
-    }
+    fun provideShiftDao(database: KiloMetaDatabase): ShiftDao = database.shiftDao()
 
     @Provides
-    fun provideTripDao(database: KiloMetaDatabase): TripDao {
-        return database.tripDao()
-    }
+    fun provideTripDao(database: KiloMetaDatabase): TripDao = database.tripDao()
 
     @Provides
-    fun provideFuelingDao(database: KiloMetaDatabase): FuelingDao {
-        return database.fuelingDao()
-    }
+    fun provideFuelingDao(database: KiloMetaDatabase): FuelingDao = database.fuelingDao()
 
     @Provides
-    fun provideExpenseDao(database: KiloMetaDatabase): ExpenseDao {
-        return database.expenseDao()
-    }
+    fun provideExpenseDao(database: KiloMetaDatabase): ExpenseDao = database.expenseDao()
+
+    @Provides
+    fun provideMaintenanceDao(
+        database: KiloMetaDatabase
+    ): com.ananapps.kilometa.data.local.dao.MaintenanceDao = database.maintenanceDao()
 }
