@@ -101,4 +101,26 @@ class ManageShiftUseCase @Inject constructor(
             notes = notes
         )
     }
+
+    /**
+     * Crea un turno completado atómico para registrar movimientos esporádicos fuera de jornada.
+     */
+    suspend fun createSporadicShift(
+        odometer: Int = 100_000,
+        notes: String = "Movimiento esporádico"
+    ): Shift {
+        val now = System.currentTimeMillis()
+        val shift = Shift(
+            id = UUID.randomUUID().toString(),
+            startTime = now,
+            endTime = now,
+            startOdometer = odometer,
+            endOdometer = odometer,
+            dailyQuotaTarget = 0.0,
+            status = ShiftStatus.COMPLETED,
+            notes = notes
+        )
+        shiftRepository.startShift(shift)
+        return shift
+    }
 }

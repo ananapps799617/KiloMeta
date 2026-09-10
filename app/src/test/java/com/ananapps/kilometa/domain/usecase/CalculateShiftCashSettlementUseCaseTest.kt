@@ -63,6 +63,8 @@ class CalculateShiftCashSettlementUseCaseTest {
         assertEquals(47_000.0, result.totalNet, 0.001)
         assertEquals(50_000.0, result.cashInHandAvailable, 0.001)
         assertEquals(0.0, result.digitalPendingDisbursement, 0.001)
+        assertEquals(3_000.0, result.cashCommissionsOwed, 0.001)
+        assertEquals(-3_000.0, result.netPlatformBalance, 0.001)
     }
 
     @Test
@@ -123,5 +125,9 @@ class CalculateShiftCashSettlementUseCaseTest {
         assertEquals(-3_000.0, result.cashInHandAvailable, 0.001)
         // Digital pending: 40k gross - 10k comm = 30k COP
         assertEquals(30_000.0, result.digitalPendingDisbursement, 0.001)
+        // Cash commission owed from DiDi cash trip: 4,000 COP
+        assertEquals(4_000.0, result.cashCommissionsOwed, 0.001)
+        // Net platform balance: 30k digital net - 4k cash commission = +26,000 COP
+        assertEquals(26_000.0, result.netPlatformBalance, 0.001)
     }
 }

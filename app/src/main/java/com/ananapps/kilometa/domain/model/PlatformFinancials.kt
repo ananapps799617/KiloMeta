@@ -47,5 +47,7 @@ data class CashSettlementSummary(
     val digitalBalanceGross: Double = 0.0,
     val totalNet: Double = 0.0,
     val cashInHandAvailable: Double = 0.0, // Efectivo disponible tras combustible y gastos
-    val digitalPendingDisbursement: Double = 0.0 // Saldo neto en apps por cobrar
+    val digitalPendingDisbursement: Double = 0.0, // Saldo neto en apps por cobrar
+    val cashCommissionsOwed: Double = 0.0, // Comisiones que se adeudan a la app por viajes en efectivo
+    val netPlatformBalance: Double = 0.0 // Cruce neto: digitalPendingDisbursement - cashCommissionsOwed
 )

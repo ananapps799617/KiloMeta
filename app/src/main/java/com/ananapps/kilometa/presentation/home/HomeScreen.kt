@@ -39,22 +39,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ananapps.kilometa.R
-import com.ananapps.kilometa.presentation.common.CockpitCloudBadge
 import com.ananapps.kilometa.presentation.home.components.ActiveShiftCockpitView
-import com.ananapps.kilometa.presentation.home.components.CockpitBottomDock
 import com.ananapps.kilometa.presentation.home.components.HomeCockpitModals
 import com.ananapps.kilometa.presentation.home.components.NoActiveShiftView
 import com.ananapps.kilometa.presentation.home.components.StandbyPlaceholderView
-import com.ananapps.kilometa.presentation.sync.AuthBottomSheet
-import com.ananapps.kilometa.presentation.sync.CloudSyncStatusSheet
-import com.ananapps.kilometa.presentation.sync.HydrationRecoveryScreen
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
-import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
-import com.ananapps.kilometa.presentation.theme.StatusGreen
-import com.ananapps.kilometa.presentation.theme.StatusRed
-import com.ananapps.kilometa.presentation.theme.TextPrimary
 
 // ------------------------------------------------------------------------------
 // BLOQUE 1: PANTALLA PRINCIPAL DE CABINA (HOME COCKPIT)
@@ -69,16 +59,11 @@ fun HomeScreen(
     triggerQuickTrip: Boolean = false,
     onResetQuickTripTrigger: () -> Unit = {},
     triggerQuickFueling: Boolean = false,
-    onResetQuickFuelingTrigger: () -> Unit = {}
+    onResetQuickFuelingTrigger: () -> Unit = {},
+    triggerQuickExpense: Boolean = false,
+    onResetQuickExpenseTrigger: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val syncStatus by viewModel.syncStatus.collectAsState()
-    val userSession by viewModel.userSession.collectAsState()
-    val restoreProgress by viewModel.restoreProgress.collectAsState()
-    val isPingingCloud by viewModel.isPingingCloud.collectAsState()
-    val connectionDiagnostic by viewModel.connectionDiagnostic.collectAsState()
-    val authError by viewModel.authError.collectAsState()
-    val isAuthLoading by viewModel.isAuthLoading.collectAsState()
 
     // Solicitud elegante de permisos de notificación vehicular en Android 13+
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -91,32 +76,14 @@ fun HomeScreen(
         }
     }
 
-    // Google Sign-In nativo con play-services-auth
-    val context = LocalContext.current
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
-            val idToken = account?.idToken
-            if (!idToken.isNullOrBlank()) {
-                viewModel.signInWithGoogle(idToken)
-            } else {
-                viewModel.setAuthError("No se recibió token de Google.")
-            }
-        } catch (e: Exception) {
-            viewModel.setAuthError("Error Google: ${e.localizedMessage ?: e.message}")
-        }
-    }
-
     var showTripSheet by remember { mutableStateOf(false) }
     var showFuelingSheet by remember { mutableStateOf(false) }
+    var showExpenseSheet by remember { mutableStateOf(false) }
     var showStartShiftDialog by remember { mutableStateOf(false) }
     var showCloseShiftDialog by remember { mutableStateOf(false) }
-    var showSyncSheet by remember { mutableStateOf(false) }
-    var showAuthSheet by remember { mutableStateOf(false) }
-    var showRecoveryScreen by remember { mutableStateOf(false) }
+    var showShiftPromptDialog by remember { mutableStateOf(false) }
+    var pendingPromptAction by remember { mutableStateOf<String?>(null) }
+    var isSporadicAction by remember { mutableStateOf(false) }
 
     LaunchedEffect(triggerCloseShift) {
         if (triggerCloseShift) {
@@ -127,40 +94,46 @@ fun HomeScreen(
 
     LaunchedEffect(triggerQuickTrip) {
         if (triggerQuickTrip) {
-            showTripSheet = true
+            if (uiState is HomeUiState.ActiveShift) {
+                isSporadicAction = false
+                showTripSheet = true
+            } else {
+                pendingPromptAction = "carrera"
+                showShiftPromptDialog = true
+            }
             onResetQuickTripTrigger()
         }
     }
 
     LaunchedEffect(triggerQuickFueling) {
         if (triggerQuickFueling) {
-            showFuelingSheet = true
+            if (uiState is HomeUiState.ActiveShift) {
+                isSporadicAction = false
+                showFuelingSheet = true
+            } else {
+                pendingPromptAction = "tanqueo"
+                showShiftPromptDialog = true
+            }
             onResetQuickFuelingTrigger()
         }
     }
 
-    LaunchedEffect(userSession) {
-        if (userSession != null && !userSession!!.isAnonymous) {
-            showAuthSheet = false
+    LaunchedEffect(triggerQuickExpense) {
+        if (triggerQuickExpense) {
+            if (uiState is HomeUiState.ActiveShift) {
+                isSporadicAction = false
+                showExpenseSheet = true
+            } else {
+                pendingPromptAction = "gasto"
+                showShiftPromptDialog = true
+            }
+            onResetQuickExpenseTrigger()
         }
     }
 
     val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val syncSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val authSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    if (showRecoveryScreen) {
-        HydrationRecoveryScreen(
-            progress = restoreProgress,
-            onStartRecovery = { viewModel.startDisasterRecovery() },
-            onBack = {
-                viewModel.resetRecoveryProgress()
-                showRecoveryScreen = false
-            }
-        )
-        return
-    }
+    val expenseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         containerColor = DeepObsidianBackground
@@ -200,63 +173,47 @@ fun HomeScreen(
         viewModel = viewModel,
         uiState = uiState,
         showTripSheet = showTripSheet,
-        onDismissTripSheet = { showTripSheet = false },
+        onDismissTripSheet = { showTripSheet = false; isSporadicAction = false },
         tripSheetState = tripSheetState,
         showFuelingSheet = showFuelingSheet,
-        onDismissFuelingSheet = { showFuelingSheet = false },
+        onDismissFuelingSheet = { showFuelingSheet = false; isSporadicAction = false },
         fuelSheetState = fuelSheetState,
+        showExpenseSheet = showExpenseSheet,
+        onDismissExpenseSheet = { showExpenseSheet = false; isSporadicAction = false },
+        expenseSheetState = expenseSheetState,
+        isSporadic = isSporadicAction,
         showStartShiftDialog = showStartShiftDialog,
         onDismissStartShiftDialog = { showStartShiftDialog = false },
+        onStartShiftConfirmed = {
+            isSporadicAction = false
+            when (pendingPromptAction) {
+                "carrera" -> showTripSheet = true
+                "tanqueo" -> showFuelingSheet = true
+                "gasto" -> showExpenseSheet = true
+            }
+            pendingPromptAction = null
+        },
         showCloseShiftDialog = showCloseShiftDialog,
-        onDismissCloseShiftDialog = { showCloseShiftDialog = false }
+        onDismissCloseShiftDialog = { showCloseShiftDialog = false },
+        showShiftPromptDialog = showShiftPromptDialog,
+        promptActionName = pendingPromptAction,
+        onDismissShiftPrompt = {
+            showShiftPromptDialog = false
+            pendingPromptAction = null
+        },
+        onStartShiftFromPrompt = {
+            showShiftPromptDialog = false
+            showStartShiftDialog = true
+        },
+        onSporadicFromPrompt = {
+            showShiftPromptDialog = false
+            isSporadicAction = true
+            when (pendingPromptAction) {
+                "carrera" -> showTripSheet = true
+                "tanqueo" -> showFuelingSheet = true
+                "gasto" -> showExpenseSheet = true
+            }
+            pendingPromptAction = null
+        }
     )
-
-    val syncPreferences by viewModel.syncPreferences.collectAsState()
-
-    if (showSyncSheet) {
-        CloudSyncStatusSheet(
-            sheetState = syncSheetState,
-            syncStatus = syncStatus,
-            userSession = userSession,
-            connectionDiagnostic = connectionDiagnostic,
-            isPinging = isPingingCloud,
-            syncPreferences = syncPreferences,
-            onToggleAutoSync = { viewModel.onToggleAutoSync(it) },
-            onSelectWifiOnly = { viewModel.onSelectNetworkPreference(it) },
-            onDismiss = { showSyncSheet = false },
-            onSyncNow = { viewModel.syncNow() },
-            onTestConnection = { viewModel.onTestLiveConnection() },
-            onOpenAuth = {
-                showSyncSheet = false
-                showAuthSheet = true
-            },
-            onOpenRecovery = {
-                showSyncSheet = false
-                showRecoveryScreen = true
-            },
-            onSignOut = { viewModel.signOut() }
-        )
-    }
-
-    if (showAuthSheet) {
-        AuthBottomSheet(
-            sheetState = authSheetState,
-            onDismiss = {
-                viewModel.clearAuthError()
-                showAuthSheet = false
-            },
-            onSignInWithGoogle = {
-                val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(
-                    com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN
-                ).requestIdToken(context.getString(R.string.default_web_client_id)).requestEmail().build()
-                com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso).apply {
-                    signOut().addOnCompleteListener { googleSignInLauncher.launch(signInIntent) }
-                }
-            },
-            onSignInWithEmail = { email, pass -> viewModel.signInWithEmail(email, pass) },
-            onSignInAnonymously = { viewModel.signInAnonymously(); showAuthSheet = false },
-            authError = authError,
-            isLoading = isAuthLoading
-        )
-    }
 }

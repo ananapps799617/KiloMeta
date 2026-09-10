@@ -28,17 +28,35 @@ fun HomeCockpitModals(
     showFuelingSheet: Boolean,
     onDismissFuelingSheet: () -> Unit,
     fuelSheetState: SheetState,
+    showExpenseSheet: Boolean = false,
+    onDismissExpenseSheet: () -> Unit = {},
+    expenseSheetState: SheetState? = null,
+    isSporadic: Boolean = false,
     showStartShiftDialog: Boolean,
     onDismissStartShiftDialog: () -> Unit,
+    onStartShiftConfirmed: () -> Unit = {},
     showCloseShiftDialog: Boolean,
-    onDismissCloseShiftDialog: () -> Unit
+    onDismissCloseShiftDialog: () -> Unit,
+    showShiftPromptDialog: Boolean = false,
+    promptActionName: String? = null,
+    onDismissShiftPrompt: () -> Unit = {},
+    onStartShiftFromPrompt: () -> Unit = {},
+    onSporadicFromPrompt: () -> Unit = {}
 ) {
+    if (showShiftPromptDialog && promptActionName != null) {
+        ShiftPromptDialog(
+            actionName = promptActionName,
+            onDismiss = onDismissShiftPrompt,
+            onStartShiftSelected = onStartShiftFromPrompt,
+            onSporadicSelected = onSporadicFromPrompt
+        )
+    }
     if (showTripSheet) {
         RegisterTripSheet(
             sheetState = tripSheetState,
             onDismiss = onDismissTripSheet,
             onConfirmTrip = { platform, gross, commission, payment, destination ->
-                viewModel.registerTrip(platform, gross, commission, payment, destination)
+                viewModel.registerTrip(platform, gross, commission, payment, destination, isSporadic = isSporadic)
             }
         )
     }
@@ -52,7 +70,17 @@ fun HomeCockpitModals(
             onDismiss = onDismissFuelingSheet,
             propulsionType = profile.propulsionType,
             onConfirmFueling = { fuelType, amount, volume, odo ->
-                viewModel.registerFueling(fuelType, amount, volume, odo)
+                viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic)
+            }
+        )
+    }
+
+    if (showExpenseSheet && expenseSheetState != null) {
+        RegisterExpenseSheet(
+            sheetState = expenseSheetState,
+            onDismiss = onDismissExpenseSheet,
+            onConfirmExpense = { concept, amount ->
+                viewModel.registerExpense(concept, amount, isSporadic = isSporadic)
             }
         )
     }
@@ -64,6 +92,7 @@ fun HomeCockpitModals(
             onConfirm = { startOdo ->
                 viewModel.startShift(startOdometer = startOdo)
                 onDismissStartShiftDialog()
+                onStartShiftConfirmed()
             }
         )
     }
