@@ -2,16 +2,15 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/profile/components/VehicleConfigSection.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Configuración técnica y económica del vehículo: Placa con diseño de matrícula,
-// catálogo asistido de Marca/Modelo (chips colombianos + opción personalizada),
-// propulsión, régimen de tenencia, meta de cuota y días semanales.
+// Configuración técnica vehicular: Placa con diseño de matrícula colombiana,
+// catálogo asistido de Marca/Modelo (chips nacionales + opción libre),
+// sistema de propulsión y régimen de tenencia (Propio vs Alquilado).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.profile.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,11 +20,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -36,21 +32,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.PropulsionType
-import com.ananapps.kilometa.domain.model.QuotaPeriodicity
 import com.ananapps.kilometa.domain.model.VehicleCatalog
 import com.ananapps.kilometa.domain.model.VehicleTenure
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
-import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
-import com.ananapps.kilometa.presentation.theme.ObsidianBorder
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
@@ -68,20 +58,13 @@ fun VehicleConfigSection(
     onPropulsionChange: (PropulsionType) -> Unit,
     tenureType: VehicleTenure,
     onTenureChange: (VehicleTenure) -> Unit,
-    quotaAmount: Double,
-    onQuotaAmountChange: (Double) -> Unit,
-    quotaPeriodicity: QuotaPeriodicity,
-    onQuotaPeriodicityChange: (QuotaPeriodicity) -> Unit,
-    workDaysWeek: Int,
-    onWorkDaysWeekChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val haptic = LocalHapticFeedback.current
     val isCustomBrand = brand == VehicleCatalog.OTHER_BRAND_KEY || VehicleCatalog.brands.none { it.name == brand }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
-            text = "🚗 Configuración del Vehículo",
+            text = "🚗 Identidad y Mecánica del Vehículo",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             color = TextPrimary
         )
@@ -213,59 +196,6 @@ fun VehicleConfigSection(
                         selectedLabelColor = DeepObsidianBackground
                     )
                 )
-            }
-        }
-
-        // Periodicidad y Meta de Cuota Financiera
-        Text(text = "Meta Financiera Objetivo", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            QuotaPeriodicity.entries.forEach { per ->
-                FilterChip(
-                    selected = quotaPeriodicity == per,
-                    onClick = { onQuotaPeriodicityChange(per) },
-                    label = { Text(per.displayName) },
-                    modifier = Modifier.weight(1f),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = ElectricBluePrimary,
-                        selectedLabelColor = DeepObsidianBackground
-                    )
-                )
-            }
-        }
-        OutlinedTextField(
-            value = quotaAmount.toInt().toString(),
-            onValueChange = { onQuotaAmountChange(it.filter { ch -> ch.isDigit() }.toDoubleOrNull() ?: 0.0) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            leadingIcon = { Text("$", color = ElectricBluePrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
-            label = { Text("Monto de Cuota (${quotaPeriodicity.displayName})") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        // Días Laborados por Semana (L M M J V S D)
-        Text(text = "Días Laborados: $workDaysWeek días/semana", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            val daysLabels = listOf("L", "M", "M", "J", "V", "S", "D")
-            daysLabels.forEachIndexed { index, label ->
-                val isActive = index < workDaysWeek
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(if (isActive) ElectricBluePrimary else DeepObsidianSurface)
-                        .border(1.dp, if (isActive) ElectricBluePrimary else ObsidianBorder, CircleShape)
-                        .clickable {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onWorkDaysWeekChange(index + 1)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = if (isActive) DeepObsidianBackground else TextSecondary
-                    )
-                }
             }
         }
     }

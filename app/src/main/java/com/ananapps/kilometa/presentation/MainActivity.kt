@@ -104,6 +104,16 @@ private fun MainAppHost(
     val isPingingCloud by viewModel.isPingingCloud.collectAsState()
     val restoreProgress by viewModel.restoreProgress.collectAsState()
 
+    // 2. Bloqueo de Onboarding Obligatorio: Si el perfil no ha sido calibrado por primera vez
+    if (!driverProfile.isReadyForCabina) {
+        DriverProfileScreen(
+            isOnboardingMode = true,
+            userEmail = userSession?.email ?: "",
+            onNavigateBack = { /* La reactividad de driverProfile desbloquea hacia la cabina */ }
+        )
+        return
+    }
+
     var currentDestination by rememberSaveable { mutableStateOf(AppDestination.COCKPIT) }
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }
     var showRecoveryScreen by rememberSaveable { mutableStateOf(false) }
@@ -174,7 +184,9 @@ private fun MainAppHost(
                         onNavigateBack = { currentDestination = AppDestination.COCKPIT }
                     )
                     AppDestination.PROFILE -> DriverProfileScreen(
-                        onNavigateBack = { currentDestination = AppDestination.COCKPIT }
+                        onNavigateBack = { currentDestination = AppDestination.COCKPIT },
+                        isOnboardingMode = false,
+                        userEmail = userSession?.email ?: ""
                     )
                     AppDestination.BACKUP -> HomeScreen(viewModel = viewModel, showTopBar = false)
                 }

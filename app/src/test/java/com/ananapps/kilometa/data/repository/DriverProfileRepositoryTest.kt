@@ -47,6 +47,15 @@ private class FakeDriverProfileRepository : DriverProfileRepository {
         saveVehicleProfile(vehicle)
         saveProfile(driver.copy(vehiclePlate = vehicle.vehiclePlate, propulsionType = vehicle.propulsionType))
     }
+
+    override suspend fun resetProfileForTesting() {
+        driverFlow.value = DriverProfile()
+        vehicleFlow.value = VehicleProfile()
+    }
+
+    override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> {
+        return Result.success(false)
+    }
 }
 
 // ------------------------------------------------------------------------------

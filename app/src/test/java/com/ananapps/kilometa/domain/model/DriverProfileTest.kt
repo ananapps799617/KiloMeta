@@ -63,4 +63,20 @@ class DriverProfileTest {
         assertEquals(FuelType.DIESEL, PropulsionType.DIESEL.defaultFuel)
         assertEquals(FuelType.ELECTRICITY, PropulsionType.ELECTRIC_100.defaultFuel)
     }
+
+    @Test
+    fun `isReadyForCabina valida flag completado, nombre no vacio y placa no vacia`() {
+        val nuevo = DriverProfile()
+        org.junit.Assert.assertFalse(nuevo.isReadyForCabina)
+
+        val configurado = nuevo.copy(
+            driverName = "Andrés López",
+            vehiclePlate = "WMB-789",
+            isProfileCompleted = true
+        )
+        assertTrue(configurado.isReadyForCabina)
+
+        val incompletoSinNombre = configurado.copy(driverName = "")
+        org.junit.Assert.assertFalse(incompletoSinNombre.isReadyForCabina)
+    }
 }

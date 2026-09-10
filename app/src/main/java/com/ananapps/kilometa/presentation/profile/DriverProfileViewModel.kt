@@ -40,8 +40,16 @@ class DriverProfileViewModel @Inject constructor(
 
     fun saveFullProfile(driver: DriverProfile, vehicle: VehicleProfile) {
         viewModelScope.launch {
-            profileRepository.saveFullProfile(driver, vehicle)
+            val completedDriver = driver.copy(isProfileCompleted = true)
+            profileRepository.saveFullProfile(completedDriver, vehicle)
             _isSaved.value = true
+        }
+    }
+
+    fun resetProfileForTesting(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            profileRepository.resetProfileForTesting()
+            onComplete()
         }
     }
 
