@@ -115,9 +115,29 @@ fun AddPlaceDialog(
     }
 
     if (showMapPicker) {
+        val initialCenter = remember(showMapPicker) {
+            if (latitude != null && longitude != null) {
+                Pair(latitude!!, longitude!!)
+            } else {
+                var foundLat = 4.7110
+                var foundLng = -74.0721
+                try {
+                    val isGps = locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true
+                    val isNet = locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
+                    val loc = if (isGps) locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                              else if (isNet) locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                              else null
+                    if (loc != null) {
+                        foundLat = loc.latitude
+                        foundLng = loc.longitude
+                    }
+                } catch (_: SecurityException) {}
+                Pair(foundLat, foundLng)
+            }
+        }
         LocationPickerMapDialog(
-            initialLat = latitude ?: 4.7110,
-            initialLng = longitude ?: -74.0721,
+            initialLat = initialCenter.first,
+            initialLng = initialCenter.second,
             onDismiss = { showMapPicker = false },
             onLocationConfirmed = { lat, lng ->
                 latitude = lat
