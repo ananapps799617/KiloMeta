@@ -127,4 +127,8 @@ class ShiftRepositoryImpl @Inject constructor(
             shiftDao.deleteShift(shiftId)
         }
     }
+
+    override fun getLastKnownOdometer(): Flow<Int?> {
+        return shiftDao.getLastKnownOdometer()
+    }
 }

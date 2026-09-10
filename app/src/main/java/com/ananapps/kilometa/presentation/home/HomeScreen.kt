@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.presentation.home.components.ActiveShiftCockpitView
+import com.ananapps.kilometa.presentation.home.components.ContinuousTimelineCockpitView
 import com.ananapps.kilometa.presentation.home.components.HomeCockpitModals
 import com.ananapps.kilometa.presentation.home.components.NoActiveShiftView
 import com.ananapps.kilometa.presentation.home.components.StandbyPlaceholderView
@@ -64,6 +65,9 @@ fun HomeScreen(
     onResetQuickExpenseTrigger: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val vehicle by viewModel.vehicleProfile.collectAsState()
+    val lastKnownOdometer by viewModel.lastKnownOdometer.collectAsState()
+    val dayContinuousTimeline by viewModel.dayContinuousTimeline.collectAsState()
 
     // Solicitud elegante de permisos de notificación vehicular en Android 13+
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -94,39 +98,21 @@ fun HomeScreen(
 
     LaunchedEffect(triggerQuickTrip) {
         if (triggerQuickTrip) {
-            if (uiState is HomeUiState.ActiveShift) {
-                isSporadicAction = false
-                showTripSheet = true
-            } else {
-                pendingPromptAction = "carrera"
-                showShiftPromptDialog = true
-            }
+            showTripSheet = true
             onResetQuickTripTrigger()
         }
     }
 
     LaunchedEffect(triggerQuickFueling) {
         if (triggerQuickFueling) {
-            if (uiState is HomeUiState.ActiveShift) {
-                isSporadicAction = false
-                showFuelingSheet = true
-            } else {
-                pendingPromptAction = "tanqueo"
-                showShiftPromptDialog = true
-            }
+            showFuelingSheet = true
             onResetQuickFuelingTrigger()
         }
     }
 
     LaunchedEffect(triggerQuickExpense) {
         if (triggerQuickExpense) {
-            if (uiState is HomeUiState.ActiveShift) {
-                isSporadicAction = false
-                showExpenseSheet = true
-            } else {
-                pendingPromptAction = "gasto"
-                showShiftPromptDialog = true
-            }
+            showExpenseSheet = true
             onResetQuickExpenseTrigger()
         }
     }
@@ -150,16 +136,29 @@ fun HomeScreen(
                     }
                 }
                 is HomeUiState.NoActiveShift -> {
-                    NoActiveShiftView(
-                        state = state,
-                        onStartShiftClick = { showStartShiftDialog = true }
+                    ContinuousTimelineCockpitView(
+                        vehicle = vehicle,
+                        lastKnownOdometer = lastKnownOdometer,
+                        timelineSummary = dayContinuousTimeline,
+                        weeklyProgress = state.weeklyProgress,
+                        auditSummary = state.accountingAuditSummary,
+                        cashSettlement = null,
+                        onStartShiftClick = { showStartShiftDialog = true },
+                        onCloseShiftClick = { showCloseShiftDialog = true },
+                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) }
                     )
                 }
                 is HomeUiState.ActiveShift -> {
-                    ActiveShiftCockpitView(
-                        state = state,
-                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) },
-                        onCloseShiftClick = { showCloseShiftDialog = true }
+                    ContinuousTimelineCockpitView(
+                        vehicle = vehicle,
+                        lastKnownOdometer = lastKnownOdometer,
+                        timelineSummary = dayContinuousTimeline,
+                        weeklyProgress = state.weeklyProgress,
+                        auditSummary = state.accountingAuditSummary,
+                        cashSettlement = state.cashSettlement,
+                        onStartShiftClick = { showStartShiftDialog = true },
+                        onCloseShiftClick = { showCloseShiftDialog = true },
+                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) }
                     )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
@@ -214,6 +213,7 @@ fun HomeScreen(
                 "gasto" -> showExpenseSheet = true
             }
             pendingPromptAction = null
-        }
+        },
+        lastKnownOdometer = lastKnownOdometer
     )
 }

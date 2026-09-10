@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/places/PlacesViewModel.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -52,14 +52,18 @@ class PlacesViewModel @Inject constructor(
         name: String,
         category: PlaceCategory,
         address: String,
-        notes: String?
+        notes: String?,
+        latitude: Double? = null,
+        longitude: Double? = null
     ) {
         viewModelScope.launch {
             managePlacesUseCase.savePlace(
                 name = name,
                 category = category,
                 address = address,
-                notes = notes
+                notes = notes,
+                latitude = latitude,
+                longitude = longitude
             )
         }
     }

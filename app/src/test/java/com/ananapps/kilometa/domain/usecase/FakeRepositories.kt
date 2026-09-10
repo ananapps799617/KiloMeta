@@ -84,4 +84,10 @@ class FakeShiftRepository : ShiftRepository {
     }
     override suspend fun updateShift(shift: Shift) {}
     override suspend fun deleteShift(shiftId: String) { shifts.removeAll { it.id == shiftId } }
+    override fun getLastKnownOdometer(): Flow<Int?> = flowOf(
+        listOfNotNull(
+            shifts.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull(),
+            allFuelingsList.map { it.odometer }.maxOrNull()
+        ).maxOrNull()
+    )
 }

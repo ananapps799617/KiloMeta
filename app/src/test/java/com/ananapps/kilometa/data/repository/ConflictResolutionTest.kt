@@ -63,6 +63,10 @@ class FakeShiftDao : ShiftDao {
     override suspend fun clearAllShifts() {
         shifts.clear()
     }
+
+    override fun getLastKnownOdometer(): Flow<Int?> = flowOf(
+        shifts.values.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
+    )
 }
 
 // ------------------------------------------------------------------------------

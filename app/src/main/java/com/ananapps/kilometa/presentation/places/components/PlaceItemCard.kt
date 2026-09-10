@@ -99,6 +99,14 @@ fun PlaceItemCard(
                 )
             }
 
+            if (place.latitude != null && place.longitude != null) {
+                Text(
+                    text = "🛰️ GPS Fijado (${String.format(java.util.Locale.US, "%.4f, %.4f", place.latitude, place.longitude)})",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = StatusGreen
+                )
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
 
             Row(

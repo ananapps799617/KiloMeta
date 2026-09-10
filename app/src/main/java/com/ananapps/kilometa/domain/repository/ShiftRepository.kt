@@ -86,4 +86,9 @@ interface ShiftRepository {
      * Elimina un turno y todas sus entidades dependientes (en cascada).
      */
     suspend fun deleteShift(shiftId: String)
+
+    /**
+     * Emite el último kilometraje conocido registrado en el sistema.
+     */
+    fun getLastKnownOdometer(): Flow<Int?>
 }

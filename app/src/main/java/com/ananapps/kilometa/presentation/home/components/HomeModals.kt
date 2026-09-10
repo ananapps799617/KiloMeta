@@ -41,8 +41,15 @@ fun HomeCockpitModals(
     promptActionName: String? = null,
     onDismissShiftPrompt: () -> Unit = {},
     onStartShiftFromPrompt: () -> Unit = {},
-    onSporadicFromPrompt: () -> Unit = {}
+    onSporadicFromPrompt: () -> Unit = {},
+    lastKnownOdometer: Int = 0
 ) {
+    val resolvedOdo = if (lastKnownOdometer > 0) {
+        lastKnownOdometer
+    } else {
+        (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer ?: 0
+    }
+
     if (showShiftPromptDialog && promptActionName != null) {
         ShiftPromptDialog(
             actionName = promptActionName,
@@ -62,10 +69,9 @@ fun HomeCockpitModals(
     }
 
     if (showFuelingSheet) {
-        val currentOdo = (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer ?: 100_000
         val profile = viewModel.driverProfile.value
         RegisterFuelingSheet(
-            currentOdometer = currentOdo,
+            currentOdometer = resolvedOdo,
             sheetState = fuelSheetState,
             onDismiss = onDismissFuelingSheet,
             propulsionType = profile.propulsionType,
@@ -87,7 +93,7 @@ fun HomeCockpitModals(
 
     if (showStartShiftDialog) {
         StartShiftDialog(
-            initialOdometer = 100_000,
+            initialOdometer = resolvedOdo,
             onDismiss = onDismissStartShiftDialog,
             onConfirm = { startOdo ->
                 viewModel.startShift(startOdometer = startOdo)
@@ -98,7 +104,7 @@ fun HomeCockpitModals(
     }
 
     if (showCloseShiftDialog) {
-        val startOdo = (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer ?: 100_000
+        val startOdo = (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer ?: resolvedOdo
         CloseShiftDialog(
             startOdometer = startOdo,
             onDismiss = onDismissCloseShiftDialog,

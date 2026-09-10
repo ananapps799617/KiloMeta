@@ -14,6 +14,7 @@ import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.ShiftStatus
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
 
@@ -24,7 +25,8 @@ import javax.inject.Inject
  * Controla el inicio, seguimiento y cierre de jornadas laborales.
  */
 class ManageShiftUseCase @Inject constructor(
-    private val shiftRepository: ShiftRepository
+    private val shiftRepository: ShiftRepository,
+    private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase? = null
 ) {
 
     /**
@@ -104,18 +106,20 @@ class ManageShiftUseCase @Inject constructor(
 
     /**
      * Crea un turno completado atómico para registrar movimientos esporádicos fuera de jornada.
+     * Si no se especifica odómetro, consulta el último conocido de la base de datos (nunca un número inventado).
      */
     suspend fun createSporadicShift(
-        odometer: Int = 100_000,
+        odometer: Int? = null,
         notes: String = "Movimiento esporádico"
     ): Shift {
+        val odo = odometer ?: getLastKnownOdometerUseCase?.getSync() ?: (shiftRepository.getLastKnownOdometer().first() ?: 0)
         val now = System.currentTimeMillis()
         val shift = Shift(
             id = UUID.randomUUID().toString(),
             startTime = now,
             endTime = now,
-            startOdometer = odometer,
-            endOdometer = odometer,
+            startOdometer = odo,
+            endOdometer = odo,
             dailyQuotaTarget = 0.0,
             status = ShiftStatus.COMPLETED,
             notes = notes

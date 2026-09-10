@@ -42,7 +42,9 @@ class HomeViewModel @Inject constructor(
     private val getAccountingAuditDashboardUseCase: GetAccountingAuditDashboardUseCase,
     private val scheduleWeeklyCutoffNotificationsUseCase: ScheduleWeeklyCutoffNotificationsUseCase,
     private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase,
-    private val driverProfileRepository: DriverProfileRepository
+    private val driverProfileRepository: DriverProfileRepository,
+    private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase,
+    private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
@@ -50,6 +52,15 @@ class HomeViewModel @Inject constructor(
 
     val driverProfile: StateFlow<DriverProfile> = driverProfileRepository.getProfile()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DriverProfile())
+
+    val vehicleProfile: StateFlow<VehicleProfile> = driverProfileRepository.getVehicleProfile()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), VehicleProfile())
+
+    val lastKnownOdometer: StateFlow<Int> = getLastKnownOdometerUseCase()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), 0)
+
+    val dayContinuousTimeline: StateFlow<DayContinuousSummary> = getDayContinuousTimelineUseCase()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DayContinuousSummary())
 
     init {
         schedulePeriodicSyncUseCase(_syncPreferences.value)

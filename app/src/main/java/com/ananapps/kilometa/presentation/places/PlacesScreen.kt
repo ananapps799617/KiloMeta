@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/places/PlacesScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -215,8 +215,8 @@ fun PlacesScreen(
     if (showAddDialog) {
         AddPlaceDialog(
             onDismiss = { showAddDialog = false },
-            onSave = { name, category, address, notes ->
-                viewModel.savePlace(name, category, address, notes)
+            onSave = { name, category, address, notes, lat, lng ->
+                viewModel.savePlace(name, category, address, notes, lat, lng)
                 showAddDialog = false
             }
         )
