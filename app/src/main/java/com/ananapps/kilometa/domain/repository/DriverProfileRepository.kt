@@ -21,5 +21,6 @@ interface DriverProfileRepository {
     suspend fun saveVehicleProfile(vehicle: VehicleProfile)
     suspend fun saveFullProfile(driver: DriverProfile, vehicle: VehicleProfile)
     suspend fun resetProfileForTesting()
+    suspend fun clearProfile()
     suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean>
 }

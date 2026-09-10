@@ -60,6 +60,8 @@ class CheckCloudConnectionUseCaseTest {
             checkConnectionCallCount++
             return diagnosticToReturn
         }
+
+        override suspend fun clearAllLocalData(): Result<Unit> = Result.success(Unit)
     }
 
     private lateinit var fakeRepository: FakeDiagnosticSyncRepository

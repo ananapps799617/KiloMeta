@@ -39,6 +39,7 @@ import com.ananapps.kilometa.domain.usecase.RegisterTripUseCase
 import com.ananapps.kilometa.domain.usecase.RestoreDataUseCase
 import com.ananapps.kilometa.domain.usecase.SchedulePeriodicSyncUseCase
 import com.ananapps.kilometa.domain.usecase.ScheduleWeeklyCutoffNotificationsUseCase
+import com.ananapps.kilometa.domain.usecase.SignOutUseCase
 import com.ananapps.kilometa.domain.usecase.SyncDataUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,6 +68,7 @@ class HomeViewModel @Inject constructor(
     private val syncDataUseCase: SyncDataUseCase,
     private val restoreDataUseCase: RestoreDataUseCase,
     private val authenticateUserUseCase: AuthenticateUserUseCase,
+    private val signOutUseCase: SignOutUseCase,
     private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase,
     private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase,
     private val getAccountingAuditDashboardUseCase: GetAccountingAuditDashboardUseCase,
@@ -151,16 +153,11 @@ class HomeViewModel @Inject constructor(
     // BLOQUE 3: OPERACIONES DE CABINA Y CAPTURA EXPRESS
     // --------------------------------------------------------------------------
     fun registerTrip(
-        platform: PlatformType,
-        gross: Double,
-        commission: Double,
-        payment: PaymentMethod,
-        destination: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND
+        platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod,
+        dest: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND
     ) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch {
-            registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment, destination)
-        }
+        viewModelScope.launch { registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment, dest) }
     }
 
     fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int) {
@@ -262,7 +259,7 @@ class HomeViewModel @Inject constructor(
         _isAuthLoading.value = false
     }
 
-    fun signOut() = viewModelScope.launch { authenticateUserUseCase.signOut() }
+    fun signOut() = viewModelScope.launch { signOutUseCase() }
 
     fun onToggleAutoSync(enabled: Boolean) {
         _syncPreferences.value = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)

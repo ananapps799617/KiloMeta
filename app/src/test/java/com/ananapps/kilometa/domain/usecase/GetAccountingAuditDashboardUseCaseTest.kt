@@ -53,10 +53,8 @@ private class TestShiftRepository : ShiftRepository {
     override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> = completedHistoryFlow
     override fun getAllTrips(): Flow<List<Trip>> = emptyFlow()
     override fun getAllFuelings(): Flow<List<Fueling>> = emptyFlow()
-    override suspend fun startShift(shift: Shift) {}
-    override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {}
-    override suspend fun updateShift(shift: Shift) {}
-    override suspend fun deleteShift(shiftId: String) {}
+    override suspend fun startShift(shift: Shift) {}; override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {}
+    override suspend fun updateShift(shift: Shift) {}; override suspend fun deleteShift(shiftId: String) {}
     override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)
 }
 
@@ -75,6 +73,7 @@ private class TestSyncRepository : SyncRepository {
     override suspend fun pullRemoteChanges(): Result<Unit> = Result.success(Unit)
     override fun fullDisasterRecovery(): Flow<RestoreProgress> = emptyFlow()
     override suspend fun checkCloudConnection(): ConnectionDiagnostic = ConnectionDiagnostic(isConnected = true, latencyMs = 50L, message = "OK")
+    override suspend fun clearAllLocalData(): Result<Unit> = Result.success(Unit)
 }
 
 private class TestDriverProfileRepository : DriverProfileRepository {
@@ -85,6 +84,7 @@ private class TestDriverProfileRepository : DriverProfileRepository {
     override suspend fun saveVehicleProfile(vehicle: VehicleProfile) { vehicleProfileFlow.value = vehicle }
     override suspend fun saveFullProfile(driver: DriverProfile, vehicle: VehicleProfile) {}
     override suspend fun resetProfileForTesting() {}
+    override suspend fun clearProfile() {}
     override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> = Result.success(true)
 }
 

@@ -53,6 +53,11 @@ private class FakeDriverProfileRepository : DriverProfileRepository {
         vehicleFlow.value = VehicleProfile()
     }
 
+    override suspend fun clearProfile() {
+        driverFlow.value = DriverProfile(id = "", driverName = "", vehiclePlate = "", isProfileCompleted = false)
+        vehicleFlow.value = VehicleProfile(id = "", vehiclePlate = "")
+    }
+
     override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> {
         return Result.success(false)
     }
@@ -75,7 +80,7 @@ class DriverProfileRepositoryTest {
         val initialDriver = repository.getProfile().first()
         val initialVehicle = repository.getVehicleProfile().first()
 
-        assertEquals("WMB-789", initialDriver.vehiclePlate)
+        assertEquals("", initialDriver.vehiclePlate)
         assertEquals(PropulsionType.BI_FUEL, initialDriver.propulsionType)
         assertEquals("Chevrolet", initialVehicle.brand)
         assertEquals("Joy", initialVehicle.model)
