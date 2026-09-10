@@ -81,8 +81,11 @@ private fun MainAppHost(
     // 1. Bloqueo de cabina: Si no hay sesión autenticada, se exige inicio de sesión
     if (userSession == null) {
         LoginScreen(
-            onSignInWithGoogle = {
-                viewModel.signInWithGoogle("google-token-auth")
+            onSignInWithGoogleToken = { token ->
+                viewModel.signInWithGoogle(token)
+            },
+            onGoogleSignInError = { errorMsg ->
+                viewModel.setAuthError(errorMsg)
             },
             onSignInWithEmail = { email, pass ->
                 viewModel.signInWithEmail(email, pass)

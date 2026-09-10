@@ -3,23 +3,19 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/auth/LoginScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Pantalla de inicio de sesión obligatoria de KiloMeta.
-// Presenta el logo institucional, título, lema de cabina y botón táctil prominente
-// 'Continuar con Google' (>= 56dp), más sección secundaria desplegable para correo/contraseña.
+// Integra Google Sign-In nativo (play-services-auth) con obtención real de idToken
+// y sección modular para autenticación mediante correo/contraseña.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.auth
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,55 +24,71 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.R
+import com.ananapps.kilometa.presentation.auth.components.EmailLoginSection
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
-import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 import com.ananapps.kilometa.presentation.theme.StatusRed
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 // ------------------------------------------------------------------------------
 // BLOQUE 1: PANTALLA PRINCIPAL DE AUTENTICACIÓN
 // ------------------------------------------------------------------------------
 @Composable
 fun LoginScreen(
-    onSignInWithGoogle: () -> Unit,
+    onSignInWithGoogleToken: (idToken: String) -> Unit,
+    onGoogleSignInError: (errorMessage: String) -> Unit,
     onSignInWithEmail: (email: String, pass: String) -> Unit,
     authError: String? = null,
     isLoading: Boolean = false
 ) {
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var showEmailAccordion by remember { mutableStateOf(false) }
+
+    // Launcher oficial de Play Services para Google Sign-In
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account?.idToken
+            if (!idToken.isNullOrBlank()) {
+                onSignInWithGoogleToken(idToken)
+            } else {
+                onGoogleSignInError("No se recibió el token de identidad de Google.")
+            }
+        } catch (e: ApiException) {
+            // Códigos 12501 y 16 corresponden a cancelación voluntaria por el usuario
+            if (e.statusCode != 12501 && e.statusCode != 16) {
+                onGoogleSignInError("Error al conectar con Google (${e.statusCode}): ${e.localizedMessage ?: "Fallo de conexión"}")
+            }
+        } catch (e: Exception) {
+            onGoogleSignInError("Error Google: ${e.localizedMessage ?: e.message}")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -139,7 +151,25 @@ fun LoginScreen(
             Button(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onSignInWithGoogle()
+                    val webClientId = runCatching {
+                        context.getString(R.string.default_web_client_id)
+                    }.getOrNull()
+
+                    if (webClientId.isNullOrBlank()) {
+                        onGoogleSignInError("Configuración de Google no encontrada en el dispositivo.")
+                        return@Button
+                    }
+
+                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken(webClientId)
+                        .requestEmail()
+                        .build()
+
+                    GoogleSignIn.getClient(context, gso).apply {
+                        signOut().addOnCompleteListener {
+                            googleSignInLauncher.launch(signInIntent)
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -148,7 +178,7 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 enabled = !isLoading
             ) {
-                if (isLoading && !showEmailAccordion) {
+                if (isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = DeepObsidianBackground)
                 } else {
                     Text(
@@ -161,76 +191,11 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Toggle para Acordeón de Correo y Contraseña
-            TextButton(
-                onClick = { showEmailAccordion = !showEmailAccordion }
-            ) {
-                Text(
-                    text = if (showEmailAccordion) "Ocultar acceso con correo ▲" else "O ingresar con correo electrónico ▼",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = ElectricBluePrimary
-                )
-            }
-
-            // Sección Secundaria Acordeón
-            AnimatedVisibility(
-                visible = showEmailAccordion,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(DeepObsidianSurface)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Correo Electrónico") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Contraseña (mínimo 6 caracteres)") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Button(
-                        onClick = {
-                            if (email.isNotBlank() && password.length >= 6) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onSignInWithEmail(email.trim(), password)
-                            }
-                        },
-                        enabled = email.isNotBlank() && password.length >= 6 && !isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBluePrimary)
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextPrimary)
-                        } else {
-                            Text(
-                                text = "Iniciar / Registrar Cuenta",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = TextPrimary
-                            )
-                        }
-                    }
-                }
-            }
+            // Subcomponente modular de autenticación por correo electrónico
+            EmailLoginSection(
+                onSignInWithEmail = onSignInWithEmail,
+                isLoading = isLoading
+            )
         }
     }
 }
