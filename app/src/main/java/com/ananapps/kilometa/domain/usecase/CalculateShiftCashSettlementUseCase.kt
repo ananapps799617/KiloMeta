@@ -26,11 +26,13 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         var cashGross = 0.0
         var digitalGross = 0.0
         var digitalCommissions = 0.0
+        var cashCommissions = 0.0
         var totalCommission = 0.0
 
         trips.forEach { trip ->
             if (trip.paymentDestination == PaymentDestination.CASH_IN_HAND) {
                 cashGross += trip.grossAmount
+                cashCommissions += trip.commissionAmount
             } else {
                 digitalGross += trip.grossAmount
                 digitalCommissions += trip.commissionAmount
@@ -47,13 +49,17 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         // El combustible y los gastos en ruta se descuentan de la caja física disponible
         val cashAvailable = cashGross - totalFueling - totalExpenses
         val digitalPending = (digitalGross - digitalCommissions).coerceAtLeast(0.0)
+        // Cruce de billetera: Saldo en app descuenta la comisión adeudada por viajes en efectivo
+        val netPlatformBalance = (digitalGross - digitalCommissions) - cashCommissions
 
         return CashSettlementSummary(
             cashInHandGross = cashGross,
             digitalBalanceGross = digitalGross,
             totalNet = totalNet,
             cashInHandAvailable = cashAvailable,
-            digitalPendingDisbursement = digitalPending
+            digitalPendingDisbursement = digitalPending,
+            cashCommissionsOwed = cashCommissions,
+            netPlatformBalance = netPlatformBalance
         )
     }
 }

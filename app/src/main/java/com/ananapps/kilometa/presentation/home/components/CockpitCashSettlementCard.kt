@@ -145,6 +145,47 @@ fun CockpitCashSettlementCard(
                     }
                 }
             }
+
+            // Cruce de Cuentas: Billetera Digital vs Comisión Efectivo
+            val isPlatformNetPositive = settlement.netPlatformBalance >= 0
+            val balanceColor = if (isPlatformNetPositive) StatusGreen else StatusRed
+            val balanceBg = if (isPlatformNetPositive) StatusGreenContainer else StatusRedContainer
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(balanceBg)
+                    .border(1.dp, balanceColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isPlatformNetPositive) "⚖️ Cruce: Saldo a favor" else "⚠️ Cruce: Comisión adeudada",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = balanceColor
+                        )
+                        Text(
+                            text = if (isPlatformNetPositive)
+                                "Tus viajes en app cubren las comisiones de efectivo"
+                            else
+                                "Comisión efectivo: ${copFormat.format(settlement.cashCommissionsOwed)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                    Text(
+                        text = copFormat.format(settlement.netPlatformBalance),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = balanceColor
+                    )
+                }
+            }
         }
     }
 }

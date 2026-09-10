@@ -116,24 +116,43 @@ class HomeViewModel @Inject constructor(
 
     fun registerTrip(
         platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod,
-        dest: PaymentDestination = PaymentDestination.CASH_IN_HAND
+        dest: PaymentDestination = PaymentDestination.CASH_IN_HAND,
+        isSporadic: Boolean = false
     ) {
-        val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch { registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment, dest) }
+        viewModelScope.launch {
+            val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
+                manageShiftUseCase.createSporadicShift(notes = "Carrera esporádica").id
+            } else {
+                (uiState.value as HomeUiState.ActiveShift).summary.shiftId
+            }
+            registerTripUseCase(shiftId, platform, gross, commission, payment, dest)
+        }
     }
 
     fun deleteTrip(tripId: String) {
         viewModelScope.launch { deleteTripUseCase(tripId) }
     }
 
-    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int) {
-        val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch { registerFuelingUseCase(state.summary.shiftId, type, amount, volume, odo) }
+    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false) {
+        viewModelScope.launch {
+            val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
+                manageShiftUseCase.createSporadicShift(odometer = odo, notes = "Tanqueo esporádico").id
+            } else {
+                (uiState.value as HomeUiState.ActiveShift).summary.shiftId
+            }
+            registerFuelingUseCase(shiftId, type, amount, volume, odo)
+        }
     }
 
-    fun registerExpense(concept: ExpenseConcept, amount: Double) {
-        val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch { registerExpenseUseCase(state.summary.shiftId, concept, amount) }
+    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false) {
+        viewModelScope.launch {
+            val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
+                manageShiftUseCase.createSporadicShift(notes = "Gasto esporádico").id
+            } else {
+                (uiState.value as HomeUiState.ActiveShift).summary.shiftId
+            }
+            registerExpenseUseCase(shiftId, concept, amount)
+        }
     }
 
     fun startShift(startOdometer: Int, dailyQuota: Double? = null) {
