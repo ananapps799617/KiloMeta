@@ -64,4 +64,10 @@ abstract class RepositoryModule {
     abstract fun bindMaintenanceRepository(
         impl: com.ananapps.kilometa.data.repository.MaintenanceRepositoryImpl
     ): com.ananapps.kilometa.domain.repository.MaintenanceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlaceRepository(
+        impl: com.ananapps.kilometa.data.repository.PlaceRepositoryImpl
+    ): com.ananapps.kilometa.domain.repository.PlaceRepository
 }

@@ -1,10 +1,10 @@
-// ==============================================================================
+﻿// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/profile/components/VehicleConfigSection.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Configuración técnica vehicular: Placa con diseño de matrícula colombiana,
-// catálogo asistido de Marca/Modelo (chips nacionales + opción libre),
-// sistema de propulsión y régimen de tenencia (Propio vs Alquilado).
+// Configuración técnica vehicular ampliada: Tipología (Carro vs Moto),
+// matrícula colombiana, marcas y modelos asistidos, sistema de tanques
+// (Un tanque vs Bi-combustible GNV) y régimen de tenencia.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.profile.components
@@ -37,8 +37,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.PropulsionType
+import com.ananapps.kilometa.domain.model.TankSystem
 import com.ananapps.kilometa.domain.model.VehicleCatalog
 import com.ananapps.kilometa.domain.model.VehicleTenure
+import com.ananapps.kilometa.domain.model.VehicleType
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 import com.ananapps.kilometa.presentation.theme.StatusGreen
@@ -50,6 +52,10 @@ import com.ananapps.kilometa.presentation.theme.TextSecondary
 fun VehicleConfigSection(
     vehiclePlate: String,
     onVehiclePlateChange: (String) -> Unit,
+    vehicleType: VehicleType = VehicleType.CAR,
+    onVehicleTypeChange: (VehicleType) -> Unit = {},
+    tankSystem: TankSystem = TankSystem.DUAL_TANK,
+    onTankSystemChange: (TankSystem) -> Unit = {},
     brand: String,
     onBrandChange: (String) -> Unit,
     model: String,
@@ -60,7 +66,8 @@ fun VehicleConfigSection(
     onTenureChange: (VehicleTenure) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isCustomBrand = brand == VehicleCatalog.OTHER_BRAND_KEY || VehicleCatalog.brands.none { it.name == brand }
+    val availableBrands = VehicleCatalog.getBrandsFor(vehicleType)
+    val isCustomBrand = brand !in availableBrands
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
@@ -69,7 +76,32 @@ fun VehicleConfigSection(
             color = TextPrimary
         )
 
-        // Matrícula Colombiana Estilizada
+        // 1. Selector Tipo de Vehículo (Carro vs Moto)
+        Text(text = "Tipo de Vehículo", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            VehicleType.entries.forEach { type ->
+                FilterChip(
+                    selected = vehicleType == type,
+                    onClick = {
+                        onVehicleTypeChange(type)
+                        val newBrands = VehicleCatalog.getBrandsFor(type)
+                        if (newBrands.isNotEmpty() && brand !in newBrands) {
+                            onBrandChange(newBrands.first())
+                            val models = VehicleCatalog.getModelsForBrand(newBrands.first())
+                            if (models.isNotEmpty()) onModelChange(models.first())
+                        }
+                    },
+                    label = { Text("${type.icon} ${type.displayName}") },
+                    modifier = Modifier.weight(1f),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = ElectricBluePrimary,
+                        selectedLabelColor = DeepObsidianBackground
+                    )
+                )
+            }
+        }
+
+        // 2. Matrícula Colombiana Estilizada
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(text = "Placa del Vehículo", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
             Box(
@@ -97,30 +129,38 @@ fun VehicleConfigSection(
             }
         }
 
-        // Catálogo Asistido: Marcas Populares en Colombia
-        Text(text = "Marca del Vehículo", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+        // 3. Catálogo Asistido: Marcas según Tipo
+        Text(text = "Marca (${vehicleType.displayName})", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            VehicleCatalog.brands.forEach { b ->
+            availableBrands.forEach { bName ->
                 FilterChip(
-                    selected = brand == b.name,
+                    selected = brand == bName,
                     onClick = {
-                        onBrandChange(b.name)
-                        val suggested = VehicleCatalog.getModelsForBrand(b.name)
+                        onBrandChange(bName)
+                        val suggested = VehicleCatalog.getModelsForBrand(bName)
                         if (suggested.isNotEmpty()) onModelChange(suggested.first())
                     },
-                    label = { Text(b.name) },
+                    label = { Text(bName) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = ElectricBluePrimary,
                         selectedLabelColor = DeepObsidianBackground
                     )
                 )
             }
+            FilterChip(
+                selected = isCustomBrand,
+                onClick = { onBrandChange("") },
+                label = { Text("Otro") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = ElectricBluePrimary,
+                    selectedLabelColor = DeepObsidianBackground
+                )
+            )
         }
 
-        // Si es "Otro / Personalizado", se habilita campo libre de Marca
         if (isCustomBrand) {
             OutlinedTextField(
                 value = brand,
@@ -131,7 +171,7 @@ fun VehicleConfigSection(
             )
         }
 
-        // Modelos sugeridos de la marca o campo libre
+        // 4. Modelos sugeridos de la marca
         val suggestedModels = VehicleCatalog.getModelsForBrand(brand)
         if (suggestedModels.isNotEmpty()) {
             Text(text = "Modelo / Línea ($brand)", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
@@ -162,18 +202,15 @@ fun VehicleConfigSection(
             )
         }
 
-        // Sistema de Propulsión
-        Text(text = "Sistema de Propulsión", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            PropulsionType.entries.forEach { prop ->
+        // 5. Sistema de Tanques (Un Tanque vs Dos Tanques Bi-Combustible)
+        Text(text = "Configuración de Tanques", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TankSystem.entries.forEach { tank ->
                 FilterChip(
-                    selected = propulsionType == prop,
-                    onClick = { onPropulsionChange(prop) },
-                    label = { Text(prop.displayName) },
+                    selected = tankSystem == tank,
+                    onClick = { onTankSystemChange(tank) },
+                    label = { Text(tank.displayName) },
+                    modifier = Modifier.weight(1f),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = ElectricBluePrimary,
                         selectedLabelColor = DeepObsidianBackground
@@ -182,7 +219,7 @@ fun VehicleConfigSection(
             }
         }
 
-        // Régimen de Tenencia
+        // 6. Régimen de Tenencia
         Text(text = "Régimen de Tenencia", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             VehicleTenure.entries.forEach { ten ->

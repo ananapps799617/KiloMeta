@@ -32,6 +32,7 @@ import com.ananapps.kilometa.presentation.theme.*
 @Composable
 fun MoreScreen(
     onNavigateToProfile: () -> Unit,
+    onNavigateToPlaces: () -> Unit,
     onNavigateToMaintenance: () -> Unit,
     onNavigateToExpenses: () -> Unit,
     onNavigateToSync: () -> Unit,
@@ -60,6 +61,15 @@ fun MoreScreen(
                 title = "Mi Perfil & Vehículo",
                 subtitle = "Nombre, placa, cuota y horario de corte",
                 onClick = onNavigateToProfile
+            )
+        }
+
+        item {
+            MoreOptionItem(
+                icon = Icons.Default.Place,
+                title = "Mis Bombas & Talleres",
+                subtitle = "Gasolineras, talleres y enlace a Waze / Maps",
+                onClick = onNavigateToPlaces
             )
         }
 

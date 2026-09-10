@@ -60,6 +60,27 @@ object DatabaseModule {
         }
     }
 
+    val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `places` (
+                    `id` TEXT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `category` TEXT NOT NULL,
+                    `address` TEXT NOT NULL,
+                    `latitude` REAL,
+                    `longitude` REAL,
+                    `notes` TEXT,
+                    `created_at` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_places_category` ON `places` (`category`)")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideKiloMetaDatabase(
@@ -70,7 +91,7 @@ object DatabaseModule {
             KiloMetaDatabase::class.java,
             KiloMetaDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -94,4 +115,9 @@ object DatabaseModule {
     fun provideMaintenanceDao(
         database: KiloMetaDatabase
     ): com.ananapps.kilometa.data.local.dao.MaintenanceDao = database.maintenanceDao()
+
+    @Provides
+    fun providePlaceDao(
+        database: KiloMetaDatabase
+    ): com.ananapps.kilometa.data.local.dao.PlaceDao = database.placeDao()
 }

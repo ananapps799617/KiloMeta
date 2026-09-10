@@ -22,5 +22,6 @@ enum class AppDestination(
     MAINTENANCE("Mantenimientos", "Alertas Drivvo & Odómetro"),
     EXPENSES("Gastos en Ruta", "Lavadas, Despinchadas & Comida"),
     PROFILE("Mi Perfil & Vehículo", "Configuración Técnica"),
+    PLACES("Mis Bombas & Talleres", "Ruta directa a Waze & Maps"),
     BACKUP("Respaldo Nube", "Cloud Sync & Firestore")
 }

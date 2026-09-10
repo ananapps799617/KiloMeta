@@ -32,6 +32,7 @@ import com.ananapps.kilometa.presentation.home.components.QuickActionSheet
 import com.ananapps.kilometa.presentation.maintenance.MaintenanceScreen
 import com.ananapps.kilometa.presentation.more.MoreScreen
 import com.ananapps.kilometa.presentation.navigation.*
+import com.ananapps.kilometa.presentation.places.PlacesScreen
 import com.ananapps.kilometa.presentation.profile.DriverProfileScreen
 import com.ananapps.kilometa.presentation.sync.CloudSyncStatusSheet
 import com.ananapps.kilometa.presentation.sync.HydrationRecoveryScreen
@@ -155,6 +156,11 @@ private fun MainAppHost(
                         userEmail = userSession?.email ?: ""
                     )
                 }
+                activeSubDestination == AppDestination.PLACES -> {
+                    PlacesScreen(
+                        onNavigateBack = { activeSubDestination = null }
+                    )
+                }
                 activeSubDestination == AppDestination.EXPENSES -> {
                     ExpensesScreen(
                         onNavigateBack = { activeSubDestination = null }
@@ -183,6 +189,7 @@ private fun MainAppHost(
                 currentNavTab == KiloMetaNavTab.MORE -> {
                     MoreScreen(
                         onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE },
+                        onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
                         onNavigateToMaintenance = { currentNavTab = KiloMetaNavTab.REMINDERS },
                         onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
                         onNavigateToSync = { showSyncSheet = true },
