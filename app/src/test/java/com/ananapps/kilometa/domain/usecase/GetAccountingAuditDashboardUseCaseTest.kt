@@ -56,6 +56,7 @@ private class TestShiftRepository : ShiftRepository {
     override suspend fun startShift(shift: Shift) {}; override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {}
     override suspend fun updateShift(shift: Shift) {}; override suspend fun deleteShift(shiftId: String) {}
     override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)
+    override fun getActiveShiftTrips(): Flow<List<Trip>> = emptyFlow()
 }
 
 private class TestExpenseRepository : ExpenseRepository {

@@ -2,64 +2,32 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/HomeViewModel.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// ViewModel principal de cabina (@HiltViewModel).
-// Orquesta flujos locales, operaciones de captura express, Cloud Sync Engine,
-// auditoría contable de ciclo semanal y alertas vehiculares de corte de cuota.
+// ViewModel principal de Cabina que orquesta el estado reactivo del turno activo,
+// la bolsa contable, el feed en vivo de carreras y las operaciones de sincronización.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ananapps.kilometa.domain.model.AccountingAuditSummary
-import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
-import com.ananapps.kilometa.domain.model.ExpenseConcept
-import com.ananapps.kilometa.domain.model.FuelType
-import com.ananapps.kilometa.domain.model.PaymentMethod
-import com.ananapps.kilometa.domain.model.PlatformType
-import com.ananapps.kilometa.domain.model.RestoreProgress
-import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
-import com.ananapps.kilometa.domain.model.SyncPreferences
-import com.ananapps.kilometa.domain.model.SyncState
-import com.ananapps.kilometa.domain.model.SyncStatus
-import com.ananapps.kilometa.domain.model.UserSession
+import com.ananapps.kilometa.domain.model.*
 import com.ananapps.kilometa.domain.repository.AuthRepository
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
-import com.ananapps.kilometa.domain.usecase.AuthenticateUserUseCase
-import com.ananapps.kilometa.domain.usecase.CalculateBiFuelCostPerKmUseCase
-import com.ananapps.kilometa.domain.usecase.CheckCloudConnectionUseCase
-import com.ananapps.kilometa.domain.usecase.GetAccountingAuditDashboardUseCase
-import com.ananapps.kilometa.domain.usecase.GetShiftFinancialStatusUseCase
-import com.ananapps.kilometa.domain.usecase.ManageShiftUseCase
-import com.ananapps.kilometa.domain.usecase.NotifyQuotaMilestoneUseCase
-import com.ananapps.kilometa.domain.usecase.RegisterExpenseUseCase
-import com.ananapps.kilometa.domain.usecase.RegisterFuelingUseCase
-import com.ananapps.kilometa.domain.usecase.RegisterTripUseCase
-import com.ananapps.kilometa.domain.usecase.RestoreDataUseCase
-import com.ananapps.kilometa.domain.usecase.SchedulePeriodicSyncUseCase
-import com.ananapps.kilometa.domain.usecase.ScheduleWeeklyCutoffNotificationsUseCase
-import com.ananapps.kilometa.domain.usecase.SignOutUseCase
-import com.ananapps.kilometa.domain.usecase.SyncDataUseCase
+import com.ananapps.kilometa.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: VIEWMODEL DE CABINA CON INYECCIÓN HILT
-// ------------------------------------------------------------------------------
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val shiftRepository: ShiftRepository,
     private val getShiftFinancialStatusUseCase: GetShiftFinancialStatusUseCase,
     private val calculateBiFuelCostPerKmUseCase: CalculateBiFuelCostPerKmUseCase,
     private val registerTripUseCase: RegisterTripUseCase,
+    private val deleteTripUseCase: DeleteTripUseCase,
     private val registerFuelingUseCase: RegisterFuelingUseCase,
     private val registerExpenseUseCase: RegisterExpenseUseCase,
     private val manageShiftUseCase: ManageShiftUseCase,
@@ -74,19 +42,17 @@ class HomeViewModel @Inject constructor(
     private val getAccountingAuditDashboardUseCase: GetAccountingAuditDashboardUseCase,
     private val scheduleWeeklyCutoffNotificationsUseCase: ScheduleWeeklyCutoffNotificationsUseCase,
     private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase,
-    private val driverProfileRepository: com.ananapps.kilometa.domain.repository.DriverProfileRepository
+    private val driverProfileRepository: DriverProfileRepository
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
     val syncPreferences: StateFlow<SyncPreferences> = _syncPreferences.asStateFlow()
 
-    val driverProfile: StateFlow<com.ananapps.kilometa.domain.model.DriverProfile> = driverProfileRepository.getProfile()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), com.ananapps.kilometa.domain.model.DriverProfile())
+    val driverProfile: StateFlow<DriverProfile> = driverProfileRepository.getProfile()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DriverProfile())
 
     init {
-        // 1. Sincronización híbrida por defecto (Móviles + Wi-Fi)
         schedulePeriodicSyncUseCase(_syncPreferences.value)
-        // 2. Programación de alarmas de corte vehicular (Martes 18:00 y 23:59)
         scheduleWeeklyCutoffNotificationsUseCase()
     }
 
@@ -105,14 +71,12 @@ class HomeViewModel @Inject constructor(
     private val _connectionDiagnostic = MutableStateFlow<ConnectionDiagnostic?>(null)
     val connectionDiagnostic: StateFlow<ConnectionDiagnostic?> = _connectionDiagnostic.asStateFlow()
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 2: COMBINACIÓN REACTIVA DEL ESTADO DE UI
-    // --------------------------------------------------------------------------
     val uiState: StateFlow<HomeUiState> = combine(
         shiftRepository.getActiveShiftFinancialSummary(),
         getAccountingAuditDashboardUseCase(),
-        shiftRepository.getActiveShiftCashSettlement()
-    ) { activeSummary, auditSummary, cashSettlement ->
+        shiftRepository.getActiveShiftCashSettlement(),
+        shiftRepository.getActiveShiftTrips()
+    ) { activeSummary, auditSummary, cashSettlement, activeTrips ->
         val weeklyProgress = auditSummary.quotaProgress
 
         if (activeSummary == null) {
@@ -144,60 +108,47 @@ class HomeViewModel @Inject constructor(
                 isPingingCloud = _isPingingCloud.value,
                 syncPreferences = _syncPreferences.value,
                 accountingAuditSummary = auditSummary,
-                cashSettlement = cashSettlement
+                cashSettlement = cashSettlement,
+                activeTrips = activeTrips
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HomeUiState.Loading)
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 3: OPERACIONES DE CABINA Y CAPTURA EXPRESS
-    // --------------------------------------------------------------------------
     fun registerTrip(
         platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod,
-        dest: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND
+        dest: PaymentDestination = PaymentDestination.CASH_IN_HAND
     ) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
         viewModelScope.launch { registerTripUseCase(state.summary.shiftId, platform, gross, commission, payment, dest) }
     }
 
+    fun deleteTrip(tripId: String) {
+        viewModelScope.launch { deleteTripUseCase(tripId) }
+    }
+
     fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch {
-            registerFuelingUseCase(state.summary.shiftId, type, amount, volume, odo)
-        }
+        viewModelScope.launch { registerFuelingUseCase(state.summary.shiftId, type, amount, volume, odo) }
     }
 
     fun registerExpense(concept: ExpenseConcept, amount: Double) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch {
-            registerExpenseUseCase(state.summary.shiftId, concept, amount)
-        }
+        viewModelScope.launch { registerExpenseUseCase(state.summary.shiftId, concept, amount) }
     }
 
     fun startShift(startOdometer: Int, dailyQuota: Double? = null) {
-        viewModelScope.launch {
-            manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0)
-        }
+        viewModelScope.launch { manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0) }
     }
 
     fun closeShift(endOdometer: Int, notes: String? = null) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
         viewModelScope.launch {
-            manageShiftUseCase.closeShift(
-                shiftId = state.summary.shiftId,
-                startOdometer = state.summary.startOdometer,
-                endOdometer = endOdometer,
-                notes = notes
-            )
-            // Evaluación de hitos de cuota con política DataGuard (cero dinero líquido en pantalla)
+            manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, notes = notes)
             notifyQuotaMilestoneUseCase.checkAndNotifyShiftMilestone(state.summary)
             notifyQuotaMilestoneUseCase.checkAndNotifyWeeklyMilestone(state.weeklyProgress)
         }
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 4: ACCIONES DE SINCRONIZACIÓN Y DIAGNÓSTICO EN VIVO
-    // --------------------------------------------------------------------------
     fun syncNow() { viewModelScope.launch { syncDataUseCase() } }
 
     fun onTestLiveConnection() {
@@ -227,10 +178,7 @@ class HomeViewModel @Inject constructor(
         _isAuthLoading.value = true; _authError.value = null
         val result = authenticateUserUseCase.signInWithGoogle(idToken)
         if (result.isSuccess) {
-            val user = result.getOrNull()
-            if (user != null) {
-                driverProfileRepository.fetchAndHydrateRemoteProfile(user.uid)
-            }
+            result.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
         } else {
             _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google"
         }
@@ -241,10 +189,7 @@ class HomeViewModel @Inject constructor(
         _isAuthLoading.value = true; _authError.value = null
         val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
         if (signIn.isSuccess) {
-            val user = signIn.getOrNull()
-            if (user != null) {
-                driverProfileRepository.fetchAndHydrateRemoteProfile(user.uid)
-            }
+            signIn.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
         } else {
             val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
             if (signUp.isFailure) _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error auth"

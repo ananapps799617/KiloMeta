@@ -38,6 +38,11 @@ interface ShiftRepository {
     fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?>
 
     /**
+     * Emite el listado de carreras asociadas al turno activo ordenadas cronológicamente descendente.
+     */
+    fun getActiveShiftTrips(): Flow<List<Trip>>
+
+    /**
      * Emite el histórico completo de turnos ordenados cronológicamente descendente.
      */
     fun getAllShifts(): Flow<List<Shift>>
