@@ -13,9 +13,12 @@ package com.ananapps.kilometa.domain.model
 // ------------------------------------------------------------------------------
 data class VehicleProfile(
     val id: String = "primary_vehicle",
+    val vehicleType: VehicleType = VehicleType.CAR,
     val vehiclePlate: String = "WMB-789",
     val brand: String = "Chevrolet",
     val model: String = "Joy",
+    val year: Int = 2022,
+    val tankSystem: TankSystem = TankSystem.DUAL_TANK,
     val propulsionType: PropulsionType = PropulsionType.BI_FUEL,
     val tenureType: VehicleTenure = VehicleTenure.OWNED,
     val quotaPeriodicity: QuotaPeriodicity = QuotaPeriodicity.WEEKLY,

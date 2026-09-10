@@ -10,35 +10,12 @@
 package com.ananapps.kilometa.presentation.profile
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -75,12 +52,13 @@ fun DriverProfileScreen(
 
     var showPasswordResetDialog by remember { mutableStateOf(false) }
 
-    // Estados locales para edición fluida
     var driverName by remember(initialDriver.driverName) { mutableStateOf(initialDriver.driverName) }
     var phone by remember(initialDriver.phone) { mutableStateOf(initialDriver.phone) }
     var gender by remember(initialDriver.gender) { mutableStateOf(initialDriver.gender) }
 
     var vehiclePlate by remember(initialVehicle.vehiclePlate) { mutableStateOf(initialVehicle.vehiclePlate) }
+    var vehicleType by remember(initialVehicle.vehicleType) { mutableStateOf(initialVehicle.vehicleType) }
+    var tankSystem by remember(initialVehicle.tankSystem) { mutableStateOf(initialVehicle.tankSystem) }
     var brand by remember(initialVehicle.brand) { mutableStateOf(initialVehicle.brand) }
     var model by remember(initialVehicle.model) { mutableStateOf(initialVehicle.model) }
     var propulsionType by remember(initialVehicle.propulsionType) { mutableStateOf(initialVehicle.propulsionType) }
@@ -163,6 +141,10 @@ fun DriverProfileScreen(
                 VehicleConfigSection(
                     vehiclePlate = vehiclePlate,
                     onVehiclePlateChange = { vehiclePlate = it },
+                    vehicleType = vehicleType,
+                    onVehicleTypeChange = { vehicleType = it },
+                    tankSystem = tankSystem,
+                    onTankSystemChange = { tankSystem = it },
                     brand = brand,
                     onBrandChange = { brand = it },
                     model = model,
@@ -224,6 +206,8 @@ fun DriverProfileScreen(
                     )
                     val updatedVehicle = initialVehicle.copy(
                         vehiclePlate = vehiclePlate.trim().uppercase(),
+                        vehicleType = vehicleType,
+                        tankSystem = tankSystem,
                         brand = brand.trim(),
                         model = model.trim(),
                         propulsionType = propulsionType,
