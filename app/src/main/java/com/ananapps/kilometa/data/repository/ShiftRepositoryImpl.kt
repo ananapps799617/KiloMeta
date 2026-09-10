@@ -60,6 +60,14 @@ class ShiftRepositoryImpl @Inject constructor(
             .flowOn(dispatchers.io)
     }
 
+    override fun getActiveShiftTrips(): Flow<List<Trip>> {
+        return shiftDao.getActiveShiftWithDetails()
+            .map { details ->
+                details?.trips?.map { it.toDomain() }?.sortedByDescending { it.timestamp } ?: emptyList()
+            }
+            .flowOn(dispatchers.io)
+    }
+
     override fun getAllShifts(): Flow<List<Shift>> {
         return shiftDao.getAllShifts()
             .map { it.toDomain() }

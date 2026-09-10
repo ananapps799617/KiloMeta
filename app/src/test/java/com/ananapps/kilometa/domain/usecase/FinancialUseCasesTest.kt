@@ -1,15 +1,5 @@
-// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
-// ARCHIVO: app/src/test/java/com/ananapps/kilometa/domain/usecase/FinancialUseCasesTest.kt
-// DESCRIPCIÓN PEDAGÓGICA:
 // Suite de pruebas unitarias exhaustiva para la lógica de Dominio de la Orden #004.
-// Valida:
-// 1. Prorrateo de cuota semanal ($500k) y cálculo determinista de días al martes.
-// 2. Transiciones del Semáforo Financiero (Rojo déficit, Ámbar aceleración, Verde Turno Libre).
-// 3. Domain Guards estrictos (rechazo de montos negativos, comisiones > tarifa, volumen <= 0).
-// 4. Protección matemática contra división por cero en vehículos detenidos (km = 0).
-// ==============================================================================
-
 package com.ananapps.kilometa.domain.usecase
 
 import com.ananapps.kilometa.domain.model.ExpenseConcept
@@ -266,8 +256,8 @@ class FinancialUseCasesTest {
     // --------------------------------------------------------------------------
     // BLOQUE 5: CONSTRUCTOR AUXILIAR DE RESÚMENES FINANCIEROS
     // --------------------------------------------------------------------------
-    private fun createSummary(netProfit: Double, quota: Double): ShiftFinancialSummary {
-        return ShiftFinancialSummary(
+    private fun createSummary(netProfit: Double, quota: Double): ShiftFinancialSummary =
+        ShiftFinancialSummary(
             shiftId = "shift-test-1", status = ShiftStatus.ACTIVE,
             startTime = System.currentTimeMillis(), endTime = null,
             startOdometer = 100_000, endOdometer = null, totalKilometers = 50,
@@ -281,5 +271,4 @@ class FinancialUseCasesTest {
             netIncomePerKilometer = 800.0, tripsCount = 5,
             fuelingsCount = 1, expensesCount = 0
         )
-    }
 }

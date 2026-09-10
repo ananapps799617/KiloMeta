@@ -65,7 +65,11 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
     showTopBar: Boolean = false,
     triggerCloseShift: Boolean = false,
-    onResetCloseShiftTrigger: () -> Unit = {}
+    onResetCloseShiftTrigger: () -> Unit = {},
+    triggerQuickTrip: Boolean = false,
+    onResetQuickTripTrigger: () -> Unit = {},
+    triggerQuickFueling: Boolean = false,
+    onResetQuickFuelingTrigger: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val syncStatus by viewModel.syncStatus.collectAsState()
@@ -121,6 +125,20 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(triggerQuickTrip) {
+        if (triggerQuickTrip) {
+            showTripSheet = true
+            onResetQuickTripTrigger()
+        }
+    }
+
+    LaunchedEffect(triggerQuickFueling) {
+        if (triggerQuickFueling) {
+            showFuelingSheet = true
+            onResetQuickFuelingTrigger()
+        }
+    }
+
     LaunchedEffect(userSession) {
         if (userSession != null && !userSession!!.isAnonymous) {
             showAuthSheet = false
@@ -145,14 +163,6 @@ fun HomeScreen(
     }
 
     Scaffold(
-        bottomBar = {
-            if (uiState is HomeUiState.ActiveShift) {
-                CockpitBottomDock(
-                    onQuickTrip = { showTripSheet = true },
-                    onQuickFueling = { showFuelingSheet = true }
-                )
-            }
-        },
         containerColor = DeepObsidianBackground
     ) { innerPadding ->
         Box(
@@ -175,6 +185,7 @@ fun HomeScreen(
                 is HomeUiState.ActiveShift -> {
                     ActiveShiftCockpitView(
                         state = state,
+                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) },
                         onCloseShiftClick = { showCloseShiftDialog = true }
                     )
                 }

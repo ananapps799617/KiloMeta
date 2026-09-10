@@ -89,6 +89,7 @@ fun NoActiveShiftView(
 @Composable
 fun ActiveShiftCockpitView(
     state: HomeUiState.ActiveShift,
+    onDeleteTrip: (String) -> Unit = {},
     onCloseShiftClick: () -> Unit
 ) {
     Column(
@@ -98,14 +99,28 @@ fun ActiveShiftCockpitView(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        SemaphoreCard(status = state.status)
+        // Hero de Producción en Vivo (Números gigantes al sol)
+        LiveProductionHeroCard(
+            summary = state.summary,
+            status = state.status,
+            dailyQuotaTarget = state.dailyQuotaTarget
+        )
+
+        // Feed de Carreras del Turno en Vivo
+        ActiveTripsLiveCard(
+            trips = state.activeTrips,
+            onDeleteTrip = onDeleteTrip
+        )
+
+        // Resumen de Efectivo en Mano vs Billetera App
+        state.cashSettlement?.let { CockpitCashSettlementCard(settlement = it) }
+
+        // Auditoría Contable Semanal
         if (state.accountingAuditSummary != null) {
             AdvancedAccountingCard(auditSummary = state.accountingAuditSummary)
         } else {
             WeeklyQuotaCard(progress = state.weeklyProgress)
         }
-        CockpitKpisCard(summary = state.summary, metrics = state.biFuelMetrics)
-        state.cashSettlement?.let { CockpitCashSettlementCard(settlement = it) }
 
         Spacer(modifier = Modifier.height(8.dp))
 

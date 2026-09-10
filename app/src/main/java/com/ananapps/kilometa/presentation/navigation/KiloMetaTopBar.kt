@@ -41,7 +41,7 @@ import com.ananapps.kilometa.presentation.theme.TextPrimary
 @Composable
 fun KiloMetaTopBar(
     currentDestination: AppDestination,
-    onOpenDrawer: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     onNavigateToProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -63,25 +63,6 @@ fun KiloMetaTopBar(
                     color = ElectricBluePrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
-                )
-            }
-        },
-        navigationIcon = {
-            Box(
-                modifier = Modifier
-                    .padding(start = 12.dp, end = 6.dp)
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onOpenDrawer()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "☰",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
                 )
             }
         },
