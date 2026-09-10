@@ -104,6 +104,9 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.firebase.firestore.ktx)
 
+    // Mapa Nativo OpenStreetMap (Cero API Key, Cero WebViews)
+    implementation(libs.osmdroid.android)
+
     // Pruebas Unitarias
     testImplementation(libs.junit)
     testImplementation(libs.androidx.room.testing)
