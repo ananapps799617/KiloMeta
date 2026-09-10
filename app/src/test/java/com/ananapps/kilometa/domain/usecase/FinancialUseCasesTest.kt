@@ -155,70 +155,78 @@ class FinancialUseCasesTest {
     // BLOQUE 3: VALIDACIÓN DE DOMAIN GUARDS (CARRERAS, TANQUEOS, GASTOS, TURNOS)
     // --------------------------------------------------------------------------
     @Test
-    fun testRegisterTripDomainGuards() = runBlocking {
-        // Tarifa negativa rechazada
-        try {
-            registerTripUseCase("shift-1", PlatformType.UBER, -100.0, 0.0, PaymentMethod.CASH)
-            fail("Debe rechazar tarifa bruta negativa")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor o igual a cero"))
-        }
+    fun testRegisterTripDomainGuards() {
+        runBlocking {
+            // Tarifa negativa rechazada
+            try {
+                registerTripUseCase("shift-1", PlatformType.UBER, -100.0, 0.0, PaymentMethod.CASH)
+                fail("Debe rechazar tarifa bruta negativa")
+            } catch (e: IllegalArgumentException) {
+                assertTrue(e.message!!.contains("mayor o igual a cero"))
+            }
 
-        // Comisión negativa rechazada
-        try {
-            registerTripUseCase("shift-1", PlatformType.UBER, 20_000.0, -500.0, PaymentMethod.CASH)
-            fail("Debe rechazar comisión negativa")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor o igual a cero"))
-        }
+            // Comisión negativa rechazada
+            try {
+                registerTripUseCase("shift-1", PlatformType.UBER, 20_000.0, -500.0, PaymentMethod.CASH)
+                fail("Debe rechazar comisión negativa")
+            } catch (e: IllegalArgumentException) {
+                assertTrue(e.message!!.contains("mayor o igual a cero"))
+            }
 
-        // Comisión mayor que tarifa bruta rechazada
-        try {
-            registerTripUseCase("shift-1", PlatformType.UBER, 20_000.0, 25_000.0, PaymentMethod.CASH)
-            fail("Debe rechazar comisión superior a la tarifa bruta")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("no puede exceder"))
-        }
+            // Comisión mayor que tarifa bruta rechazada
+            try {
+                registerTripUseCase("shift-1", PlatformType.UBER, 20_000.0, 25_000.0, PaymentMethod.CASH)
+                fail("Debe rechazar comisión superior a la tarifa bruta")
+            } catch (e: IllegalArgumentException) {
+                assertTrue(e.message!!.contains("no puede exceder"))
+            }
 
-        // Carrera válida aceptada
-        val validTrip = registerTripUseCase("shift-1", PlatformType.UBER, 20_000.0, 5_000.0, PaymentMethod.CASH)
-        assertEquals(15_000.0, validTrip.netAmount, 0.001)
-        assertEquals(1, fakeTripRepository.savedTrips.size)
-    }
-
-    @Test
-    fun testRegisterFuelingDomainGuards() = runBlocking {
-        // Monto pagado <= 0 rechazado
-        try {
-            registerFuelingUseCase("shift-1", FuelType.GAS, 0.0, 10.0, 100_000)
-            fail("Debe rechazar monto pagado <= 0")
-        } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("mayor a cero"))
-        }
-
-        // Volumen <= 0 rechazado
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 0.0, 100_000) }
-        }
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 10.0, -1) }
+            // Carrera válida aceptada
+            val validTrip = registerTripUseCase("shift-1", PlatformType.UBER, 20_000.0, 5_000.0, PaymentMethod.CASH)
+            assertEquals(15_000.0, validTrip.netAmount, 0.001)
+            assertEquals(1, fakeTripRepository.savedTrips.size)
         }
     }
 
     @Test
-    fun testRegisterExpenseDomainGuards() = runBlocking {
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { registerExpenseUseCase("shift-1", ExpenseConcept.WASH, 0.0) }
+    fun testRegisterFuelingDomainGuards() {
+        runBlocking {
+            // Monto pagado <= 0 rechazado
+            try {
+                registerFuelingUseCase("shift-1", FuelType.GAS, 0.0, 10.0, 100_000)
+                fail("Debe rechazar monto pagado <= 0")
+            } catch (e: IllegalArgumentException) {
+                assertTrue(e.message!!.contains("mayor a cero"))
+            }
+
+            // Volumen <= 0 rechazado
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+                runBlocking { registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 0.0, 100_000) }
+            }
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+                runBlocking { registerFuelingUseCase("shift-1", FuelType.GAS, 25_000.0, 10.0, -1) }
+            }
         }
     }
 
     @Test
-    fun testManageShiftDomainGuards() = runBlocking {
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { manageShiftUseCase.startShift(startOdometer = -5) }
+    fun testRegisterExpenseDomainGuards() {
+        runBlocking {
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+                runBlocking { registerExpenseUseCase("shift-1", ExpenseConcept.WASH, 0.0) }
+            }
         }
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { manageShiftUseCase.closeShift("shift-1", startOdometer = 100_500, endOdometer = 100_400) }
+    }
+
+    @Test
+    fun testManageShiftDomainGuards() {
+        runBlocking {
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+                runBlocking { manageShiftUseCase.startShift(startOdometer = -5) }
+            }
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+                runBlocking { manageShiftUseCase.closeShift("shift-1", startOdometer = 100_500, endOdometer = 100_400) }
+            }
         }
     }
 

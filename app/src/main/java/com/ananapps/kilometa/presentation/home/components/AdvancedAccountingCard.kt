@@ -99,9 +99,9 @@ fun AdvancedAccountingCard(
                     color = DeepObsidianSurfaceVariant
                 ) {
                     Text(
-                        text = "Corte Martes 23:59",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary,
+                        text = "⏰ ${formatCutoffBadge(auditSummary.cycleEndDateMillis)}",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = StatusAmber,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -130,7 +130,7 @@ fun AdvancedAccountingCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${formatCop(progress.accumulatedSoFar)} / ${formatCop(progress.weeklyTarget)}",
+                    text = "${formatAccountingCop(progress.accumulatedSoFar)} / ${formatAccountingCop(progress.weeklyTarget)}",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary
                 )
@@ -152,8 +152,8 @@ fun AdvancedAccountingCard(
                 // KPI 1: Costo / Ingreso por Kilómetro
                 KpiItemBox(
                     title = "$/km Real",
-                    mainValue = formatCopPerKm(auditSummary.costPerKilometer),
-                    subValue = "Ing: ${formatCopPerKm(auditSummary.revenuePerKilometer)}",
+                    mainValue = formatAccountingCopPerKm(auditSummary.costPerKilometer),
+                    subValue = "Ing: ${formatAccountingCopPerKm(auditSummary.revenuePerKilometer)}",
                     modifier = Modifier.weight(1f),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -259,15 +259,4 @@ private fun KpiItemBox(
     }
 }
 
-// ------------------------------------------------------------------------------
-// BLOQUE 3: FUNCIONES DE FORMATEO LOCALIZADO
-// ------------------------------------------------------------------------------
-private fun formatCop(amount: Double): String {
-    val rounded = kotlin.math.round(amount).toLong()
-    return String.format(Locale.GERMANY, "$%,d", rounded)
-}
 
-private fun formatCopPerKm(amount: Double): String {
-    val rounded = kotlin.math.round(amount).toLong()
-    return String.format(Locale.GERMANY, "$%,d/km", rounded)
-}

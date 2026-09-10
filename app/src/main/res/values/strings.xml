@@ -19,7 +19,7 @@
     <string name="btn_quick_expense">Tanqueo / Gasto (-)</string>
     <string name="quota_label">Cuota Semanal</string>
     <string name="fuel_label">Combustible</string>
-    <string name="weekly_bag_title">Bolsa Semanal (Corte Martes 23:59)</string>
+    <string name="weekly_bag_title">Bolsa Semanal</string>
     <string name="free_shift_achieved">¡TURNO LIBRE LOGRADO!</string>
     <string name="remaining_to_free_shift">Faltan %s para Turno Libre</string>
     <string name="surplus_label">Utilidad Neta de Bolsillo: %s</string>

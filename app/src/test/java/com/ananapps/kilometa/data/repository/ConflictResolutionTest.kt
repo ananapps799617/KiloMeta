@@ -60,7 +60,7 @@ class FakeShiftDao : ShiftDao {
         shifts.remove(shiftId)
     }
 
-    override suspend fun deleteAllShifts() {
+    override suspend fun clearAllShifts() {
         shifts.clear()
     }
 }

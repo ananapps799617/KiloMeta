@@ -19,6 +19,9 @@ import com.ananapps.kilometa.domain.model.ShiftStatus
 import com.ananapps.kilometa.domain.model.SyncState
 import com.ananapps.kilometa.domain.model.SyncStatus
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.model.DriverProfile
+import com.ananapps.kilometa.domain.model.VehicleProfile
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.ExpenseRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
@@ -54,6 +57,7 @@ private class TestShiftRepository : ShiftRepository {
     override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {}
     override suspend fun updateShift(shift: Shift) {}
     override suspend fun deleteShift(shiftId: String) {}
+    override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)
 }
 
 private class TestExpenseRepository : ExpenseRepository {
@@ -70,7 +74,18 @@ private class TestSyncRepository : SyncRepository {
     override suspend fun pushPendingChanges(): Result<Unit> = Result.success(Unit)
     override suspend fun pullRemoteChanges(): Result<Unit> = Result.success(Unit)
     override fun fullDisasterRecovery(): Flow<RestoreProgress> = emptyFlow()
-    override suspend fun checkCloudConnection(): ConnectionDiagnostic = ConnectionDiagnostic(true, 50L, "OK")
+    override suspend fun checkCloudConnection(): ConnectionDiagnostic = ConnectionDiagnostic(isConnected = true, latencyMs = 50L, message = "OK")
+}
+
+private class TestDriverProfileRepository : DriverProfileRepository {
+    val vehicleProfileFlow = MutableStateFlow(VehicleProfile(quotaCutoffDay = 2, quotaCutoffHour = 23, quotaAmount = 500000.0))
+    override fun getProfile(): Flow<DriverProfile> = flowOf(DriverProfile())
+    override suspend fun saveProfile(profile: DriverProfile) {}
+    override fun getVehicleProfile(): Flow<VehicleProfile> = vehicleProfileFlow
+    override suspend fun saveVehicleProfile(vehicle: VehicleProfile) { vehicleProfileFlow.value = vehicle }
+    override suspend fun saveFullProfile(driver: DriverProfile, vehicle: VehicleProfile) {}
+    override suspend fun resetProfileForTesting() {}
+    override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> = Result.success(true)
 }
 
 // ------------------------------------------------------------------------------
@@ -81,6 +96,7 @@ class GetAccountingAuditDashboardUseCaseTest {
     private lateinit var shiftRepository: TestShiftRepository
     private lateinit var expenseRepository: TestExpenseRepository
     private lateinit var syncRepository: TestSyncRepository
+    private lateinit var driverProfileRepository: TestDriverProfileRepository
     private lateinit var calculateDailyQuotaUseCase: CalculateDailyQuotaUseCase
     private lateinit var useCase: GetAccountingAuditDashboardUseCase
 
@@ -91,12 +107,14 @@ class GetAccountingAuditDashboardUseCaseTest {
         shiftRepository = TestShiftRepository()
         expenseRepository = TestExpenseRepository()
         syncRepository = TestSyncRepository()
+        driverProfileRepository = TestDriverProfileRepository()
         calculateDailyQuotaUseCase = CalculateDailyQuotaUseCase()
         useCase = GetAccountingAuditDashboardUseCase(
             shiftRepository = shiftRepository,
             expenseRepository = expenseRepository,
             calculateDailyQuotaUseCase = calculateDailyQuotaUseCase,
-            syncRepository = syncRepository
+            syncRepository = syncRepository,
+            driverProfileRepository = driverProfileRepository
         )
     }
 
@@ -122,6 +140,32 @@ class GetAccountingAuditDashboardUseCaseTest {
         assertEquals(8, endDate.dayOfMonth)
         assertEquals(23, endDate.hour)
         assertEquals(59, endDate.minute)
+    }
+
+    @Test
+    fun `calculateWeeklyCycleBounds con corte personalizado Martes 18_00`() {
+        // GIVEN: Domingo 2026-09-06 a las 14:30:00 en Bogotá con corte Martes 18:00
+        val testSunday = ZonedDateTime.of(2026, 9, 6, 14, 30, 0, 0, bogotaZone)
+        val testMillis = testSunday.toInstant().toEpochMilli()
+
+        // WHEN: Se calculan los bordes con cutoffDay = TUESDAY y cutoffHour = 18
+        val (startMillis, endMillis) = useCase.calculateWeeklyCycleBounds(
+            nowMillis = testMillis,
+            zoneId = bogotaZone,
+            cutoffDay = DayOfWeek.TUESDAY,
+            cutoffHour = 18
+        )
+
+        // THEN: Fin = Martes 2026-09-08 a las 18:00:00 y Inicio = Martes 2026-09-01 a las 18:00:00
+        val endDate = Instant.ofEpochMilli(endMillis).atZone(bogotaZone)
+        assertEquals(DayOfWeek.TUESDAY, endDate.dayOfWeek)
+        assertEquals(8, endDate.dayOfMonth)
+        assertEquals(18, endDate.hour)
+
+        val startDate = Instant.ofEpochMilli(startMillis).atZone(bogotaZone)
+        assertEquals(DayOfWeek.TUESDAY, startDate.dayOfWeek)
+        assertEquals(1, startDate.dayOfMonth)
+        assertEquals(18, startDate.hour)
     }
 
     @Test
@@ -210,45 +254,24 @@ class GetAccountingAuditDashboardUseCaseTest {
     }
 
     private fun createDummySummary(
-        shiftId: String,
-        startTime: Long,
-        grossIncome: Double,
-        commissions: Double,
-        netIncome: Double,
-        gasExpense: Double,
-        gasolineExpense: Double,
-        operational: Double,
-        kilometers: Int
+        shiftId: String, startTime: Long, grossIncome: Double, commissions: Double,
+        netIncome: Double, gasExpense: Double, gasolineExpense: Double, operational: Double, kilometers: Int
     ): ShiftFinancialSummary {
         val totalFuel = gasExpense + gasolineExpense
         val totalExpenses = totalFuel + operational
         val netProfit = netIncome - totalExpenses
 
         return ShiftFinancialSummary(
-            shiftId = shiftId,
-            status = ShiftStatus.COMPLETED,
-            startTime = startTime,
-            endTime = startTime + 36_000_000L,
-            startOdometer = 100_000,
-            endOdometer = 100_000 + kilometers,
-            totalKilometers = kilometers,
-            dailyQuotaTarget = 83_333.0,
-            totalGrossIncome = grossIncome,
-            totalCommissions = commissions,
-            totalNetIncome = netIncome,
-            totalGasExpense = gasExpense,
-            totalGasolineExpense = gasolineExpense,
-            totalFuelExpense = totalFuel,
-            totalOperationalExpenses = operational,
-            totalExpenses = totalExpenses,
-            netProfit = netProfit,
-            quotaProgressPercentage = 100.0,
-            costPerKilometer = if (kilometers > 0) totalExpenses / kilometers else 0.0,
+            shiftId = shiftId, status = ShiftStatus.COMPLETED, startTime = startTime,
+            endTime = startTime + 36_000_000L, startOdometer = 100_000, endOdometer = 100_000 + kilometers,
+            totalKilometers = kilometers, dailyQuotaTarget = 83_333.0, totalGrossIncome = grossIncome,
+            totalCommissions = commissions, totalNetIncome = netIncome, totalGasExpense = gasExpense,
+            totalGasolineExpense = gasolineExpense, totalFuelExpense = totalFuel,
+            totalOperationalExpenses = operational, totalExpenses = totalExpenses, netProfit = netProfit,
+            quotaProgressPercentage = 100.0, costPerKilometer = if (kilometers > 0) totalExpenses / kilometers else 0.0,
             grossIncomePerKilometer = if (kilometers > 0) grossIncome / kilometers else 0.0,
             netIncomePerKilometer = if (kilometers > 0) netIncome / kilometers else 0.0,
-            tripsCount = 5,
-            fuelingsCount = 1,
-            expensesCount = 1
+            tripsCount = 5, fuelingsCount = 1, expensesCount = 1
         )
     }
 }

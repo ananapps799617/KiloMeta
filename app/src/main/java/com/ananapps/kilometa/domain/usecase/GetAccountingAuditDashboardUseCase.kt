@@ -13,6 +13,7 @@ package com.ananapps.kilometa.domain.usecase
 import com.ananapps.kilometa.core.util.Constants
 import com.ananapps.kilometa.domain.model.AccountingAuditSummary
 import com.ananapps.kilometa.domain.model.SyncState
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.ExpenseRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
@@ -33,7 +34,8 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
     private val shiftRepository: ShiftRepository,
     @Suppress("unused") private val expenseRepository: ExpenseRepository,
     private val calculateDailyQuotaUseCase: CalculateDailyQuotaUseCase,
-    private val syncRepository: SyncRepository
+    private val syncRepository: SyncRepository,
+    private val driverProfileRepository: DriverProfileRepository
 ) {
 
     private val bogotaZone: ZoneId = ZoneId.of("America/Bogota")
@@ -49,13 +51,23 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
         nowMillis: Long = System.currentTimeMillis(),
         zoneId: ZoneId = bogotaZone
     ): Flow<AccountingAuditSummary> {
-        val (cycleStartMillis, cycleEndMillis) = calculateWeeklyCycleBounds(nowMillis, zoneId)
-
         return combine(
             shiftRepository.getCompletedShiftsHistory(),
-            syncRepository.observeSyncStatus()
-        ) { completedShifts, syncStatus ->
-            // Filtro estricto por jornadas completadas dentro del ciclo Miércoles-Martes
+            syncRepository.observeSyncStatus(),
+            driverProfileRepository.getVehicleProfile()
+        ) { completedShifts, syncStatus, vehicleProfile ->
+            val targetCutoffDay = DayOfWeek.of(vehicleProfile.quotaCutoffDay.coerceIn(1, 7))
+            val targetCutoffHour = vehicleProfile.quotaCutoffHour.coerceIn(0, 23)
+            val weeklyTarget = if (vehicleProfile.quotaAmount > 0) vehicleProfile.quotaAmount else Constants.DEFAULT_WEEKLY_QUOTA_DOUBLE
+
+            val (cycleStartMillis, cycleEndMillis) = calculateWeeklyCycleBounds(
+                nowMillis = nowMillis,
+                zoneId = zoneId,
+                cutoffDay = targetCutoffDay,
+                cutoffHour = targetCutoffHour
+            )
+
+            // Filtro estricto por jornadas completadas dentro del ciclo continuo de 168 horas
             val weeklyShifts = completedShifts.filter { shift ->
                 shift.startTime in cycleStartMillis..cycleEndMillis
             }
@@ -81,8 +93,11 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
             }
 
             val quotaProgress = calculateDailyQuotaUseCase(
-                weeklyTarget = Constants.DEFAULT_WEEKLY_QUOTA_DOUBLE,
+                weeklyTarget = weeklyTarget,
                 accumulatedSoFar = netProfit.coerceAtLeast(0.0),
+                cycleEndMillis = cycleEndMillis,
+                cutoffDayOfWeek = targetCutoffDay,
+                cutoffHour = targetCutoffHour,
                 nowMillis = nowMillis,
                 zoneId = zoneId
             )
@@ -111,35 +126,43 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
     }
 
     // --------------------------------------------------------------------------
-    // BLOQUE 2: CÁLCULO DE BORDES TEMPORALES DEL CICLO (MIÉRCOLES A MARTES)
+    // BLOQUE 2: CÁLCULO DE BORDES TEMPORALES DEL CICLO (VENTANA CONTINUA DE 168 HORAS)
     // --------------------------------------------------------------------------
     /**
-     * Calcula los timestamps de inicio (Miércoles 00:00:00) y fin (Martes 23:59:59.999) del ciclo.
+     * Calcula los timestamps de inicio y fin del ciclo semanal según el corte configurado.
      */
     fun calculateWeeklyCycleBounds(
         nowMillis: Long,
-        zoneId: ZoneId = bogotaZone
+        zoneId: ZoneId = bogotaZone,
+        cutoffDay: DayOfWeek = DayOfWeek.TUESDAY,
+        cutoffHour: Int = 23
     ): Pair<Long, Long> {
         val now = Instant.ofEpochMilli(nowMillis).atZone(zoneId)
-        val daysSinceWednesday = when (now.dayOfWeek) {
-            DayOfWeek.WEDNESDAY -> 0L
-            DayOfWeek.THURSDAY -> 1L
-            DayOfWeek.FRIDAY -> 2L
-            DayOfWeek.SATURDAY -> 3L
-            DayOfWeek.SUNDAY -> 4L
-            DayOfWeek.MONDAY -> 5L
-            DayOfWeek.TUESDAY -> 6L
-            null -> 0L
+
+        var cutoffCandidate = if (cutoffHour >= 23) {
+            now.with(java.time.temporal.TemporalAdjusters.nextOrSame(cutoffDay))
+                .withHour(23)
+                .withMinute(59)
+                .withSecond(59)
+                .withNano(999_000_000)
+        } else {
+            now.with(java.time.temporal.TemporalAdjusters.nextOrSame(cutoffDay))
+                .withHour(cutoffHour)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
         }
 
-        val cycleStart = now.minusDays(daysSinceWednesday)
-            .toLocalDate()
-            .atStartOfDay(zoneId)
+        if (!now.isBefore(cutoffCandidate)) {
+            cutoffCandidate = cutoffCandidate.plusWeeks(1)
+        }
 
-        val cycleEnd = cycleStart.plusDays(6)
-            .toLocalDate()
-            .atTime(23, 59, 59, 999_000_000)
-            .atZone(zoneId)
+        val cycleEnd = cutoffCandidate
+        val cycleStart = if (cutoffHour >= 23) {
+            cycleEnd.minusDays(6).toLocalDate().atStartOfDay(zoneId)
+        } else {
+            cycleEnd.minusWeeks(1)
+        }
 
         return Pair(
             cycleStart.toInstant().toEpochMilli(),

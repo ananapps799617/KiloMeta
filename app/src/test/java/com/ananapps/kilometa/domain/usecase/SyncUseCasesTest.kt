@@ -8,6 +8,7 @@
 
 package com.ananapps.kilometa.domain.usecase
 
+import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.RestoreProgress
 import com.ananapps.kilometa.domain.model.SyncState
 import com.ananapps.kilometa.domain.model.SyncStatus

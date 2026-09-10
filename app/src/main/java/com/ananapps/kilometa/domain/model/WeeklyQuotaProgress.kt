@@ -26,7 +26,9 @@ data class WeeklyQuotaProgress(
     val accumulatedSoFar: Double,
     val remainingTarget: Double,
     val daysRemaining: Int,
-    val suggestedDailyQuota: Double
+    val suggestedDailyQuota: Double,
+    val cutoffDayOfWeek: java.time.DayOfWeek = java.time.DayOfWeek.TUESDAY,
+    val cutoffHour: Int = 18
 ) {
     // --------------------------------------------------------------------------
     // BLOQUE 2: PROPIEDADES CALCULADAS PARA UI Y ANÁLISIS

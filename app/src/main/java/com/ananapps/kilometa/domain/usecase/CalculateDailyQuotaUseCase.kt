@@ -31,21 +31,33 @@ class CalculateDailyQuotaUseCase @Inject constructor() {
      *
      * @param weeklyTarget Meta total semanal en COP (por defecto $500.000).
      * @param accumulatedSoFar Ingreso neto acumulado en la semana en curso (COP).
+     * @param cycleEndMillis Marca de tiempo límite de finalización del ciclo (opcional).
+     * @param cutoffDayOfWeek Día de la semana en que vence el corte (default: Martes).
+     * @param cutoffHour Hora límite en que vence el corte (default: 18).
      * @param nowMillis Timestamp Unix en milisegundos para cálculo temporal.
-     * @param zoneId Zona horaria para evaluar el calendario (por defecto local).
+     * @param zoneId Zona horaria para evaluar el calendario (por defecto Bogotá).
      * @return [WeeklyQuotaProgress] con desglose de días restantes y cuota diaria sugerida.
      */
     operator fun invoke(
         weeklyTarget: Double = Constants.DEFAULT_WEEKLY_QUOTA_DOUBLE,
         accumulatedSoFar: Double = 0.0,
+        cycleEndMillis: Long? = null,
+        cutoffDayOfWeek: DayOfWeek = DayOfWeek.TUESDAY,
+        cutoffHour: Int = 18,
         nowMillis: Long = System.currentTimeMillis(),
-        zoneId: ZoneId = ZoneId.systemDefault()
+        zoneId: ZoneId = ZoneId.of("America/Bogota")
     ): WeeklyQuotaProgress {
         require(weeklyTarget >= 0.0) { "La meta semanal no puede ser negativa" }
         require(accumulatedSoFar >= 0.0) { "El acumulado semanal no puede ser negativo" }
 
         val zonedDateTime = Instant.ofEpochMilli(nowMillis).atZone(zoneId)
-        val daysRemaining = calculateDaysRemainingToTuesday(zonedDateTime.dayOfWeek)
+        val daysRemaining = if (cycleEndMillis != null) {
+            val endZoned = Instant.ofEpochMilli(cycleEndMillis).atZone(zoneId)
+            val durationHours = java.time.Duration.between(zonedDateTime, endZoned).toHours()
+            if (durationHours <= 0) 1 else kotlin.math.ceil(durationHours / 24.0).toInt().coerceIn(1, 7)
+        } else {
+            calculateDaysRemainingToCutoff(zonedDateTime.dayOfWeek, cutoffDayOfWeek)
+        }
 
         val remainingTarget = if (accumulatedSoFar >= weeklyTarget) {
             0.0
@@ -64,32 +76,27 @@ class CalculateDailyQuotaUseCase @Inject constructor() {
             accumulatedSoFar = accumulatedSoFar,
             remainingTarget = remainingTarget,
             daysRemaining = daysRemaining,
-            suggestedDailyQuota = suggestedDailyQuota
+            suggestedDailyQuota = suggestedDailyQuota,
+            cutoffDayOfWeek = cutoffDayOfWeek,
+            cutoffHour = cutoffHour
         )
     }
 
     // --------------------------------------------------------------------------
-    // BLOQUE 2: REGLA DE NEGOCIO DE DÍAS RESTANTES (CORTE MARTES 23:59:59)
+    // BLOQUE 2: REGLA DE NEGOCIO DE DÍAS RESTANTES HASTA EL CORTE
     // --------------------------------------------------------------------------
     /**
-     * El ciclo semanal inicia el Miércoles a las 00:00:00 y finaliza el Martes a las 23:59:59.
-     * - Miércoles: 7 días restantes (incluye el miércoles completo).
-     * - Jueves: 6 días restantes.
-     * - Viernes: 5 días restantes.
-     * - Sábado: 4 días restantes.
-     * - Domingo: 3 días restantes.
-     * - Lunes: 2 días restantes.
-     * - Martes: 1 día restante (día de cierre de liquidación semanal).
+     * Calcula los días restantes desde el día actual hasta el día de corte semanal.
+     */
+    fun calculateDaysRemainingToCutoff(currentDay: DayOfWeek, cutoffDay: DayOfWeek): Int {
+        val diff = (cutoffDay.value - currentDay.value + 7) % 7
+        return if (diff == 0) 1 else diff + 1
+    }
+
+    /**
+     * Retrocompatibilidad: El ciclo semanal con corte el Martes.
      */
     fun calculateDaysRemainingToTuesday(dayOfWeek: DayOfWeek): Int {
-        return when (dayOfWeek) {
-            DayOfWeek.WEDNESDAY -> 7
-            DayOfWeek.THURSDAY -> 6
-            DayOfWeek.FRIDAY -> 5
-            DayOfWeek.SATURDAY -> 4
-            DayOfWeek.SUNDAY -> 3
-            DayOfWeek.MONDAY -> 2
-            DayOfWeek.TUESDAY -> 1
-        }
+        return calculateDaysRemainingToCutoff(dayOfWeek, DayOfWeek.TUESDAY)
     }
 }

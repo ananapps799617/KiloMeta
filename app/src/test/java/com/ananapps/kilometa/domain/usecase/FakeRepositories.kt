@@ -67,6 +67,7 @@ class FakeShiftRepository : ShiftRepository {
     override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> = flowOf(completedSummaries)
     override fun getAllTrips(): Flow<List<Trip>> = flowOf(allTripsList)
     override fun getAllFuelings(): Flow<List<Fueling>> = flowOf(allFuelingsList)
+    override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)
 
     override suspend fun startShift(shift: Shift) { shifts.add(shift) }
     override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {

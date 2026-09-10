@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -192,27 +193,50 @@ fun VehicleQuotaSection(
                     color = TextSecondary
                 )
 
-                Row(
+                // Selector de Hora Límite en Grilla Ergonómica 3x2 (Touch Target 48dp, cero saltos de línea)
+                val hourRows = listOf(
+                    listOf(6 to "06:00", 14 to "14:00", 18 to "18:00"),
+                    listOf(20 to "20:00", 22 to "22:00", 23 to "23:59")
+                )
+
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val presetHours = listOf(6, 14, 18, 20, 22, 23)
-                    presetHours.forEach { h ->
-                        val selected = quotaCutoffHour == h
-                        FilterChip(
-                            selected = selected,
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onQuotaCutoffHourChange(h)
-                            },
-                            label = { Text(if (h == 23) "11:59p" else "${h}:00") },
-                            modifier = Modifier.weight(1f),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = StatusGreen,
-                                selectedLabelColor = DeepObsidianBackground
-                            )
-                        )
+                    hourRows.forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowItems.forEach { (h, label) ->
+                                val isSelected = quotaCutoffHour == h
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) StatusGreen else DeepObsidianBackground)
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) StatusGreen else ObsidianBorder,
+                                            RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onQuotaCutoffHourChange(h)
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = if (isSelected) DeepObsidianBackground else TextPrimary,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 

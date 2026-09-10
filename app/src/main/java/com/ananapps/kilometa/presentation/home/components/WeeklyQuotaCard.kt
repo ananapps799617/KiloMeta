@@ -73,8 +73,19 @@ fun WeeklyQuotaCard(
                     color = ElectricBluePrimary
                 )
 
+                val dayShort = when (progress.cutoffDayOfWeek) {
+                    java.time.DayOfWeek.MONDAY -> "Lun"
+                    java.time.DayOfWeek.TUESDAY -> "Mar"
+                    java.time.DayOfWeek.WEDNESDAY -> "Mié"
+                    java.time.DayOfWeek.THURSDAY -> "Jue"
+                    java.time.DayOfWeek.FRIDAY -> "Vie"
+                    java.time.DayOfWeek.SATURDAY -> "Sáb"
+                    java.time.DayOfWeek.SUNDAY -> "Dom"
+                }
+                val hourLabel = if (progress.cutoffHour >= 23) "23:59" else "${progress.cutoffHour}:00"
+
                 Text(
-                    text = "Corte: Martes 23:59",
+                    text = "Corte: $dayShort $hourLabel",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextSecondary
                 )
@@ -143,5 +154,7 @@ fun WeeklyQuotaCard(
 // ------------------------------------------------------------------------------
 private fun formatCop(amount: Double): String {
     val rounded = kotlin.math.round(amount).toLong()
-    return String.format(Locale.GERMANY, "$%,d", rounded)
+    return String.format(java.util.Locale.GERMANY, "$%,d", rounded)
 }
+
+

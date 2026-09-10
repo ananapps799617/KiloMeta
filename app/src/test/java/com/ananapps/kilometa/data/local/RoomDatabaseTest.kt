@@ -205,9 +205,9 @@ class RoomDatabaseTest {
         val shiftIdB = UUID.randomUUID().toString()
 
         val tripsDatabase = mutableListOf(
-            TripEntity(UUID.randomUUID().toString(), shiftIdA, "UBER", 20000.0, 4000.0, 16000.0, "CASH", 1000L),
-            TripEntity(UUID.randomUUID().toString(), shiftIdA, "DIDI", 25000.0, 5000.0, 20000.0, "NEQUI", 2000L),
-            TripEntity(UUID.randomUUID().toString(), shiftIdB, "PRIVATE", 30000.0, 0.0, 30000.0, "CASH", 3000L)
+            TripEntity(UUID.randomUUID().toString(), shiftIdA, "UBER", 20000.0, 4000.0, 16000.0, "CASH", "CASH_IN_HAND", 1000L),
+            TripEntity(UUID.randomUUID().toString(), shiftIdA, "DIDI", 25000.0, 5000.0, 20000.0, "NEQUI", "CASH_IN_HAND", 2000L),
+            TripEntity(UUID.randomUUID().toString(), shiftIdB, "PRIVATE", 30000.0, 0.0, 30000.0, "CASH", "CASH_IN_HAND", 3000L)
         )
 
         val fuelingsDatabase = mutableListOf(
