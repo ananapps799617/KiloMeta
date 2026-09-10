@@ -47,7 +47,7 @@ data class DriverProfile(
     val gender: Gender = Gender.PREFER_NOT_TO_SAY,
     val activeVehicleId: String = "primary_vehicle",
     // Atributos de compatibilidad y conveniencia operativa directa en cabina
-    val vehiclePlate: String = "WMB-789",
+    val vehiclePlate: String = "",
     val propulsionType: PropulsionType = PropulsionType.BI_FUEL,
     val activePlatforms: Set<PlatformType> = setOf(
         PlatformType.UBER,

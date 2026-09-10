@@ -38,27 +38,16 @@ class DriverProfileRepositoryImpl @Inject constructor(
 
     companion object {
         private const val PREFS_NAME = "kilometa_driver_profile"
-        private const val KEY_DRIVER_ID = "driver_id"
-        private const val KEY_DRIVER_NAME = "driver_name"
-        private const val KEY_EMAIL = "driver_email"
-        private const val KEY_PHONE = "driver_phone"
-        private const val KEY_GENDER = "driver_gender"
-        private const val KEY_ACTIVE_VEHICLE_ID = "active_vehicle_id"
-
-        private const val KEY_VEHICLE_PLATE = "vehicle_plate"
-        private const val KEY_BRAND = "vehicle_brand"
-        private const val KEY_MODEL = "vehicle_model"
-        private const val KEY_PROPULSION_TYPE = "propulsion_type"
-        private const val KEY_TENURE_TYPE = "tenure_type"
-        private const val KEY_QUOTA_PERIODICITY = "quota_periodicity"
-        private const val KEY_QUOTA_AMOUNT = "quota_amount"
-        private const val KEY_WORK_DAYS_WEEK = "work_days_week"
-        private const val KEY_CUTOFF_DAY = "quota_cutoff_day"
-        private const val KEY_CUTOFF_HOUR = "quota_cutoff_hour"
-
+        private const val KEY_DRIVER_ID = "driver_id"; private const val KEY_DRIVER_NAME = "driver_name"
+        private const val KEY_EMAIL = "driver_email"; private const val KEY_PHONE = "driver_phone"
+        private const val KEY_GENDER = "driver_gender"; private const val KEY_ACTIVE_VEHICLE_ID = "active_vehicle_id"
+        private const val KEY_VEHICLE_PLATE = "vehicle_plate"; private const val KEY_BRAND = "vehicle_brand"
+        private const val KEY_MODEL = "vehicle_model"; private const val KEY_PROPULSION_TYPE = "propulsion_type"
+        private const val KEY_TENURE_TYPE = "tenure_type"; private const val KEY_QUOTA_PERIODICITY = "quota_periodicity"
+        private const val KEY_QUOTA_AMOUNT = "quota_amount"; private const val KEY_WORK_DAYS_WEEK = "work_days_week"
+        private const val KEY_CUTOFF_DAY = "quota_cutoff_day"; private const val KEY_CUTOFF_HOUR = "quota_cutoff_hour"
         private const val KEY_ACTIVE_PLATFORMS = "active_platforms"
-        private const val KEY_IS_PROFILE_COMPLETED = "is_profile_completed"
-        private const val KEY_UPDATED_AT = "updated_at"
+        private const val KEY_IS_PROFILE_COMPLETED = "is_profile_completed"; private const val KEY_UPDATED_AT = "updated_at"
     }
 
     private val prefs: SharedPreferences by lazy {
@@ -132,6 +121,12 @@ class DriverProfileRepositoryImpl @Inject constructor(
         _vehicleFlow.value = loadVehicleFromPrefs()
     }
 
+    override suspend fun clearProfile() = withContext(dispatchers.io) {
+        prefs.edit().clear().apply()
+        _driverFlow.value = DriverProfile(id = "", driverName = "", vehiclePlate = "", isProfileCompleted = false)
+        _vehicleFlow.value = VehicleProfile(id = "", vehiclePlate = "")
+    }
+
     override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> = withContext(dispatchers.io) {
         runCatching {
             val remoteResult = firestoreDataSource.getDriverProfile(userId)
@@ -174,6 +169,25 @@ class DriverProfileRepositoryImpl @Inject constructor(
                 _vehicleFlow.value = loadVehicleFromPrefs()
                 true
             } else {
+                // Usuario nuevo: Purga inmediata de cualquier residuo previo en SharedPreferences
+                val currentEmail = authRepository.getCurrentUser()?.email.orEmpty()
+                val currentDisplayName = authRepository.getCurrentUser()?.displayName.orEmpty()
+                prefs.edit().clear().apply()
+                prefs.edit().apply {
+                    putString(KEY_DRIVER_ID, userId)
+                    putString(KEY_EMAIL, currentEmail)
+                    putString(KEY_DRIVER_NAME, currentDisplayName)
+                    putBoolean(KEY_IS_PROFILE_COMPLETED, false)
+                    apply()
+                }
+                _driverFlow.value = DriverProfile(
+                    id = userId,
+                    driverName = currentDisplayName,
+                    email = currentEmail,
+                    vehiclePlate = "",
+                    isProfileCompleted = false
+                )
+                _vehicleFlow.value = VehicleProfile(id = userId, vehiclePlate = "")
                 false
             }
         }

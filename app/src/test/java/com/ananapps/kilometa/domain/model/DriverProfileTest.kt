@@ -20,7 +20,7 @@ class DriverProfileTest {
         assertEquals("", profile.driverName)
         assertEquals(Gender.PREFER_NOT_TO_SAY, profile.gender)
         assertEquals("primary_vehicle", profile.activeVehicleId)
-        assertEquals("WMB-789", profile.vehiclePlate)
+        assertEquals("", profile.vehiclePlate)
         assertEquals(PropulsionType.BI_FUEL, profile.propulsionType)
         assertTrue(profile.activePlatforms.contains(PlatformType.UBER))
     }

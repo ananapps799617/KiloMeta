@@ -23,6 +23,7 @@ import com.ananapps.kilometa.data.remote.mapper.toShiftDtoList
 import com.ananapps.kilometa.data.remote.mapper.toShiftEntityList
 import com.ananapps.kilometa.data.remote.mapper.toTripDtoList
 import com.ananapps.kilometa.data.remote.mapper.toTripEntityList
+import com.ananapps.kilometa.data.local.KiloMetaDatabase
 import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.ananapps.kilometa.domain.model.RestoreProgress
 import com.ananapps.kilometa.domain.model.SyncState
@@ -44,6 +45,7 @@ import javax.inject.Singleton
 // ------------------------------------------------------------------------------
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
+    private val database: KiloMetaDatabase,
     private val shiftDao: ShiftDao,
     private val tripDao: TripDao,
     private val fuelingDao: FuelingDao,
@@ -210,5 +212,15 @@ class SyncRepositoryImpl @Inject constructor(
             )
         }
         firestoreDataSource.pingDiagnostic(user.uid)
+    }
+
+    // --------------------------------------------------------------------------
+    // BLOQUE 6: PURGA TOTAL DE BASE DE DATOS LOCAL (CLEAN SESSION HANDSHAKE)
+    // --------------------------------------------------------------------------
+    override suspend fun clearAllLocalData(): Result<Unit> = withContext(dispatchers.io) {
+        runCatching {
+            database.clearAllTables()
+            _syncStatus.value = SyncStatus(state = SyncState.IDLE)
+        }
     }
 }

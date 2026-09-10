@@ -85,6 +85,11 @@ class FakeSyncRepository : SyncRepository {
         executionLog.add("RECOVERY_COMPLETED")
         emit(RestoreProgress.Completed(2, 5, 2, 1))
     }
+
+    override suspend fun clearAllLocalData(): Result<Unit> {
+        executionLog.add("CLEAR_ALL_LOCAL_DATA")
+        return Result.success(Unit)
+    }
 }
 
 // ------------------------------------------------------------------------------

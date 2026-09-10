@@ -47,4 +47,10 @@ interface SyncRepository {
      * Realiza una prueba activa de conectividad round-trip con Firestore y calcula la latencia.
      */
     suspend fun checkCloudConnection(): ConnectionDiagnostic
+
+    /**
+     * Purga atómicamente la totalidad de datos locales en la base de datos Room SQLite.
+     * Protocolo Clean Session Handshake (DataGuard Tier 3).
+     */
+    suspend fun clearAllLocalData(): Result<Unit>
 }
