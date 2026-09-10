@@ -57,6 +57,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
         private const val KEY_CUTOFF_HOUR = "quota_cutoff_hour"
 
         private const val KEY_ACTIVE_PLATFORMS = "active_platforms"
+        private const val KEY_IS_PROFILE_COMPLETED = "is_profile_completed"
         private const val KEY_UPDATED_AT = "updated_at"
     }
 
@@ -82,6 +83,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
             putString(KEY_VEHICLE_PLATE, updated.vehiclePlate)
             putString(KEY_PROPULSION_TYPE, updated.propulsionType.name)
             putStringSet(KEY_ACTIVE_PLATFORMS, updated.activePlatforms.map { it.name }.toSet())
+            putBoolean(KEY_IS_PROFILE_COMPLETED, updated.isProfileCompleted)
             putLong(KEY_UPDATED_AT, updated.updatedAt)
             apply()
         }
@@ -119,6 +121,64 @@ class DriverProfileRepositoryImpl @Inject constructor(
         saveProfile(driver.copy(vehiclePlate = vehicle.vehiclePlate, propulsionType = vehicle.propulsionType))
     }
 
+    override suspend fun resetProfileForTesting() = withContext(dispatchers.io) {
+        prefs.edit().apply {
+            putBoolean(KEY_IS_PROFILE_COMPLETED, false)
+            putString(KEY_DRIVER_NAME, "")
+            putString(KEY_VEHICLE_PLATE, "")
+            apply()
+        }
+        _driverFlow.value = loadDriverFromPrefs()
+        _vehicleFlow.value = loadVehicleFromPrefs()
+    }
+
+    override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> = withContext(dispatchers.io) {
+        runCatching {
+            val remoteResult = firestoreDataSource.getDriverProfile(userId)
+            val map = remoteResult.getOrNull()
+            if (map != null && map["isProfileCompleted"] == true) {
+                val driverName = map["driverName"] as? String ?: ""
+                val plate = map["vehiclePlate"] as? String ?: ""
+                val brand = map["brand"] as? String ?: ""
+                val model = map["model"] as? String ?: ""
+                val prop = (map["propulsionType"] as? String)?.let {
+                    runCatching { PropulsionType.valueOf(it) }.getOrNull()
+                } ?: PropulsionType.BI_FUEL
+                val tenure = (map["tenureType"] as? String)?.let {
+                    runCatching { VehicleTenure.valueOf(it) }.getOrNull()
+                } ?: VehicleTenure.RENTED
+                val periodicity = (map["quotaPeriodicity"] as? String)?.let {
+                    runCatching { QuotaPeriodicity.valueOf(it) }.getOrNull()
+                } ?: QuotaPeriodicity.WEEKLY
+                val quota = (map["quotaAmount"] as? Number)?.toDouble() ?: 500_000.0
+                val workDays = (map["workDaysWeek"] as? Number)?.toInt() ?: 6
+                val cutoffDay = (map["quotaCutoffDay"] as? Number)?.toInt() ?: 2
+                val cutoffHour = (map["quotaCutoffHour"] as? Number)?.toInt() ?: 23
+
+                prefs.edit().apply {
+                    putBoolean(KEY_IS_PROFILE_COMPLETED, true)
+                    putString(KEY_DRIVER_NAME, driverName)
+                    putString(KEY_VEHICLE_PLATE, plate)
+                    putString(KEY_BRAND, brand)
+                    putString(KEY_MODEL, model)
+                    putString(KEY_PROPULSION_TYPE, prop.name)
+                    putString(KEY_TENURE_TYPE, tenure.name)
+                    putString(KEY_QUOTA_PERIODICITY, periodicity.name)
+                    putFloat(KEY_QUOTA_AMOUNT, quota.toFloat())
+                    putInt(KEY_WORK_DAYS_WEEK, workDays)
+                    putInt(KEY_CUTOFF_DAY, cutoffDay)
+                    putInt(KEY_CUTOFF_HOUR, cutoffHour)
+                    apply()
+                }
+                _driverFlow.value = loadDriverFromPrefs()
+                _vehicleFlow.value = loadVehicleFromPrefs()
+                true
+            } else {
+                false
+            }
+        }
+    }
+
     private fun loadDriverFromPrefs(): DriverProfile {
         val def = DriverProfile()
         val genderName = prefs.getString(KEY_GENDER, def.gender.name)
@@ -139,6 +199,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
             vehiclePlate = prefs.getString(KEY_VEHICLE_PLATE, def.vehiclePlate) ?: def.vehiclePlate,
             propulsionType = prop,
             activePlatforms = platforms,
+            isProfileCompleted = prefs.getBoolean(KEY_IS_PROFILE_COMPLETED, false),
             updatedAt = prefs.getLong(KEY_UPDATED_AT, def.updatedAt)
         )
     }
@@ -183,6 +244,9 @@ class DriverProfileRepositoryImpl @Inject constructor(
             "quotaPeriodicity" to vehicle.quotaPeriodicity.name,
             "quotaAmount" to vehicle.quotaAmount,
             "workDaysWeek" to vehicle.workDaysWeek,
+            "quotaCutoffDay" to vehicle.quotaCutoffDay,
+            "quotaCutoffHour" to vehicle.quotaCutoffHour,
+            "isProfileCompleted" to driver.isProfileCompleted,
             "updatedAt" to System.currentTimeMillis()
         )
         firestoreDataSource.saveDriverProfile(currentUser.uid, map)

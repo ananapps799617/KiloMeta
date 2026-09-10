@@ -93,6 +93,14 @@ class FirestoreDataSource @Inject constructor(
         docRef.set(profileMap, SetOptions.merge()).await()
     }
 
+    suspend fun getDriverProfile(userId: String): Result<Map<String, Any>?> = runCatching {
+        val db = getFirestoreSafe()
+            ?: throw IllegalStateException("⚠️ PENDIENTE DE CONEXIÓN REAL: FirebaseFirestore no inicializado")
+        val docRef = db.collection("users").document(userId).collection("profile").document("current")
+        val snapshot = docRef.get().await()
+        if (snapshot.exists()) snapshot.data else null
+    }
+
     // --------------------------------------------------------------------------
     // BLOQUE 3: LECTURA Y DESCARGA (PULL Y DISASTER RECOVERY)
     // --------------------------------------------------------------------------

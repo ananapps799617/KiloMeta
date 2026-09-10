@@ -54,5 +54,9 @@ data class DriverProfile(
         PlatformType.DIDI,
         PlatformType.INDRIVE
     ),
+    val isProfileCompleted: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis()
-)
+) {
+    val isReadyForCabina: Boolean
+        get() = isProfileCompleted && driverName.isNotBlank() && vehiclePlate.isNotBlank()
+}

@@ -229,14 +229,26 @@ class HomeViewModel @Inject constructor(
     fun signInWithGoogle(idToken: String) = viewModelScope.launch {
         _isAuthLoading.value = true; _authError.value = null
         val result = authenticateUserUseCase.signInWithGoogle(idToken)
-        if (result.isFailure) _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google"
+        if (result.isSuccess) {
+            val user = result.getOrNull()
+            if (user != null) {
+                driverProfileRepository.fetchAndHydrateRemoteProfile(user.uid)
+            }
+        } else {
+            _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google"
+        }
         _isAuthLoading.value = false
     }
 
     fun signInWithEmail(email: String, pass: String) = viewModelScope.launch {
         _isAuthLoading.value = true; _authError.value = null
         val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
-        if (signIn.isFailure) {
+        if (signIn.isSuccess) {
+            val user = signIn.getOrNull()
+            if (user != null) {
+                driverProfileRepository.fetchAndHydrateRemoteProfile(user.uid)
+            }
+        } else {
             val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
             if (signUp.isFailure) _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error auth"
         }

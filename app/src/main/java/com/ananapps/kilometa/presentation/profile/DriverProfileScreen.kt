@@ -2,13 +2,14 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/profile/DriverProfileScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla de Perfil de Conductor y Vehículo desacoplada en secciones modulares.
-// Implementa navegación reactiva post-guardado, reseteo de clave y catálogo asistido.
-// Regla inquebrantable: Archivo pedagógico < 280 líneas.
+// Pantalla de perfil vehicular y conductor. Soporta modo Onboarding (bienvenida
+// guiada obligatoria) y modo edición regular, con selector de día/hora de pago
+// y panel de desarrollo de reseteo exclusivo para la cuenta del Gerente General.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.profile
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -44,25 +45,24 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.ananapps.kilometa.domain.model.DriverProfile
-import com.ananapps.kilometa.domain.model.Gender
-import com.ananapps.kilometa.domain.model.PropulsionType
-import com.ananapps.kilometa.domain.model.QuotaPeriodicity
-import com.ananapps.kilometa.domain.model.VehicleProfile
-import com.ananapps.kilometa.domain.model.VehicleTenure
+import com.ananapps.kilometa.presentation.profile.components.DevTestingSection
 import com.ananapps.kilometa.presentation.profile.components.DriverPersonalSection
 import com.ananapps.kilometa.presentation.profile.components.PasswordResetDialog
 import com.ananapps.kilometa.presentation.profile.components.VehicleConfigSection
+import com.ananapps.kilometa.presentation.profile.components.VehicleQuotaSection
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.TextPrimary
+import com.ananapps.kilometa.presentation.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun DriverProfileScreen(
     onNavigateBack: () -> Unit = {},
+    isOnboardingMode: Boolean = false,
+    userEmail: String = "",
     viewModel: DriverProfileViewModel = hiltViewModel()
 ) {
     val initialDriver by viewModel.driverProfile.collectAsState()
@@ -88,13 +88,15 @@ fun DriverProfileScreen(
     var quotaAmount by remember(initialVehicle.quotaAmount) { mutableDoubleStateOf(initialVehicle.quotaAmount) }
     var quotaPeriodicity by remember(initialVehicle.quotaPeriodicity) { mutableStateOf(initialVehicle.quotaPeriodicity) }
     var workDaysWeek by remember(initialVehicle.workDaysWeek) { mutableIntStateOf(initialVehicle.workDaysWeek) }
+    var quotaCutoffDay by remember(initialVehicle.quotaCutoffDay) { mutableIntStateOf(initialVehicle.quotaCutoffDay) }
+    var quotaCutoffHour by remember(initialVehicle.quotaCutoffHour) { mutableIntStateOf(initialVehicle.quotaCutoffHour) }
 
     // Retorno reactivo post-guardado exitoso
     LaunchedEffect(isSaved) {
         if (isSaved) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.resetSavedNotification()
-            delay(300)
+            delay(250)
             onNavigateBack()
         }
     }
@@ -111,6 +113,28 @@ fun DriverProfileScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Banner de Bienvenida en modo Onboarding
+            if (isOnboardingMode) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth().border(1.dp, StatusGreen.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "🚕 ¡Bienvenido a KiloMeta, Conductor!",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = StatusGreen
+                        )
+                        Text(
+                            text = "Calibremos tu identidad y vehículo para que el Semáforo de Rentabilidad y tus metas de cuota diaria sean 100% exactos.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
+
             // Tarjeta 1: Conductor
             Card(
                 colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
@@ -120,7 +144,7 @@ fun DriverProfileScreen(
                 DriverPersonalSection(
                     driverName = driverName,
                     onDriverNameChange = { driverName = it },
-                    email = initialDriver.email.ifBlank { "conductor@kilometa.co" },
+                    email = initialDriver.email.ifBlank { userEmail.ifBlank { "conductor@kilometa.co" } },
                     phone = phone,
                     onPhoneChange = { phone = it },
                     gender = gender,
@@ -130,7 +154,7 @@ fun DriverProfileScreen(
                 )
             }
 
-            // Tarjeta 2: Vehículo
+            // Tarjeta 2: Vehículo (Identidad y Propulsión)
             Card(
                 colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
                 shape = RoundedCornerShape(16.dp),
@@ -147,17 +171,46 @@ fun DriverProfileScreen(
                     onPropulsionChange = { propulsionType = it },
                     tenureType = tenureType,
                     onTenureChange = { tenureType = it },
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            // Tarjeta 3: Cuota Financiera y Corte de Entrega
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                VehicleQuotaSection(
+                    tenureType = tenureType,
                     quotaAmount = quotaAmount,
                     onQuotaAmountChange = { quotaAmount = it },
                     quotaPeriodicity = quotaPeriodicity,
                     onQuotaPeriodicityChange = { quotaPeriodicity = it },
                     workDaysWeek = workDaysWeek,
                     onWorkDaysWeekChange = { workDaysWeek = it },
+                    quotaCutoffDay = quotaCutoffDay,
+                    onQuotaCutoffDayChange = { quotaCutoffDay = it },
+                    quotaCutoffHour = quotaCutoffHour,
+                    onQuotaCutoffHourChange = { quotaCutoffHour = it },
                     modifier = Modifier.padding(16.dp)
                 )
             }
 
-            // Botón Guardar Perfil (56dp Touch Target)
+            // Tarjeta 4: Zona de Desarrollo (Solo Gerencia General)
+            DevTestingSection(
+                userEmail = userEmail.ifBlank { initialDriver.email },
+                onResetData = {
+                    viewModel.resetProfileForTesting {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Onboarding y datos locales reiniciados.")
+                            onNavigateBack()
+                        }
+                    }
+                }
+            )
+
+            // Botón Principal
             Button(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -166,7 +219,8 @@ fun DriverProfileScreen(
                         phone = phone.trim(),
                         gender = gender,
                         vehiclePlate = vehiclePlate.trim().uppercase(),
-                        propulsionType = propulsionType
+                        propulsionType = propulsionType,
+                        isProfileCompleted = true
                     )
                     val updatedVehicle = initialVehicle.copy(
                         vehiclePlate = vehiclePlate.trim().uppercase(),
@@ -176,7 +230,9 @@ fun DriverProfileScreen(
                         tenureType = tenureType,
                         quotaAmount = quotaAmount,
                         quotaPeriodicity = quotaPeriodicity,
-                        workDaysWeek = workDaysWeek
+                        workDaysWeek = workDaysWeek,
+                        quotaCutoffDay = quotaCutoffDay,
+                        quotaCutoffHour = quotaCutoffHour
                     )
                     viewModel.saveFullProfile(updatedDriver, updatedVehicle)
                 },
@@ -185,7 +241,7 @@ fun DriverProfileScreen(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
-                    text = "💾 Guardar Perfil y Regresar",
+                    text = if (isOnboardingMode) "🏁 Finalizar Configuración y Entrar a Cabina" else "💾 Guardar Perfil y Regresar",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = DeepObsidianBackground
                 )
@@ -197,7 +253,7 @@ fun DriverProfileScreen(
 
     if (showPasswordResetDialog) {
         PasswordResetDialog(
-            initialEmail = initialDriver.email.ifBlank { "conductor@kilometa.co" },
+            initialEmail = initialDriver.email.ifBlank { userEmail.ifBlank { "conductor@kilometa.co" } },
             onConfirm = { emailToReset ->
                 showPasswordResetDialog = false
                 viewModel.sendPasswordResetEmail(emailToReset) { success, errorMsg ->
@@ -214,7 +270,3 @@ fun DriverProfileScreen(
         )
     }
 }
-
-// Helper para instanciar el estado de Snackbar
-@Composable
-private fun SnackbarHostStateState(): SnackbarHostState = remember { SnackbarHostState() }
