@@ -8,10 +8,14 @@
 package com.ananapps.kilometa.data.repository
 
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
+import com.ananapps.kilometa.data.local.dao.PendingDeletionDao
 import com.ananapps.kilometa.data.local.dao.TripDao
+import com.ananapps.kilometa.data.local.entity.PendingDeletionEntity
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
+import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.TripRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -26,6 +30,9 @@ import javax.inject.Singleton
 @Singleton
 class TripRepositoryImpl @Inject constructor(
     private val tripDao: TripDao,
+    private val pendingDeletionDao: PendingDeletionDao,
+    private val firestoreDataSource: FirestoreDataSource,
+    private val authRepository: AuthRepository,
     private val dispatchers: CoroutineDispatchers
 ) : TripRepository {
 
@@ -38,12 +45,21 @@ class TripRepositoryImpl @Inject constructor(
     override suspend fun addTrip(trip: Trip) {
         withContext(dispatchers.io) {
             tripDao.insertTrip(trip.toEntity())
+            pendingDeletionDao.deleteByEntityId(trip.id)
         }
     }
 
     override suspend fun deleteTrip(tripId: String) {
         withContext(dispatchers.io) {
             tripDao.deleteTrip(tripId)
+            pendingDeletionDao.insert(PendingDeletionEntity(tripId, "TRIP"))
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                val result = firestoreDataSource.deleteTrip(user.uid, tripId)
+                if (result.isSuccess) {
+                    pendingDeletionDao.deleteByEntityId(tripId)
+                }
+            }
         }
     }
 }

@@ -86,6 +86,29 @@ class FirestoreDataSource @Inject constructor(
         batch.commit().await()
     }
 
+    // --------------------------------------------------------------------------
+    // BLOQUE 2.1: ELIMINACIÓN REMOTA EN LA NUBE (ANTI-RESURRECCIÓN)
+    // --------------------------------------------------------------------------
+    suspend fun deleteTrip(userId: String, tripId: String): Result<Unit> = runCatching {
+        val db = getFirestoreSafe() ?: return@runCatching
+        db.collection("users").document(userId).collection("trips").document(tripId).delete().await()
+    }
+
+    suspend fun deleteFueling(userId: String, fuelingId: String): Result<Unit> = runCatching {
+        val db = getFirestoreSafe() ?: return@runCatching
+        db.collection("users").document(userId).collection("fuelings").document(fuelingId).delete().await()
+    }
+
+    suspend fun deleteExpense(userId: String, expenseId: String): Result<Unit> = runCatching {
+        val db = getFirestoreSafe() ?: return@runCatching
+        db.collection("users").document(userId).collection("expenses").document(expenseId).delete().await()
+    }
+
+    suspend fun deleteShift(userId: String, shiftId: String): Result<Unit> = runCatching {
+        val db = getFirestoreSafe() ?: return@runCatching
+        db.collection("users").document(userId).collection("shifts").document(shiftId).delete().await()
+    }
+
     suspend fun saveDriverProfile(userId: String, profileMap: Map<String, Any>): Result<Unit> = runCatching {
         val db = getFirestoreSafe()
             ?: throw IllegalStateException("⚠️ PENDIENTE DE CONEXIÓN REAL: FirebaseFirestore no inicializado")

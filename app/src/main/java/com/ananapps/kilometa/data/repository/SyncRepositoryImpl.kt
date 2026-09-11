@@ -76,6 +76,17 @@ class SyncRepositoryImpl @Inject constructor(
         _syncStatus.value = _syncStatus.value.copy(state = SyncState.SYNCING)
 
         runCatching {
+            val pendingDeletions = database.pendingDeletionDao().getAllPendingDeletions()
+            for (del in pendingDeletions) {
+                when (del.entityType) {
+                    "TRIP" -> firestoreDataSource.deleteTrip(user.uid, del.entityId)
+                    "FUELING" -> firestoreDataSource.deleteFueling(user.uid, del.entityId)
+                    "EXPENSE" -> firestoreDataSource.deleteExpense(user.uid, del.entityId)
+                    "SHIFT" -> firestoreDataSource.deleteShift(user.uid, del.entityId)
+                }
+                database.pendingDeletionDao().deleteByEntityId(del.entityId)
+            }
+
             val shifts = shiftDao.getAllShifts().first().toShiftDtoList()
             val trips = tripDao.getAllTrips().first().toTripDtoList()
             val fuelings = fuelingDao.getAllFuelings().first().toFuelingDtoList()
@@ -109,6 +120,7 @@ class SyncRepositoryImpl @Inject constructor(
         _syncStatus.value = _syncStatus.value.copy(state = SyncState.SYNCING)
 
         runCatching {
+            val deletedIds = database.pendingDeletionDao().getAllPendingDeletions().map { it.entityId }.toSet()
             val remoteShifts = firestoreDataSource.getShifts(user.uid).getOrThrow().toShiftEntityList()
             val remoteTrips = firestoreDataSource.getTrips(user.uid).getOrThrow().toTripEntityList()
             val remoteFuelings = firestoreDataSource.getFuelings(user.uid).getOrThrow().toFuelingEntityList()
@@ -116,6 +128,10 @@ class SyncRepositoryImpl @Inject constructor(
 
             // Inserción en orden topológico (Primero padres con resolución LWW, luego hijos con FK)
             for (remoteShift in remoteShifts) {
+                if (remoteShift.id in deletedIds) {
+                    firestoreDataSource.deleteShift(user.uid, remoteShift.id)
+                    continue
+                }
                 val localShift = shiftDao.getShiftById(remoteShift.id)
                 if (localShift == null) {
                     shiftDao.insertShift(remoteShift)
@@ -125,11 +141,19 @@ class SyncRepositoryImpl @Inject constructor(
                 } else if (remoteShift.endOdometer != null && localShift.endOdometer == null) {
                     shiftDao.updateShift(remoteShift)
                 }
-                // En caso contrario, se preserva el estado local del conductor
             }
-            for (trip in remoteTrips) { tripDao.insertTrip(trip) }
-            for (fueling in remoteFuelings) { fuelingDao.insertFueling(fueling) }
-            for (expense in remoteExpenses) { expenseDao.insertExpense(expense) }
+            for (trip in remoteTrips) {
+                if (trip.id !in deletedIds) tripDao.insertTrip(trip)
+                else firestoreDataSource.deleteTrip(user.uid, trip.id)
+            }
+            for (fueling in remoteFuelings) {
+                if (fueling.id !in deletedIds) fuelingDao.insertFueling(fueling)
+                else firestoreDataSource.deleteFueling(user.uid, fueling.id)
+            }
+            for (expense in remoteExpenses) {
+                if (expense.id !in deletedIds) expenseDao.insertExpense(expense)
+                else firestoreDataSource.deleteExpense(user.uid, expense.id)
+            }
 
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,

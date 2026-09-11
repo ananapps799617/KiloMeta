@@ -130,4 +130,65 @@ class CalculateShiftCashSettlementUseCaseTest {
         // Net platform balance: 30k digital net - 4k cash commission = +26,000 COP
         assertEquals(26_000.0, result.netPlatformBalance, 0.001)
     }
+
+    @Test
+    fun whenMultiplePlatforms_calculatesIndependentWalletsCorrectly() {
+        // Escenario real planteado por el Gerente General:
+        // Carrera 1: Uber pago por app $10.000 neto
+        // Carrera 2: Uber pago en efectivo $15.000, descuento app $3.000
+        // Carrera 3: DiDi pago en efectivo $20.000, descuento app $4.000
+        val trips = listOf(
+            Trip(
+                id = "u1",
+                shiftId = "s1",
+                platformType = PlatformType.UBER,
+                grossAmount = 14_000.0,
+                commissionAmount = 4_000.0,
+                netAmount = 10_000.0,
+                paymentMethod = PaymentMethod.APP_WALLET,
+                paymentDestination = PaymentDestination.APP_RETAINED,
+                timestamp = 1000L
+            ),
+            Trip(
+                id = "u2",
+                shiftId = "s1",
+                platformType = PlatformType.UBER,
+                grossAmount = 15_000.0,
+                commissionAmount = 3_000.0,
+                netAmount = 12_000.0,
+                paymentMethod = PaymentMethod.CASH,
+                paymentDestination = PaymentDestination.CASH_IN_HAND,
+                timestamp = 2000L
+            ),
+            Trip(
+                id = "d1",
+                shiftId = "s1",
+                platformType = PlatformType.DIDI,
+                grossAmount = 20_000.0,
+                commissionAmount = 4_000.0,
+                netAmount = 16_000.0,
+                paymentMethod = PaymentMethod.CASH,
+                paymentDestination = PaymentDestination.CASH_IN_HAND,
+                timestamp = 3000L
+            )
+        )
+
+        val result = useCase(trips = trips, fuelings = emptyList(), expenses = emptyList())
+
+        // 1. Efectivo físico en mano: 15.000 + 20.000 = 35.000
+        assertEquals(35_000.0, result.cashInHandAvailable, 0.001)
+
+        // 2. Billetera Uber independiente: 10.000 saldo digital - 3.000 comisión efectivo = +7.000 a favor
+        assertEquals(10_000.0, result.uberWallet.netDisbursementPending, 0.001)
+        assertEquals(3_000.0, result.uberWallet.cashCommissionOwed, 0.001)
+        assertEquals(7_000.0, result.uberWallet.netBalance, 0.001)
+
+        // 3. Billetera DiDi independiente: 0 saldo digital - 4.000 comisión efectivo = -4.000 adeudado
+        assertEquals(0.0, result.didiWallet.netDisbursementPending, 0.001)
+        assertEquals(4_000.0, result.didiWallet.cashCommissionOwed, 0.001)
+        assertEquals(-4_000.0, result.didiWallet.netBalance, 0.001)
+
+        // 4. Ganancia limpia total: 10.000 + 12.000 + 16.000 = 38.000 (o 35.000 cash + 7.000 uber - 4.000 didi = 38.000)
+        assertEquals(38_000.0, result.totalNet, 0.001)
+    }
 }

@@ -109,13 +109,19 @@ fun DrivvoTripFinancialSection(
                     )
                 }
 
-                if (gross > 0.0 && commission > 0.0) {
-                    val pct = (commission / gross) * 100.0
-                    Text(
-                        text = "Comisión: ${"%.1f".format(pct)}%",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = StatusAmber
-                    )
+                if (commission > 0.0) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Descuento",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = "-${currencyFormatter.format(commission)}",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = StatusAmber
+                        )
+                    }
                 }
             }
         }

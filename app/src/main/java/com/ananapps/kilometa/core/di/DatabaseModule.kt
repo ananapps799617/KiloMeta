@@ -88,6 +88,21 @@ object DatabaseModule {
         }
     }
 
+    val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `pending_deletions` (
+                    `entity_id` TEXT NOT NULL,
+                    `entity_type` TEXT NOT NULL,
+                    `deleted_at` INTEGER NOT NULL,
+                    PRIMARY KEY(`entity_id`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+
     @Provides
     @Singleton
     fun provideKiloMetaDatabase(
@@ -98,7 +113,7 @@ object DatabaseModule {
             KiloMetaDatabase::class.java,
             KiloMetaDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -127,4 +142,9 @@ object DatabaseModule {
     fun providePlaceDao(
         database: KiloMetaDatabase
     ): com.ananapps.kilometa.data.local.dao.PlaceDao = database.placeDao()
+
+    @Provides
+    fun providePendingDeletionDao(
+        database: KiloMetaDatabase
+    ): com.ananapps.kilometa.data.local.dao.PendingDeletionDao = database.pendingDeletionDao()
 }

@@ -4,12 +4,13 @@
 // DESCRIPCIÓN PEDAGÓGICA:
 // Tarjeta de cabina que muestra el desglose de doble bolsillo contable:
 // 1. Dinero físico líquido en mano (recaudo cash menos gastos y combustible).
-// 2. Saldo retenido en plataformas (Uber/DiDi) que será desembolsado en el corte semanal.
+// 2. Saldo y billeteras independientes por plataforma (Uber, DiDi, inDrive).
 // Regla inquebrantable: Archivo pedagógico < 280 líneas.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -20,10 +21,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
@@ -41,6 +46,7 @@ import com.ananapps.kilometa.presentation.theme.StatusRed
 import com.ananapps.kilometa.presentation.theme.StatusRedContainer
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
+import com.ananapps.kilometa.presentation.theme.visualToken
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -146,7 +152,82 @@ fun CockpitCashSettlementCard(
                 }
             }
 
-            // Cruce de Cuentas: Billetera Digital vs Comisión Efectivo
+            // Desglose de Billeteras por Plataforma (Uber, DiDi, inDrive)
+            val activeWallets = listOf(
+                settlement.uberWallet,
+                settlement.didiWallet,
+                settlement.indriveWallet
+            ).filter { it.digitalGross > 0 || it.cashCommissionOwed > 0 || it.cashGross > 0 }
+
+            if (activeWallets.isNotEmpty()) {
+                Text(
+                    text = "Billeteras por Aplicación",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = TextSecondary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    activeWallets.forEach { wallet ->
+                        val token = wallet.platformType.visualToken
+                        val isPositive = wallet.netBalance >= 0
+                        val valColor = if (isPositive) StatusGreen else StatusRed
+
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            color = DeepObsidianSurfaceVariant,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, token.backgroundColor.copy(alpha = 0.5f))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(16.dp)
+                                            .clip(CircleShape)
+                                            .background(token.backgroundColor),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = token.monogram,
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Black
+                                            ),
+                                            color = token.contentColor
+                                        )
+                                    }
+                                    Text(
+                                        text = token.badgeLabel,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = TextPrimary
+                                    )
+                                }
+                                Text(
+                                    text = (if (isPositive && wallet.netBalance > 0) "+" else "") + copFormat.format(wallet.netBalance),
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                    color = valColor
+                                )
+                                Text(
+                                    text = if (isPositive) "A cobrar" else "Deuda app",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Cruce Global Referencial
             val isPlatformNetPositive = settlement.netPlatformBalance >= 0
             val balanceColor = if (isPlatformNetPositive) StatusGreen else StatusRed
             val balanceBg = if (isPlatformNetPositive) StatusGreenContainer else StatusRedContainer

@@ -36,9 +36,10 @@ import com.ananapps.kilometa.data.local.entity.TripEntity
         FuelingEntity::class,
         ExpenseEntity::class,
         MaintenanceEntity::class,
-        PlaceEntity::class
+        PlaceEntity::class,
+        com.ananapps.kilometa.data.local.entity.PendingDeletionEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -53,6 +54,7 @@ abstract class KiloMetaDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun maintenanceDao(): MaintenanceDao
     abstract fun placeDao(): PlaceDao
+    abstract fun pendingDeletionDao(): com.ananapps.kilometa.data.local.dao.PendingDeletionDao
 
     companion object {
         const val DATABASE_NAME: String = "kilometa.db"
