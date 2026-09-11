@@ -1,11 +1,6 @@
-// ==============================================================================
-// PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
-// ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/repository/SyncRepositoryImpl.kt
-// DESCRIPCIÓN PEDAGÓGICA:
-// Implementación del motor de sincronización Cloud Sync Engine y Disaster Recovery.
-// Orquesta el flujo de sincronización delta hacia Firestore y la hidratación
-// en orden topológico respetando las claves foráneas de Room (Shifts -> Hijos).
-// ==============================================================================
+// PROYECTO: KiloMeta — ARCHIVO: SyncRepositoryImpl.kt
+// Motor de sincronización Cloud Sync Engine, merge inteligente y Disaster Recovery.
+// Orquesta push/pull delta hacia Firestore respetando claves foráneas de Room.
 
 package com.ananapps.kilometa.data.repository
 
@@ -40,9 +35,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: IMPLEMENTACIÓN DEL MOTOR DE SINCRONIZACIÓN
-// ------------------------------------------------------------------------------
+// --- BLOQUE 1: MOTOR DE SINCRONIZACIÓN ---
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
     private val database: KiloMetaDatabase,
@@ -61,9 +54,7 @@ class SyncRepositoryImpl @Inject constructor(
 
     override fun observeSyncStatus(): Flow<SyncStatus> = _syncStatus.asStateFlow()
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 2: PUSH DE MUTACIONES PENDIENTES
-    // --------------------------------------------------------------------------
+    // --- BLOQUE 2: PUSH DE MUTACIONES PENDIENTES ---
     override suspend fun pushPendingChanges(): Result<Unit> = withContext(dispatchers.io) {
         val user = authRepository.getCurrentUser()
         if (user == null) {
@@ -110,9 +101,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 3: PULL DE ACTUALIZACIONES REMOTAS
-    // --------------------------------------------------------------------------
+    // --- BLOQUE 3: PULL CON MERGE INTELIGENTE ---
     override suspend fun pullRemoteChanges(): Result<Unit> = withContext(dispatchers.io) {
         val user = authRepository.getCurrentUser()
             ?: return@withContext Result.failure(IllegalStateException("Sesión no disponible"))
@@ -142,17 +131,55 @@ class SyncRepositoryImpl @Inject constructor(
                     shiftDao.updateShift(remoteShift)
                 }
             }
-            for (trip in remoteTrips) {
-                if (trip.id !in deletedIds) tripDao.insertTrip(trip)
-                else firestoreDataSource.deleteTrip(user.uid, trip.id)
+            // Merge inteligente de Carreras: preservar odómetros locales si el
+            // remoto carece de ellos (Firestore legacy sin esos campos).
+            for (remoteTrip in remoteTrips) {
+                if (remoteTrip.id in deletedIds) {
+                    firestoreDataSource.deleteTrip(user.uid, remoteTrip.id)
+                    continue
+                }
+                val localTrip = tripDao.getTripById(remoteTrip.id)
+                if (localTrip == null) {
+                    tripDao.insertTrip(remoteTrip)
+                } else {
+                    val merged = remoteTrip.copy(
+                        startOdometer = remoteTrip.startOdometer ?: localTrip.startOdometer,
+                        endOdometer = remoteTrip.endOdometer ?: localTrip.endOdometer,
+                        paymentDestination = if (remoteTrip.paymentDestination != "CASH_IN_HAND"
+                            || localTrip.paymentDestination == "CASH_IN_HAND")
+                            remoteTrip.paymentDestination else localTrip.paymentDestination
+                    )
+                    tripDao.updateTrip(merged)
+                }
             }
-            for (fueling in remoteFuelings) {
-                if (fueling.id !in deletedIds) fuelingDao.insertFueling(fueling)
-                else firestoreDataSource.deleteFueling(user.uid, fueling.id)
+            // Merge defensivo de Tanqueos: preservar odómetro local si remoto es 0
+            for (remoteFueling in remoteFuelings) {
+                if (remoteFueling.id in deletedIds) {
+                    firestoreDataSource.deleteFueling(user.uid, remoteFueling.id)
+                    continue
+                }
+                val localFueling = fuelingDao.getFuelingById(remoteFueling.id)
+                if (localFueling == null) {
+                    fuelingDao.insertFueling(remoteFueling)
+                } else {
+                    val merged = if (remoteFueling.odometer == 0 && localFueling.odometer != 0) {
+                        remoteFueling.copy(odometer = localFueling.odometer)
+                    } else remoteFueling
+                    fuelingDao.updateFueling(merged)
+                }
             }
-            for (expense in remoteExpenses) {
-                if (expense.id !in deletedIds) expenseDao.insertExpense(expense)
-                else firestoreDataSource.deleteExpense(user.uid, expense.id)
+            // Merge defensivo de Gastos: upsert seguro
+            for (remoteExpense in remoteExpenses) {
+                if (remoteExpense.id in deletedIds) {
+                    firestoreDataSource.deleteExpense(user.uid, remoteExpense.id)
+                    continue
+                }
+                val localExpense = expenseDao.getExpenseById(remoteExpense.id)
+                if (localExpense == null) {
+                    expenseDao.insertExpense(remoteExpense)
+                } else {
+                    expenseDao.updateExpense(remoteExpense)
+                }
             }
 
             _syncStatus.value = SyncStatus(
@@ -167,9 +194,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 4: RECUPERACIÓN TOTAL ANTE DESASTRES (DISASTER RECOVERY)
-    // --------------------------------------------------------------------------
+    // --- BLOQUE 4: DISASTER RECOVERY ---
     override fun fullDisasterRecovery(): Flow<RestoreProgress> = flow {
         emit(RestoreProgress.Running("Iniciando conexión de seguridad...", 0, 0.05f))
 
@@ -221,9 +246,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }.flowOn(dispatchers.io)
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 5: DIAGNÓSTICO DE ENLACE EN VIVO
-    // --------------------------------------------------------------------------
+    // --- BLOQUE 5: DIAGNÓSTICO DE ENLACE EN VIVO ---
     override suspend fun checkCloudConnection(): ConnectionDiagnostic = withContext(dispatchers.io) {
         val user = authRepository.getCurrentUser()
         if (user == null) {
@@ -238,9 +261,7 @@ class SyncRepositoryImpl @Inject constructor(
         firestoreDataSource.pingDiagnostic(user.uid)
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 6: PURGA TOTAL DE BASE DE DATOS LOCAL (CLEAN SESSION HANDSHAKE)
-    // --------------------------------------------------------------------------
+    // --- BLOQUE 6: PURGA LOCAL (CLEAN SESSION HANDSHAKE) ---
     override suspend fun clearAllLocalData(): Result<Unit> = withContext(dispatchers.io) {
         runCatching {
             database.clearAllTables()

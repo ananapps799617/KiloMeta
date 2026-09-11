@@ -42,7 +42,10 @@ data class TripDto(
     val commissionAmount: Double = 0.0,
     val netAmount: Double = 0.0,
     val paymentMethod: String = "",
+    val paymentDestination: String = "CASH_IN_HAND",
     val timestamp: Long = 0L,
+    val startOdometer: Int? = null,
+    val endOdometer: Int? = null,
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false
 )

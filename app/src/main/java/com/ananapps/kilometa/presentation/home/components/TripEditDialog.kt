@@ -43,13 +43,13 @@ fun TripEditDialog(
     onDismiss: () -> Unit,
     onConfirm: (Trip) -> Unit
 ) {
-    var platform by remember { mutableStateOf(trip.platformType) }
-    var paymentMethod by remember { mutableStateOf(trip.paymentMethod) }
-    var grossText by remember { mutableStateOf(trip.grossAmount.toLong().toString()) }
-    var commissionText by remember { mutableStateOf(trip.commissionAmount.toLong().toString()) }
-    var startOdoText by remember { mutableStateOf(trip.startOdometer?.toString() ?: "") }
-    var endOdoText by remember { mutableStateOf(trip.endOdometer?.toString() ?: "") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var platform by remember(trip.id) { mutableStateOf(trip.platformType) }
+    var paymentMethod by remember(trip.id) { mutableStateOf(trip.paymentMethod) }
+    var grossText by remember(trip.id) { mutableStateOf(trip.grossAmount.toLong().toString()) }
+    var commissionText by remember(trip.id) { mutableStateOf(trip.commissionAmount.toLong().toString()) }
+    var startOdoText by remember(trip.id) { mutableStateOf(trip.startOdometer?.toString() ?: "") }
+    var endOdoText by remember(trip.id) { mutableStateOf(trip.endOdometer?.toString() ?: "") }
+    var errorMessage by remember(trip.id) { mutableStateOf<String?>(null) }
 
     val gross = grossText.toDoubleOrNull() ?: 0.0
     val commission = commissionText.toDoubleOrNull() ?: 0.0
