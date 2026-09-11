@@ -1,9 +1,9 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripFinancialSection.kt
-// DESCRIPCIÃ“N PEDAGÃ“GICA:
-// SecciÃ³n financiera ergonÃ³mica estilo Cockpit KiloMeta: captura directa de "Â¿CuÃ¡nto recibÃ­?"
-// y "Â¿CuÃ¡nto descuentan?", cÃ¡lculo reactivo de ganancia neta y selecciÃ³n de medio de pago.
+// DESCRIPCIÓN PEDAGÓGICA:
+// Sección financiera ergonómica estilo Cockpit KiloMeta: captura directa de "¿Cuánto recibí?"
+// y "¿Cuánto descuentan?", cálculo reactivo de ganancia neta y selección de medio de pago.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -52,7 +52,7 @@ fun TripFinancialSection(
             OutlinedTextField(
                 value = grossAmountText,
                 onValueChange = onGrossAmountChange,
-                label = { Text("Â¿CuÃ¡nto cobraste?") },
+                label = { Text("¿Cuánto cobraste?") },
                 placeholder = { Text("Ej: 15000") },
                 prefix = { Text("$ ", fontWeight = FontWeight.Bold, color = StatusGreen) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -69,8 +69,8 @@ fun TripFinancialSection(
             OutlinedTextField(
                 value = commissionAmountText,
                 onValueChange = onCommissionAmountChange,
-                label = { Text("Â¿Te descuentan?") },
-                placeholder = { Text("ComisiÃ³n $") },
+                label = { Text("¿Te descuentan?") },
+                placeholder = { Text("Comisión $") },
                 prefix = { Text("$ ", fontWeight = FontWeight.Bold, color = StatusRed) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
@@ -139,7 +139,7 @@ fun TripFinancialSection(
             )
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // OpciÃ³n 1: Efectivo
+                // Opción 1: Efectivo
                 Surface(
                     modifier = Modifier
                         .weight(1f)
@@ -156,7 +156,7 @@ fun TripFinancialSection(
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "ðŸ’µ Efectivo",
+                            text = "💵 Efectivo",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = if (isCash) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isCash) StatusGreen else TextSecondary,
@@ -166,7 +166,7 @@ fun TripFinancialSection(
                     }
                 }
 
-                // OpciÃ³n 2: Nequi / Daviplata
+                // Opción 2: Nequi / Daviplata
                 Surface(
                     modifier = Modifier
                         .weight(1.15f)
@@ -183,7 +183,7 @@ fun TripFinancialSection(
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "ðŸŸ£ Nequi / Davi",
+                            text = "🟣 Nequi / Davi",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = if (isNequi) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isNequi) PlatformPrivate else TextSecondary,
@@ -193,7 +193,7 @@ fun TripFinancialSection(
                     }
                 }
 
-                // OpciÃ³n 3: Saldo en App
+                // Opción 3: Saldo en App
                 Surface(
                     modifier = Modifier
                         .weight(1.05f)
@@ -210,7 +210,7 @@ fun TripFinancialSection(
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "ðŸ“± Saldo App",
+                            text = "📱 Saldo App",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = if (isAppWallet) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isAppWallet) ElectricBluePrimary else TextSecondary,
@@ -223,13 +223,13 @@ fun TripFinancialSection(
 
             if ((isCash || isNequi) && commission > 0.0) {
                 Text(
-                    text = "âš ï¸ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisiÃ³n de ${currencyFormatter.format(commission)} queda como deuda pendiente con la app.",
+                    text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(commission)} queda como deuda pendiente con la app.",
                     style = MaterialTheme.typography.labelSmall,
                     color = StatusAmber
                 )
             } else if (isAppWallet && commission > 0.0) {
                 Text(
-                    text = "â„¹ï¸ La app descuenta su comisiÃ³n en la fuente. ${currencyFormatter.format(net)} netos ingresan a tu saldo en la app.",
+                    text = "ℹ️ La app descuenta su comisión en la fuente. ${currencyFormatter.format(net)} netos ingresan a tu saldo en la app.",
                     style = MaterialTheme.typography.labelSmall,
                     color = ElectricBluePrimary
                 )

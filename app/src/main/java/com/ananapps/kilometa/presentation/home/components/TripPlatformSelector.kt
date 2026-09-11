@@ -1,8 +1,8 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripPlatformSelector.kt
-// DESCRIPCIÃ“N PEDAGÃ“GICA:
-// Selector ergonÃ³mico de plataforma de transporte estilo Cockpit KiloMeta (Fila con Ã­cono y chips de 1 toque).
+// DESCRIPCIÓN PEDAGÓGICA:
+// Selector ergonómico de plataforma de transporte estilo Cockpit KiloMeta (Fila con ícono y chips de 1 toque).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
