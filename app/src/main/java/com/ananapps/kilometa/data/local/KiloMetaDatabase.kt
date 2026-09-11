@@ -38,7 +38,7 @@ import com.ananapps.kilometa.data.local.entity.TripEntity
         MaintenanceEntity::class,
         PlaceEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

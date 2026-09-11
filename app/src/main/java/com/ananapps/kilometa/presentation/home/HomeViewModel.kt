@@ -128,15 +128,28 @@ class HomeViewModel @Inject constructor(
     fun registerTrip(
         platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod,
         dest: PaymentDestination = PaymentDestination.CASH_IN_HAND,
+        timestamp: Long = System.currentTimeMillis(),
+        startOdometer: Int? = null,
+        endOdometer: Int? = null,
         isSporadic: Boolean = false
     ) {
         viewModelScope.launch {
             val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.createSporadicShift(notes = "Carrera esporádica").id
+                manageShiftUseCase.createSporadicShift(odometer = startOdometer ?: endOdometer, notes = "Carrera").id
             } else {
                 (uiState.value as HomeUiState.ActiveShift).summary.shiftId
             }
-            registerTripUseCase(shiftId, platform, gross, commission, payment, dest)
+            registerTripUseCase(
+                shiftId = shiftId,
+                platformType = platform,
+                grossAmount = gross,
+                commissionAmount = commission,
+                paymentMethod = payment,
+                paymentDestination = dest,
+                timestamp = timestamp,
+                startOdometer = startOdometer,
+                endOdometer = endOdometer
+            )
         }
     }
 

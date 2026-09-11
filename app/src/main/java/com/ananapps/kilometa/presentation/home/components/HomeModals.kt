@@ -11,6 +11,8 @@ package com.ananapps.kilometa.presentation.home.components
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.ananapps.kilometa.presentation.home.HomeUiState
 import com.ananapps.kilometa.presentation.home.HomeViewModel
 
@@ -59,11 +61,24 @@ fun HomeCockpitModals(
         )
     }
     if (showTripSheet) {
+        val vehicleProfile by viewModel.vehicleProfile.collectAsState()
         RegisterTripSheet(
             sheetState = tripSheetState,
+            vehicleProfile = vehicleProfile,
+            lastKnownOdometer = resolvedOdo,
             onDismiss = onDismissTripSheet,
-            onConfirmTrip = { platform, gross, commission, payment, destination ->
-                viewModel.registerTrip(platform, gross, commission, payment, destination, isSporadic = isSporadic)
+            onConfirmTrip = { platform, gross, commission, payment, destination, timestamp, startOdo, endOdo ->
+                viewModel.registerTrip(
+                    platform = platform,
+                    gross = gross,
+                    commission = commission,
+                    payment = payment,
+                    dest = destination,
+                    timestamp = timestamp,
+                    startOdometer = startOdo,
+                    endOdometer = endOdo,
+                    isSporadic = isSporadic
+                )
             }
         )
     }

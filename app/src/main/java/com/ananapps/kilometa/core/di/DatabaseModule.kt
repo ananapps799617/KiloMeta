@@ -81,6 +81,13 @@ object DatabaseModule {
         }
     }
 
+    val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `trips` ADD COLUMN `start_odometer` INTEGER DEFAULT NULL")
+            db.execSQL("ALTER TABLE `trips` ADD COLUMN `end_odometer` INTEGER DEFAULT NULL")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideKiloMetaDatabase(
@@ -91,7 +98,7 @@ object DatabaseModule {
             KiloMetaDatabase::class.java,
             KiloMetaDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .fallbackToDestructiveMigration()
             .build()
     }

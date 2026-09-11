@@ -55,5 +55,11 @@ data class TripEntity(
     val paymentDestination: String = "CASH_IN_HAND",
 
     @ColumnInfo(name = "timestamp")
-    val timestamp: Long
+    val timestamp: Long,
+
+    @ColumnInfo(name = "start_odometer", defaultValue = "NULL")
+    val startOdometer: Int? = null,
+
+    @ColumnInfo(name = "end_odometer", defaultValue = "NULL")
+    val endOdometer: Int? = null
 )

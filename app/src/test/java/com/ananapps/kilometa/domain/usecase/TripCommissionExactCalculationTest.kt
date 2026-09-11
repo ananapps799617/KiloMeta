@@ -153,6 +153,40 @@ class TripCommissionExactCalculationTest {
         assertEquals(0.0, PlatformConfig.getRule(PlatformType.PRIVATE).referenceCommissionPct, 0.01)
     }
 
+    @Test
+    fun tripWithOdometers_calculatesDistanceCorrectly() {
+        runBlocking {
+            val trip = registerTripUseCase(
+                shiftId = "shift-001",
+                platformType = PlatformType.UBER,
+                grossAmount = 15000.0,
+                commissionAmount = 4200.0,
+                paymentMethod = PaymentMethod.CASH,
+                startOdometer = 7980,
+                endOdometer = 7993
+            )
+
+            assertEquals(7980, trip.startOdometer)
+            assertEquals(7993, trip.endOdometer)
+            assertEquals(13.0, trip.tripDistanceKm ?: 0.0, 0.001)
+        }
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun endOdometerLessThanStart_throwsException() {
+        runBlocking {
+            registerTripUseCase(
+                shiftId = "shift-001",
+                platformType = PlatformType.UBER,
+                grossAmount = 15000.0,
+                commissionAmount = 4200.0,
+                paymentMethod = PaymentMethod.CASH,
+                startOdometer = 8000,
+                endOdometer = 7950
+            )
+        }
+    }
+
     private class FakeTripRepository : TripRepository {
         val savedTrips = mutableListOf<Trip>()
 

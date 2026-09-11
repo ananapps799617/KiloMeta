@@ -45,14 +45,21 @@ class RegisterTripUseCase @Inject constructor(
         commissionAmount: Double,
         paymentMethod: PaymentMethod,
         paymentDestination: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
+        startOdometer: Int? = null,
+        endOdometer: Int? = null
     ): Trip {
-        // Domain Guards: Validaciones de consistencia contable
+        // Domain Guards: Validaciones de consistencia contable y telemetría
         require(shiftId.isNotBlank()) { "El identificador del turno no puede estar vacío" }
         require(grossAmount >= 0.0) { "La tarifa bruta de la carrera debe ser mayor o igual a cero" }
         require(commissionAmount >= 0.0) { "La comisión de la plataforma debe ser mayor o igual a cero" }
         require(commissionAmount <= grossAmount) {
             "La comisión ($commissionAmount COP) no puede exceder el monto bruto cobrado ($grossAmount COP)"
+        }
+        if (startOdometer != null && endOdometer != null) {
+            require(endOdometer >= startOdometer) {
+                "El odómetro final ($endOdometer km) no puede ser inferior al inicial ($startOdometer km)"
+            }
         }
 
         val netAmount = grossAmount - commissionAmount
@@ -66,7 +73,9 @@ class RegisterTripUseCase @Inject constructor(
             netAmount = netAmount,
             paymentMethod = paymentMethod,
             paymentDestination = paymentDestination,
-            timestamp = timestamp
+            timestamp = timestamp,
+            startOdometer = startOdometer,
+            endOdometer = endOdometer
         )
 
         tripRepository.addTrip(trip)

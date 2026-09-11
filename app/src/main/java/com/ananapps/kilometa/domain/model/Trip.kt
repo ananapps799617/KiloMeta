@@ -20,11 +20,20 @@ data class Trip(
     val netAmount: Double,
     val paymentMethod: PaymentMethod,
     val paymentDestination: PaymentDestination = PaymentDestination.CASH_IN_HAND,
-    val timestamp: Long
+    val timestamp: Long,
+    val startOdometer: Int? = null,
+    val endOdometer: Int? = null
 ) {
     // --------------------------------------------------------------------------
     // BLOQUE 2: PROPIEDADES DE VALIDACIÓN Y RENDIMIENTO
     // --------------------------------------------------------------------------
+    val tripDistanceKm: Double?
+        get() = if (startOdometer != null && endOdometer != null && endOdometer >= startOdometer) {
+            (endOdometer - startOdometer).toDouble()
+        } else {
+            null
+        }
+
     val commissionRatePercentage: Double
         get() = if (grossAmount > 0.0) {
             (commissionAmount / grossAmount) * 100.0
