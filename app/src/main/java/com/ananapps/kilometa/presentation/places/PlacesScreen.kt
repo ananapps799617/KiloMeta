@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +35,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.domain.model.PlaceCategory
 import com.ananapps.kilometa.presentation.places.components.AddPlaceDialog
 import com.ananapps.kilometa.presentation.places.components.PlaceItemCard
+import com.ananapps.kilometa.presentation.places.components.PlacesOverviewMapView
+import com.ananapps.kilometa.presentation.places.WazeMapLauncher
 import com.ananapps.kilometa.presentation.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +50,7 @@ fun PlacesScreen(
     val places by viewModel.filteredPlaces.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var isMapView by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -66,6 +70,15 @@ fun PlacesScreen(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Volver",
                             tint = TextPrimary
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { isMapView = !isMapView }) {
+                        Icon(
+                            imageVector = if (isMapView) Icons.Default.List else Icons.Default.Place,
+                            contentDescription = if (isMapView) "Ver Lista" else "Ver en Mapa",
+                            tint = ElectricBluePrimary
                         )
                     }
                 },
@@ -136,7 +149,28 @@ fun PlacesScreen(
                 }
             }
 
-            if (places.isEmpty()) {
+            if (isMapView) {
+                PlacesOverviewMapView(
+                    places = places,
+                    onNavigateWaze = { place ->
+                        WazeMapLauncher.openWaze(
+                            context = context,
+                            address = place.address,
+                            latitude = place.latitude,
+                            longitude = place.longitude
+                        )
+                    },
+                    onNavigateMaps = { place ->
+                        WazeMapLauncher.openGoogleMaps(
+                            context = context,
+                            address = place.address,
+                            latitude = place.latitude,
+                            longitude = place.longitude
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (places.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
