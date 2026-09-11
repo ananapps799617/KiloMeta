@@ -64,8 +64,11 @@ class RemoteMappersTest {
             grossAmount = 35000.0,
             commissionAmount = 7000.0,
             netAmount = 28000.0,
-            paymentMethod = "CASH",
-            timestamp = 1700010000000L
+            paymentMethod = "APP_WALLET",
+            paymentDestination = "APP_RETAINED",
+            timestamp = 1700010000000L,
+            startOdometer = 207800,
+            endOdometer = 207835
         )
 
         val dto = entity.toDto(updatedAt = 1700010001000L, deleted = false)
@@ -77,7 +80,10 @@ class RemoteMappersTest {
         assertEquals(entity.commissionAmount, dto.commissionAmount, 0.001)
         assertEquals(entity.netAmount, dto.netAmount, 0.001)
         assertEquals(entity.paymentMethod, dto.paymentMethod)
+        assertEquals(entity.paymentDestination, dto.paymentDestination)
         assertEquals(entity.timestamp, dto.timestamp)
+        assertEquals(entity.startOdometer, dto.startOdometer)
+        assertEquals(entity.endOdometer, dto.endOdometer)
 
         val restoredEntity = dto.toEntity()
         assertEquals(entity, restoredEntity)

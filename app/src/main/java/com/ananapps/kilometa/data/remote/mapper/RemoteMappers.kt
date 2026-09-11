@@ -64,7 +64,10 @@ fun TripEntity.toDto(
     commissionAmount = this.commissionAmount,
     netAmount = this.netAmount,
     paymentMethod = this.paymentMethod,
+    paymentDestination = this.paymentDestination,
     timestamp = this.timestamp,
+    startOdometer = this.startOdometer,
+    endOdometer = this.endOdometer,
     updatedAt = updatedAt,
     deleted = deleted
 )
@@ -77,7 +80,10 @@ fun TripDto.toEntity(): TripEntity = TripEntity(
     commissionAmount = this.commissionAmount,
     netAmount = this.netAmount,
     paymentMethod = this.paymentMethod,
-    timestamp = this.timestamp
+    paymentDestination = if (this.paymentDestination.isNotBlank()) this.paymentDestination else "CASH_IN_HAND",
+    timestamp = this.timestamp,
+    startOdometer = this.startOdometer,
+    endOdometer = this.endOdometer
 )
 
 fun List<TripEntity>.toTripDtoList(): List<TripDto> = map { it.toDto() }
