@@ -8,8 +8,10 @@
 
 package com.ananapps.kilometa.core.di
 
+import com.ananapps.kilometa.data.repository.AppUpdateRepositoryImpl
 import com.ananapps.kilometa.data.repository.AuthRepositoryImpl
 import com.ananapps.kilometa.data.repository.SyncRepositoryImpl
+import com.ananapps.kilometa.domain.repository.AppUpdateRepository
 import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -39,6 +41,12 @@ abstract class FirebaseModule {
     abstract fun bindSyncRepository(
         impl: SyncRepositoryImpl
     ): SyncRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAppUpdateRepository(
+        impl: AppUpdateRepositoryImpl
+    ): AppUpdateRepository
 
     companion object {
         @Provides

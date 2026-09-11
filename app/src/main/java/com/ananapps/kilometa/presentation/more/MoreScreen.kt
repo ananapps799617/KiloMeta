@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,6 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ananapps.kilometa.BuildConfig
+import com.ananapps.kilometa.presentation.common.AppUpdateBottomSheet
 import com.ananapps.kilometa.presentation.theme.*
 
 // ------------------------------------------------------------------------------
@@ -37,8 +40,18 @@ fun MoreScreen(
     onNavigateToExpenses: () -> Unit,
     onNavigateToSync: () -> Unit,
     onSignOut: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: MoreViewModel = hiltViewModel()
 ) {
+    val updateState by viewModel.updateState.collectAsState()
+    var showUpToDateDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(updateState) {
+        if (updateState is UpdateCheckUiState.UpToDate) {
+            showUpToDateDialog = true
+        }
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -101,6 +114,26 @@ fun MoreScreen(
         }
 
         item {
+            MoreOptionItem(
+                icon = Icons.Default.Info,
+                title = "Actualización de Software",
+                subtitle = when (updateState) {
+                    is UpdateCheckUiState.Checking -> "Buscando nueva versión OTA..."
+                    is UpdateCheckUiState.UpToDate -> "KiloMeta v${BuildConfig.VERSION_NAME} · Al día"
+                    is UpdateCheckUiState.Available -> "¡Nueva versión disponible! Toca para actualizar"
+                    is UpdateCheckUiState.Error -> "v${BuildConfig.VERSION_NAME} · Error al buscar, reintentar"
+                    else -> "Versión ${BuildConfig.VERSION_NAME} · Buscar actualizaciones OTA"
+                },
+                tint = when (updateState) {
+                    is UpdateCheckUiState.Available -> StatusGreen
+                    is UpdateCheckUiState.Error -> StatusAmber
+                    else -> ElectricBluePrimary
+                },
+                onClick = { viewModel.checkForUpdates() }
+            )
+        }
+
+        item {
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = TextSecondary.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(8.dp))
@@ -116,6 +149,39 @@ fun MoreScreen(
                 onClick = onSignOut
             )
         }
+    }
+
+    if (updateState is UpdateCheckUiState.Available) {
+        AppUpdateBottomSheet(
+            updateInfo = (updateState as UpdateCheckUiState.Available).info,
+            onDismiss = { viewModel.dismissUpdate() }
+        )
+    }
+
+    if (showUpToDateDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showUpToDateDialog = false
+                viewModel.dismissUpdate()
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUpToDateDialog = false
+                    viewModel.dismissUpdate()
+                }) {
+                    Text("Entendido", color = ElectricBluePrimary)
+                }
+            },
+            title = {
+                Text("KiloMeta al día", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("Tienes instalada la versión más reciente (v${BuildConfig.VERSION_NAME}).")
+            },
+            containerColor = DeepObsidianSurface,
+            titleContentColor = TextPrimary,
+            textContentColor = TextSecondary
+        )
     }
 }
 

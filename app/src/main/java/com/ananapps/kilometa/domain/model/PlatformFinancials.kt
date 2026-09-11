@@ -21,15 +21,17 @@ enum class PaymentDestination(val displayName: String) {
 // ------------------------------------------------------------------------------
 data class PlatformRule(
     val platformType: PlatformType,
-    val defaultCommissionPct: Double,
+    val referenceCommissionPct: Double,
     val disbursementDay: String,
     val defaultDestination: PaymentDestination
-)
+) {
+    val defaultCommissionPct: Double get() = referenceCommissionPct
+}
 
 object PlatformConfig {
     val rules: Map<PlatformType, PlatformRule> = mapOf(
-        PlatformType.UBER to PlatformRule(PlatformType.UBER, 25.0, "Lunes", PaymentDestination.APP_RETAINED),
-        PlatformType.DIDI to PlatformRule(PlatformType.DIDI, 20.0, "Martes", PaymentDestination.APP_RETAINED),
+        PlatformType.UBER to PlatformRule(PlatformType.UBER, 28.0, "Lunes", PaymentDestination.APP_RETAINED),
+        PlatformType.DIDI to PlatformRule(PlatformType.DIDI, 21.5, "Martes", PaymentDestination.APP_RETAINED),
         PlatformType.INDRIVE to PlatformRule(PlatformType.INDRIVE, 10.0, "Miércoles", PaymentDestination.CASH_IN_HAND),
         PlatformType.PRIVATE to PlatformRule(PlatformType.PRIVATE, 0.0, "Inmediato", PaymentDestination.CASH_IN_HAND)
     )
