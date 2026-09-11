@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Plataforma-Android_Nativa_(Kotlin)-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Plataforma" />
   <img src="https://img.shields.io/badge/Arquitectura-Clean_%2B_Room_%2B_OSMDroid-purple?style=for-the-badge&logo=sqlite" alt="Arquitectura" />
   <img src="https://img.shields.io/badge/Seguridad-Zero_Trust-red?style=for-the-badge&logo=firebase" alt="Seguridad" />
-  <img src="https://img.shields.io/badge/Versi%C3%B3n-v1.9.3_alpha.1-00C853?style=for-the-badge" alt="Versión" />
+  <img src="https://img.shields.io/badge/Versi%C3%B3n-v1.9.8_alpha.1-00C853?style=for-the-badge" alt="Versión" />
 </p>
 
 > **KiloMeta** es una plataforma móvil nativa de alto rendimiento desarrollada bajo el **Ecosistema AnAnApps 2.0 (División de Movilidad y Finanzas Operativas)**. Creada a la medida de la realidad operativa de los socios conductores de plataformas (Uber, DiDi, inDrive, Cabify, Particular) y vehículos bi-combustibles o de alquiler semanal en Colombia.
@@ -37,6 +37,8 @@ Los conductores modernos —especialmente aquellos que operan vehículos de alto
    Catálogo personal de estaciones de servicio, talleres, lavaderos y parqueaderos con renderizado 100% nativo en Android Canvas con **OSMDroid 6.1.20** (cero WebViews lentos, cero APIs comerciales) y lanzador directo de 1 tap a **Waze** y **Google Maps**.
 10. **Respaldo Asíncrono Anti-Hurto y Recuperación ante Desastres:**  
     Persistencia soberana en Room SQLite combinada con replicación desatendida en Google Cloud Firestore bajo reglas criptográficas Zero-Trust (`request.auth.uid == userId`) y resolución Last-Write-Wins (LWW).
+11. **Edición Integral en Cabina & Odometría Continua:**  
+    Modificación completa de carreras (odómetros, plataforma, método de pago, cobrado y comisión), tanqueos y gastos sin perder el historial ni reiniciar a cero las billeteras digitales. Recálculo reactivo en tiempo real de kilómetros recorridos y caja líquida.
 
 ---
 

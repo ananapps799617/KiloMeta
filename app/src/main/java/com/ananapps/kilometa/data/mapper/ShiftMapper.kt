@@ -124,38 +124,14 @@ fun ShiftWithDetails.toFinancialSummary(): ShiftFinancialSummary {
     )
 }
 
-// ------------------------------------------------------------------------------
-// BLOQUE 3: CONSOLIDACIÓN DE LIQUIDACIÓN DE DOBLE BOLSILLO
-// ------------------------------------------------------------------------------
 fun ShiftWithDetails.toCashSettlement(): com.ananapps.kilometa.domain.model.CashSettlementSummary {
-    var cashGross = 0.0
-    var digitalGross = 0.0
-    var digitalCommissions = 0.0
-    var totalCommission = 0.0
-
-    trips.forEach { trip ->
-        if (trip.paymentDestination == com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND.name) {
-            cashGross += trip.grossAmount
-        } else {
-            digitalGross += trip.grossAmount
-            digitalCommissions += trip.commissionAmount
-        }
-        totalCommission += trip.commissionAmount
-    }
-
-    val totalGross = cashGross + digitalGross
-    val totalNet = totalGross - totalCommission
-    val totalFuel = fuelings.sumOf { it.amountPaid }
-    val totalExpenses = expenses.sumOf { it.amount }
-
-    val cashAvailable = cashGross - totalFuel - totalExpenses
-    val digitalPending = (digitalGross - digitalCommissions).coerceAtLeast(0.0)
-
-    return com.ananapps.kilometa.domain.model.CashSettlementSummary(
-        cashInHandGross = cashGross,
-        digitalBalanceGross = digitalGross,
-        totalNet = totalNet,
-        cashInHandAvailable = cashAvailable,
-        digitalPendingDisbursement = digitalPending
+    val domainTrips = trips.map { it.toDomain() }
+    val domainFuelings = fuelings.map { it.toDomain() }
+    val domainExpenses = expenses.map { it.toDomain() }
+    return com.ananapps.kilometa.domain.usecase.CalculateShiftCashSettlementUseCase().invoke(
+        trips = domainTrips,
+        fuelings = domainFuelings,
+        expenses = domainExpenses
     )
 }
+

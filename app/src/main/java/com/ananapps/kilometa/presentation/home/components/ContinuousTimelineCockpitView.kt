@@ -122,8 +122,10 @@ fun ContinuousTimelineCockpitView(
             onEditFueling = onEditFueling
         )
 
-        // Liquidación de Efectivo en Mano vs Plataformas (si aplica)
-        cashSettlement?.let { CockpitCashSettlementCard(settlement = it) }
+        // Liquidación de Efectivo en Mano vs Plataformas (Continua 24/7)
+        val effectiveSettlement = cashSettlement ?: timelineSummary.cashSettlement
+        effectiveSettlement?.let { CockpitCashSettlementCard(settlement = it) }
+
 
         // Auditoría Semanal o Progreso de Cuota
         if (auditSummary != null) {

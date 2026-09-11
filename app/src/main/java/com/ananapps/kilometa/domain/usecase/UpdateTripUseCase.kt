@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/usecase/UpdateTripUseCase.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -8,6 +8,8 @@
 
 package com.ananapps.kilometa.domain.usecase
 
+import com.ananapps.kilometa.domain.model.PaymentDestination
+import com.ananapps.kilometa.domain.model.PaymentMethod
 import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.domain.repository.TripRepository
 import javax.inject.Inject
@@ -16,7 +18,7 @@ import javax.inject.Inject
 // BLOQUE 1: CASO DE USO DE ACTUALIZACIÓN DE CARRERA
 // ------------------------------------------------------------------------------
 /**
- * Modifica una carrera existente garantizando consistencia contable.
+ * Modifica una carrera existente garantizando consistencia contable y telemétrica.
  */
 class UpdateTripUseCase @Inject constructor(
     private val tripRepository: TripRepository
@@ -35,9 +37,30 @@ class UpdateTripUseCase @Inject constructor(
             "El valor cobrado (${trip.grossAmount}) no puede ser menor a la comisión (${trip.commissionAmount})"
         }
 
+        trip.startOdometer?.let {
+            require(it >= 0) { "El odómetro inicial no puede ser negativo" }
+        }
+        trip.endOdometer?.let {
+            require(it >= 0) { "El odómetro final no puede ser negativo" }
+        }
+        if (trip.startOdometer != null && trip.endOdometer != null) {
+            require(trip.endOdometer >= trip.startOdometer) {
+                "El odómetro final (${trip.endOdometer}) no puede ser menor al inicial (${trip.startOdometer})"
+            }
+        }
+
+        val expectedDestination = when (trip.paymentMethod) {
+            PaymentMethod.APP_WALLET -> PaymentDestination.APP_RETAINED
+            PaymentMethod.CASH, PaymentMethod.NEQUI -> PaymentDestination.CASH_IN_HAND
+        }
+
         val calculatedNet = trip.grossAmount - trip.commissionAmount
-        val normalizedTrip = trip.copy(netAmount = calculatedNet)
+        val normalizedTrip = trip.copy(
+            netAmount = calculatedNet,
+            paymentDestination = expectedDestination
+        )
 
         tripRepository.updateTrip(normalizedTrip)
     }
 }
+

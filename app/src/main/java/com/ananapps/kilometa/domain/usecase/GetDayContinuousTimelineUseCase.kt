@@ -24,7 +24,8 @@ import javax.inject.Inject
 // ------------------------------------------------------------------------------
 class GetDayContinuousTimelineUseCase @Inject constructor(
     private val shiftRepository: ShiftRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val calculateShiftCashSettlementUseCase: CalculateShiftCashSettlementUseCase
 ) {
 
     operator fun invoke(): Flow<DayContinuousSummary> {
@@ -112,6 +113,8 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             }
             val distanceKm = maxOf(odoDistanceKm, sumTripKm)
 
+            val cashSettlement = calculateShiftCashSettlementUseCase(todayTrips, todayFuelings, todayExpenses)
+
             DayContinuousSummary(
                 totalNetIncome = totalNetIncome,
                 totalGrossProduced = totalGrossProduced,
@@ -127,8 +130,10 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 distanceTraversedKm = distanceKm,
                 hasActiveShift = activeShift != null,
                 activeShiftId = activeShift?.id,
+                cashSettlement = cashSettlement,
                 events = events
             )
+
         }
     }
 }

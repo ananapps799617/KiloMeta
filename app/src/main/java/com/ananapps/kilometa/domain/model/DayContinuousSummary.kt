@@ -73,5 +73,7 @@ data class DayContinuousSummary(
     val distanceTraversedKm: Int = 0,
     val hasActiveShift: Boolean = false,
     val activeShiftId: String? = null,
+    val cashSettlement: CashSettlementSummary? = null,
     val events: List<DayActivityEvent> = emptyList()
 )
+

@@ -26,7 +26,11 @@ class GetDayContinuousTimelineUseCaseTest {
     fun setUp() {
         fakeShiftRepository = FakeShiftRepository()
         fakeExpenseRepository = FakeExpenseRepository()
-        useCase = GetDayContinuousTimelineUseCase(fakeShiftRepository, fakeExpenseRepository)
+        useCase = GetDayContinuousTimelineUseCase(
+            fakeShiftRepository,
+            fakeExpenseRepository,
+            CalculateShiftCashSettlementUseCase()
+        )
     }
 
     @Test
@@ -100,5 +104,12 @@ class GetDayContinuousTimelineUseCaseTest {
         assertEquals(45000.0, summary.pocketNet, 0.001) // 65k - 20k
         assertEquals(morningTime, summary.firstEventTimestamp)
         assertEquals("5h 30m", summary.elapsedHoursFormatted)
+
+        // Verificación de liquidación continua de caja y billeteras
+        assertNotNull(summary.cashSettlement)
+        val settlement = summary.cashSettlement!!
+        assertEquals(30000.0, settlement.cashInHandAvailable, 0.001) // 50k cash - 20k fuel
+        assertEquals(25000.0, settlement.uberWallet.netBalance, 0.001) // 25k app wallet
+        assertEquals(-10000.0, settlement.didiWallet.netBalance, 0.001) // -10k debt
     }
 }
