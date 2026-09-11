@@ -36,6 +36,12 @@ interface TripDao {
     @Query("SELECT COUNT(*) FROM trips WHERE shift_id = :shiftId")
     suspend fun getTripCountByShift(shiftId: String): Int
 
+    @androidx.room.Update
+    suspend fun updateTrip(trip: TripEntity)
+
+    @Query("SELECT id FROM trips WHERE shift_id = :shiftId")
+    suspend fun getTripIdsByShift(shiftId: String): List<String>
+
     @Query("SELECT * FROM trips ORDER BY timestamp DESC")
     fun getAllTrips(): Flow<List<TripEntity>>
 }

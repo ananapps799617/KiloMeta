@@ -29,6 +29,10 @@ class FakeTripRepository : TripRepository {
     override fun getTripsByShift(shiftId: String): Flow<List<Trip>> = flowOf(savedTrips)
     override suspend fun addTrip(trip: Trip) { savedTrips.add(trip) }
     override suspend fun deleteTrip(tripId: String) { savedTrips.removeAll { it.id == tripId } }
+    override suspend fun updateTrip(trip: Trip) {
+        val idx = savedTrips.indexOfFirst { it.id == trip.id }
+        if (idx != -1) savedTrips[idx] = trip else savedTrips.add(trip)
+    }
 }
 
 // ------------------------------------------------------------------------------
@@ -39,6 +43,10 @@ class FakeFuelingRepository : FuelingRepository {
     override fun getFuelingsByShift(shiftId: String): Flow<List<Fueling>> = flowOf(savedFuelings)
     override suspend fun addFueling(fueling: Fueling) { savedFuelings.add(fueling) }
     override suspend fun deleteFueling(fuelingId: String) { savedFuelings.removeAll { it.id == fuelingId } }
+    override suspend fun updateFueling(fueling: Fueling) {
+        val idx = savedFuelings.indexOfFirst { it.id == fueling.id }
+        if (idx != -1) savedFuelings[idx] = fueling else savedFuelings.add(fueling)
+    }
 }
 
 // ------------------------------------------------------------------------------
@@ -49,6 +57,10 @@ class FakeExpenseRepository : ExpenseRepository {
     override fun getExpensesByShift(shiftId: String): Flow<List<Expense>> = flowOf(savedExpenses)
     override suspend fun addExpense(expense: Expense) { savedExpenses.add(expense) }
     override suspend fun deleteExpense(expenseId: String) { savedExpenses.removeAll { it.id == expenseId } }
+    override suspend fun updateExpense(expense: Expense) {
+        val idx = savedExpenses.indexOfFirst { it.id == expense.id }
+        if (idx != -1) savedExpenses[idx] = expense else savedExpenses.add(expense)
+    }
     override fun getAllExpenses(): Flow<List<Expense>> = flowOf(savedExpenses)
 }
 
@@ -65,6 +77,7 @@ class FakeShiftRepository : ShiftRepository {
     override fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?> = flowOf(null)
     override fun getAllShifts(): Flow<List<Shift>> = flowOf(shifts)
     override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> = flowOf(completedSummaries)
+    override fun getAllShiftsHistoryWithDetails(): Flow<List<ShiftFinancialSummary>> = flowOf(completedSummaries)
     override fun getAllTrips(): Flow<List<Trip>> = flowOf(allTripsList)
     override fun getAllFuelings(): Flow<List<Fueling>> = flowOf(allFuelingsList)
     override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)

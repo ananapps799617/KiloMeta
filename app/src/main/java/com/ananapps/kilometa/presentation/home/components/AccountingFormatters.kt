@@ -20,17 +20,41 @@ import java.util.Locale
 // ------------------------------------------------------------------------------
 fun formatAccountingCop(amount: Double): String {
     val rounded = kotlin.math.round(amount).toLong()
-    return String.format(Locale.GERMANY, "$%,d", rounded)
+    return if (rounded < 0) {
+        String.format(Locale.GERMANY, "-$%,d", -rounded)
+    } else {
+        String.format(Locale.GERMANY, "$%,d", rounded)
+    }
 }
 
 fun formatAccountingCopPerKm(amount: Double): String {
     val rounded = kotlin.math.round(amount).toLong()
-    return String.format(Locale.GERMANY, "$%,d/km", rounded)
+    return if (rounded < 0) {
+        String.format(Locale.GERMANY, "-$%,d/km", -rounded)
+    } else {
+        String.format(Locale.GERMANY, "$%,d/km", rounded)
+    }
 }
 
 // ------------------------------------------------------------------------------
-// BLOQUE 2: FORMATEADOR DE BADGE DE CORTE SEMANAL
+// BLOQUE 2: FORMATEADOR DE BADGE DE CORTE SEMANAL Y RANGO DE FECHAS
 // ------------------------------------------------------------------------------
+/**
+ * Formatea el rango de fechas de corte del ciclo semanal (ej. "10 Sep – 16 Sep").
+ */
+fun formatCycleDateRange(
+    cycleStartDateMillis: Long,
+    cycleEndDateMillis: Long,
+    zoneId: ZoneId = ZoneId.of("America/Bogota")
+): String {
+    val start = Instant.ofEpochMilli(cycleStartDateMillis).atZone(zoneId)
+    val end = Instant.ofEpochMilli(cycleEndDateMillis).atZone(zoneId)
+    val monthNames = arrayOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
+    val startMonth = monthNames.getOrElse(start.monthValue - 1) { "Sep" }
+    val endMonth = monthNames.getOrElse(end.monthValue - 1) { "Sep" }
+    return "${start.dayOfMonth} $startMonth – ${end.dayOfMonth} $endMonth"
+}
+
 /**
  * Genera la etiqueta dinámica para el badge de corte en la tarjeta de auditoría.
  * Ejemplo: "Corte Mar 18:00" o "Corte Dom 20:00".

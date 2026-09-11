@@ -37,13 +37,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ananapps.kilometa.presentation.home.components.ActiveShiftCockpitView
+import com.ananapps.kilometa.domain.model.Expense
+import com.ananapps.kilometa.domain.model.Fueling
+import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.presentation.home.components.ContinuousTimelineCockpitView
+import com.ananapps.kilometa.presentation.home.components.ExpenseEditDialog
+import com.ananapps.kilometa.presentation.home.components.FuelingEditDialog
 import com.ananapps.kilometa.presentation.home.components.HomeCockpitModals
-import com.ananapps.kilometa.presentation.home.components.NoActiveShiftView
 import com.ananapps.kilometa.presentation.home.components.StandbyPlaceholderView
+import com.ananapps.kilometa.presentation.home.components.TripEditDialog
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 
@@ -88,6 +91,9 @@ fun HomeScreen(
     var showShiftPromptDialog by remember { mutableStateOf(false) }
     var pendingPromptAction by remember { mutableStateOf<String?>(null) }
     var isSporadicAction by remember { mutableStateOf(false) }
+    var editingTrip by remember { mutableStateOf<Trip?>(null) }
+    var editingExpense by remember { mutableStateOf<Expense?>(null) }
+    var editingFueling by remember { mutableStateOf<Fueling?>(null) }
 
     LaunchedEffect(triggerCloseShift) {
         if (triggerCloseShift) {
@@ -135,30 +141,33 @@ fun HomeScreen(
                         CircularProgressIndicator(color = ElectricBluePrimary)
                     }
                 }
-                is HomeUiState.NoActiveShift -> {
+                is HomeUiState.NoActiveShift, is HomeUiState.ActiveShift -> {
+                    val cashSettlement = (state as? HomeUiState.ActiveShift)?.cashSettlement
+                    val weeklyProgress = when (state) {
+                        is HomeUiState.NoActiveShift -> state.weeklyProgress
+                        is HomeUiState.ActiveShift -> state.weeklyProgress
+                        else -> null
+                    }
+                    val auditSummary = when (state) {
+                        is HomeUiState.NoActiveShift -> state.accountingAuditSummary
+                        is HomeUiState.ActiveShift -> state.accountingAuditSummary
+                        else -> null
+                    }
                     ContinuousTimelineCockpitView(
                         vehicle = vehicle,
                         lastKnownOdometer = lastKnownOdometer,
                         timelineSummary = dayContinuousTimeline,
-                        weeklyProgress = state.weeklyProgress,
-                        auditSummary = state.accountingAuditSummary,
-                        cashSettlement = null,
+                        weeklyProgress = weeklyProgress,
+                        auditSummary = auditSummary,
+                        cashSettlement = cashSettlement,
                         onStartShiftClick = { showStartShiftDialog = true },
                         onCloseShiftClick = { showCloseShiftDialog = true },
-                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) }
-                    )
-                }
-                is HomeUiState.ActiveShift -> {
-                    ContinuousTimelineCockpitView(
-                        vehicle = vehicle,
-                        lastKnownOdometer = lastKnownOdometer,
-                        timelineSummary = dayContinuousTimeline,
-                        weeklyProgress = state.weeklyProgress,
-                        auditSummary = state.accountingAuditSummary,
-                        cashSettlement = state.cashSettlement,
-                        onStartShiftClick = { showStartShiftDialog = true },
-                        onCloseShiftClick = { showCloseShiftDialog = true },
-                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) }
+                        onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) },
+                        onDeleteExpense = { expenseId -> viewModel.deleteExpense(expenseId) },
+                        onDeleteFueling = { fuelingId -> viewModel.deleteFueling(fuelingId) },
+                        onEditTrip = { editingTrip = it },
+                        onEditExpense = { editingExpense = it },
+                        onEditFueling = { editingFueling = it }
                     )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
@@ -216,4 +225,37 @@ fun HomeScreen(
         },
         lastKnownOdometer = lastKnownOdometer
     )
+
+    editingTrip?.let { trip ->
+        TripEditDialog(
+            trip = trip,
+            onDismiss = { editingTrip = null },
+            onConfirm = { updated ->
+                viewModel.updateTrip(updated)
+                editingTrip = null
+            }
+        )
+    }
+
+    editingExpense?.let { expense ->
+        ExpenseEditDialog(
+            expense = expense,
+            onDismiss = { editingExpense = null },
+            onConfirm = { updated ->
+                viewModel.updateExpense(updated)
+                editingExpense = null
+            }
+        )
+    }
+
+    editingFueling?.let { fueling ->
+        FuelingEditDialog(
+            fueling = fueling,
+            onDismiss = { editingFueling = null },
+            onConfirm = { updated ->
+                viewModel.updateFueling(updated)
+                editingFueling = null
+            }
+        )
+    }
 }

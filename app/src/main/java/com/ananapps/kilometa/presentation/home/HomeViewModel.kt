@@ -28,6 +28,11 @@ class HomeViewModel @Inject constructor(
     private val calculateBiFuelCostPerKmUseCase: CalculateBiFuelCostPerKmUseCase,
     private val registerTripUseCase: RegisterTripUseCase,
     private val deleteTripUseCase: DeleteTripUseCase,
+    private val deleteExpenseUseCase: DeleteExpenseUseCase,
+    private val deleteFuelingUseCase: DeleteFuelingUseCase,
+    private val updateTripUseCase: UpdateTripUseCase,
+    private val updateExpenseUseCase: UpdateExpenseUseCase,
+    private val updateFuelingUseCase: UpdateFuelingUseCase,
     private val registerFuelingUseCase: RegisterFuelingUseCase,
     private val registerExpenseUseCase: RegisterExpenseUseCase,
     private val manageShiftUseCase: ManageShiftUseCase,
@@ -157,37 +162,29 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun deleteTrip(tripId: String) {
-        viewModelScope.launch { deleteTripUseCase(tripId) }
+    fun deleteTrip(tripId: String) = viewModelScope.launch { deleteTripUseCase(tripId) }
+    fun deleteExpense(expenseId: String) = viewModelScope.launch { deleteExpenseUseCase(expenseId) }
+    fun deleteFueling(fuelingId: String) = viewModelScope.launch { deleteFuelingUseCase(fuelingId) }
+    fun updateTrip(trip: Trip) = viewModelScope.launch { updateTripUseCase(trip) }
+    fun updateExpense(expense: Expense) = viewModelScope.launch { updateExpenseUseCase(expense) }
+    fun updateFueling(fueling: Fueling) = viewModelScope.launch { updateFuelingUseCase(fueling) }
+
+    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false) = viewModelScope.launch {
+        val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
+            manageShiftUseCase.getOrCreateShiftForDay(System.currentTimeMillis(), odo, "Jornada diaria").id
+        } else {
+            (uiState.value as HomeUiState.ActiveShift).summary.shiftId
+        }
+        registerFuelingUseCase(shiftId, type, amount, volume, odo)
     }
 
-    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false) {
-        viewModelScope.launch {
-            val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.getOrCreateShiftForDay(
-                    timestamp = System.currentTimeMillis(),
-                    odometer = odo,
-                    notes = "Jornada diaria"
-                ).id
-            } else {
-                (uiState.value as HomeUiState.ActiveShift).summary.shiftId
-            }
-            registerFuelingUseCase(shiftId, type, amount, volume, odo)
+    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false) = viewModelScope.launch {
+        val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
+            manageShiftUseCase.getOrCreateShiftForDay(System.currentTimeMillis(), null, "Jornada diaria").id
+        } else {
+            (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
-    }
-
-    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false) {
-        viewModelScope.launch {
-            val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.getOrCreateShiftForDay(
-                    timestamp = System.currentTimeMillis(),
-                    notes = "Jornada diaria"
-                ).id
-            } else {
-                (uiState.value as HomeUiState.ActiveShift).summary.shiftId
-            }
-            registerExpenseUseCase(shiftId, concept, amount)
-        }
+        registerExpenseUseCase(shiftId, concept, amount)
     }
 
     fun startShift(startOdometer: Int, dailyQuota: Double? = null) {

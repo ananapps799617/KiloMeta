@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.DayActivityEvent
+import com.ananapps.kilometa.domain.model.Expense
+import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.PlatformType
+import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.presentation.common.PlatformAvatar
 import com.ananapps.kilometa.presentation.common.PlatformBadge
 import com.ananapps.kilometa.presentation.theme.*
@@ -36,11 +40,16 @@ import java.util.Locale
 @Composable
 fun DayActivityFeedCard(
     events: List<DayActivityEvent>,
-    onDeleteTrip: (String) -> Unit,
+    onDeleteTrip: (String) -> Unit = {},
+    onDeleteExpense: (String) -> Unit = {},
+    onDeleteFueling: (String) -> Unit = {},
+    onEditTrip: (Trip) -> Unit = {},
+    onEditExpense: (Expense) -> Unit = {},
+    onEditFueling: (Fueling) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
-    var tripIdPendingDeletion by remember { mutableStateOf<String?>(null) }
+    var eventPendingDeletion by remember { mutableStateOf<DayActivityEvent?>(null) }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -98,11 +107,14 @@ fun DayActivityFeedCard(
                         DayActivityItemRow(
                             event = event,
                             timeFormatted = timeFormatter.format(Date(event.timestamp)),
-                            onDeleteRequested = {
-                                if (event is DayActivityEvent.TripItem) {
-                                    tripIdPendingDeletion = event.id
+                            onEditRequested = {
+                                when (event) {
+                                    is DayActivityEvent.TripItem -> onEditTrip(event.trip)
+                                    is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
+                                    is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
                                 }
-                            }
+                            },
+                            onDeleteRequested = { eventPendingDeletion = event }
                         )
                     }
                 }
@@ -110,16 +122,28 @@ fun DayActivityFeedCard(
         }
     }
 
-    if (tripIdPendingDeletion != null) {
+    if (eventPendingDeletion != null) {
+        val (dialogTitle, dialogDesc) = when (eventPendingDeletion) {
+            is DayActivityEvent.TripItem -> Pair("¿Eliminar Carrera?", "Esta carrera se descontará del producido de hoy y de la nube.")
+            is DayActivityEvent.FuelingItem -> Pair("¿Eliminar Tanqueo?", "Este gasto de combustible se reintegrará a tu caja de hoy.")
+            is DayActivityEvent.ExpenseItem -> Pair("¿Eliminar Gasto?", "Este gasto operativo se reintegrará a tu caja disponible.")
+            null -> Pair("", "")
+        }
+
         AlertDialog(
-            onDismissRequest = { tripIdPendingDeletion = null },
-            title = { Text("¿Eliminar Carrera?", color = TextPrimary, fontWeight = FontWeight.Bold) },
-            text = { Text("Esta carrera se descontará del acumulado de hoy.", color = TextSecondary) },
+            onDismissRequest = { eventPendingDeletion = null },
+            title = { Text(dialogTitle, color = TextPrimary, fontWeight = FontWeight.Bold) },
+            text = { Text(dialogDesc, color = TextSecondary) },
             confirmButton = {
                 Button(
                     onClick = {
-                        tripIdPendingDeletion?.let { onDeleteTrip(it) }
-                        tripIdPendingDeletion = null
+                        when (val ev = eventPendingDeletion) {
+                            is DayActivityEvent.TripItem -> onDeleteTrip(ev.id)
+                            is DayActivityEvent.FuelingItem -> onDeleteFueling(ev.id)
+                            is DayActivityEvent.ExpenseItem -> onDeleteExpense(ev.id)
+                            null -> Unit
+                        }
+                        eventPendingDeletion = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = StatusRed)
                 ) {
@@ -127,7 +151,7 @@ fun DayActivityFeedCard(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { tripIdPendingDeletion = null }) {
+                TextButton(onClick = { eventPendingDeletion = null }) {
                     Text("Cancelar", color = TextSecondary)
                 }
             },
@@ -140,6 +164,7 @@ fun DayActivityFeedCard(
 private fun DayActivityItemRow(
     event: DayActivityEvent,
     timeFormatted: String,
+    onEditRequested: () -> Unit,
     onDeleteRequested: () -> Unit
 ) {
     Row(
@@ -204,7 +229,7 @@ private fun DayActivityItemRow(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = "${if (event.isIncome) "+" else "-"} $ ${String.format(Locale.US, "%,.0f", event.amount)}",
@@ -215,15 +240,22 @@ private fun DayActivityItemRow(
                 color = if (event.isIncome) StatusGreen else StatusRed
             )
 
-            if (event is DayActivityEvent.TripItem) {
-                IconButton(onClick = onDeleteRequested, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Borrar",
-                        tint = StatusRed.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+            IconButton(onClick = onEditRequested, modifier = Modifier.size(28.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            IconButton(onClick = onDeleteRequested, modifier = Modifier.size(28.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Borrar",
+                    tint = StatusRed.copy(alpha = 0.8f),
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
     }

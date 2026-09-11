@@ -33,6 +33,12 @@ interface ExpenseDao {
     @Query("DELETE FROM expenses WHERE id = :expenseId")
     suspend fun deleteExpense(expenseId: String)
 
+    @androidx.room.Update
+    suspend fun updateExpense(expense: ExpenseEntity)
+
+    @Query("SELECT id FROM expenses WHERE shift_id = :shiftId")
+    suspend fun getExpenseIdsByShift(shiftId: String): List<String>
+
     @Query("SELECT * FROM expenses ORDER BY timestamp DESC")
     fun getAllExpenses(): Flow<List<ExpenseEntity>>
 }

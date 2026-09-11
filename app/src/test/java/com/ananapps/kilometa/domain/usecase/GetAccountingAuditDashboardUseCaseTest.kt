@@ -47,23 +47,22 @@ import java.time.ZonedDateTime
 private class TestShiftRepository : ShiftRepository {
     val completedHistoryFlow = MutableStateFlow<List<ShiftFinancialSummary>>(emptyList())
 
-    override fun getActiveShift(): Flow<Shift?> = emptyFlow()
-    override fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?> = emptyFlow()
-    override fun getAllShifts(): Flow<List<Shift>> = emptyFlow()
-    override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> = completedHistoryFlow
-    override fun getAllTrips(): Flow<List<Trip>> = emptyFlow()
-    override fun getAllFuelings(): Flow<List<Fueling>> = emptyFlow()
+    override fun getActiveShift(): Flow<Shift?> = emptyFlow(); override fun getActiveShiftFinancialSummary(): Flow<ShiftFinancialSummary?> = emptyFlow()
+    override fun getAllShifts(): Flow<List<Shift>> = emptyFlow(); override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> = completedHistoryFlow
+    override fun getAllShiftsHistoryWithDetails(): Flow<List<ShiftFinancialSummary>> = completedHistoryFlow
+    override fun getAllTrips(): Flow<List<Trip>> = emptyFlow(); override fun getAllFuelings(): Flow<List<Fueling>> = emptyFlow()
     override suspend fun startShift(shift: Shift) {}; override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {}
     override suspend fun updateShift(shift: Shift) {}; override suspend fun deleteShift(shiftId: String) {}
-    override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null); override fun getActiveShiftTrips(): Flow<List<Trip>> = emptyFlow(); override fun getLastKnownOdometer(): Flow<Int?> = flowOf(null)
-    override suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<Shift> = emptyList(); override suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>) {}
+    override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)
+    override fun getActiveShiftTrips(): Flow<List<Trip>> = emptyFlow(); override fun getLastKnownOdometer(): Flow<Int?> = flowOf(null)
+    override suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<Shift> = emptyList()
+    override suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>) {}
 }
 
 private class TestExpenseRepository : ExpenseRepository {
     override fun getExpensesByShift(shiftId: String): Flow<List<Expense>> = emptyFlow()
-    override suspend fun addExpense(expense: Expense) {}
-    override suspend fun deleteExpense(expenseId: String) {}
-    override fun getAllExpenses(): Flow<List<Expense>> = flowOf(emptyList())
+    override suspend fun addExpense(expense: Expense) {}; override suspend fun deleteExpense(expenseId: String) {}
+    override suspend fun updateExpense(expense: Expense) {}; override fun getAllExpenses(): Flow<List<Expense>> = flowOf(emptyList())
 }
 
 private class TestSyncRepository : SyncRepository {

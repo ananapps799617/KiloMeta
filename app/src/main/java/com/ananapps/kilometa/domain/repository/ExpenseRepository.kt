@@ -34,6 +34,11 @@ interface ExpenseRepository {
     suspend fun deleteExpense(expenseId: String)
 
     /**
+     * Actualiza la información de un gasto existente.
+     */
+    suspend fun updateExpense(expense: Expense)
+
+    /**
      * Emite la lista completa de todos los gastos operativos históricos registrados.
      */
     fun getAllExpenses(): Flow<List<Expense>>

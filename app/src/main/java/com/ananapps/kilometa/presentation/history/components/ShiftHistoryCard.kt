@@ -19,11 +19,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,16 +64,19 @@ import java.util.Locale
 // BLOQUE 1: TARJETA DE TURNO CERRADO
 // ------------------------------------------------------------------------------
 /**
- * Renderiza el resumen auditado de una jornada concluida.
- *
- * @param shift Resumen consolidado del turno finalizado.
- * @param modifier Modificador Compose.
+ * Renderiza el resumen auditado de una jornada concluida con opciones de edición y borrado.
  */
 @Composable
 fun ShiftHistoryCard(
     shift: ShiftFinancialSummary,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDeleteShift: (shiftId: String) -> Unit = {},
+    onEditShift: (shiftId: String, startOdo: Int, endOdo: Int?, notes: String?) -> Unit = { _, _, _, _ -> }
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
         maximumFractionDigits = 0
     }
@@ -94,13 +111,13 @@ fun ShiftHistoryCard(
                 .fillMaxWidth()
                 .padding(14.dp)
         ) {
-            // Fila superior: Fecha, duración y Badge del Semáforo
+            // Fila superior: Fecha, duración, Badge y Menú de Opciones
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = shiftDate.replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.titleMedium,
@@ -114,17 +131,50 @@ fun ShiftHistoryCard(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .background(badgeContainer, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = badgeText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = badgeColor,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .background(badgeContainer, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = badgeText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = badgeColor,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Opciones de jornada",
+                                tint = TextSecondary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(DeepObsidianSurface)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("✏️ Editar Turno", color = TextPrimary) },
+                                onClick = {
+                                    showMenu = false
+                                    showEditDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("🗑️ Eliminar Turno", color = StatusRed) },
+                                onClick = {
+                                    showMenu = false
+                                    showDeleteConfirm = true
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -182,5 +232,43 @@ fun ShiftHistoryCard(
                 }
             }
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = DeepObsidianSurface,
+            title = { Text("¿Eliminar Jornada?", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Se eliminará permanentemente esta jornada y todas sus actividades asociadas. No se podrá recuperar.",
+                    color = TextSecondary
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDeleteShift(shift.shiftId)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusRed)
+                ) {
+                    Text("ELIMINAR", color = TextPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("CANCELAR", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    if (showEditDialog) {
+        ShiftEditDialog(
+            shift = shift,
+            onDismiss = { showEditDialog = false },
+            onSave = onEditShift
+        )
     }
 }

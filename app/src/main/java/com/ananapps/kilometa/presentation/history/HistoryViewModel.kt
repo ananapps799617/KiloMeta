@@ -17,11 +17,14 @@ import com.ananapps.kilometa.domain.model.PlatformAnalytics
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.domain.repository.ShiftRepository
+import com.ananapps.kilometa.domain.usecase.ConsolidateDayShiftsUseCase
+import com.ananapps.kilometa.domain.usecase.DeleteShiftUseCase
 import com.ananapps.kilometa.domain.usecase.GenerateCsvReportUseCase
 import com.ananapps.kilometa.domain.usecase.GenerateShareableSummaryUseCase
 import com.ananapps.kilometa.domain.usecase.GetBiFuelSavingsUseCase
 import com.ananapps.kilometa.domain.usecase.GetPlatformAnalyticsUseCase
 import com.ananapps.kilometa.domain.usecase.GetShiftHistoryUseCase
+import com.ananapps.kilometa.domain.usecase.UpdateShiftUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,6 +51,9 @@ class HistoryViewModel @Inject constructor(
     private val getBiFuelSavingsUseCase: GetBiFuelSavingsUseCase,
     private val generateCsvReportUseCase: GenerateCsvReportUseCase,
     private val generateShareableSummaryUseCase: GenerateShareableSummaryUseCase,
+    private val deleteShiftUseCase: DeleteShiftUseCase,
+    private val consolidateDayShiftsUseCase: ConsolidateDayShiftsUseCase,
+    private val updateShiftUseCase: UpdateShiftUseCase,
     private val shiftRepository: ShiftRepository
 ) : ViewModel() {
 
@@ -142,6 +148,45 @@ class HistoryViewModel @Inject constructor(
         _exportState.value = ExportUiState.Idle
     }
 
+    /**
+     * Elimina un turno en cascada con registro de lápidas y purga Cloud.
+     */
+    fun onDeleteShift(shiftId: String) {
+        viewModelScope.launch {
+            deleteShiftUseCase(shiftId)
+        }
+    }
+
+    /**
+     * Fusiona múltiples turnos fragmentados de un mismo día en un Turno Maestro.
+     */
+    fun onConsolidateShiftsForDay(shifts: List<ShiftFinancialSummary>) {
+        viewModelScope.launch {
+            val allShifts = shiftRepository.getAllShifts().first()
+            val targetIds = shifts.map { it.shiftId }.toSet()
+            val toConsolidate = allShifts.filter { it.id in targetIds }
+            if (toConsolidate.size >= 2) {
+                consolidateDayShiftsUseCase(toConsolidate)
+            }
+        }
+    }
+
+    /**
+     * Actualiza kilometrajes u observaciones de un turno existente.
+     */
+    fun onUpdateShift(shiftId: String, startOdo: Int, endOdo: Int?, notes: String?) {
+        viewModelScope.launch {
+            val allShifts = shiftRepository.getAllShifts().first()
+            val existing = allShifts.find { it.id == shiftId } ?: return@launch
+            val updated = existing.copy(
+                startOdometer = startOdo,
+                endOdometer = endOdo,
+                notes = notes
+            )
+            updateShiftUseCase(updated)
+        }
+    }
+
     // --------------------------------------------------------------------------
     // BLOQUE 4: LÓGICA DE AGREGACIÓN Y FILTRADO MATEMÁTICO
     // --------------------------------------------------------------------------
@@ -162,42 +207,22 @@ class HistoryViewModel @Inject constructor(
         shifts: List<ShiftFinancialSummary>,
         trips: List<Trip>
     ): HistoryUiState {
-        if (shifts.isEmpty()) {
-            return HistoryUiState.Empty(selectedFilter = filter)
-        }
+        if (shifts.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
 
         val cutoffMillis = calculatePeriodCutoff(filter)
-        val filteredShifts = if (cutoffMillis > 0L) {
-            shifts.filter { it.startTime >= cutoffMillis }
-        } else {
-            shifts
-        }
+        val filteredShifts = if (cutoffMillis > 0L) shifts.filter { it.startTime >= cutoffMillis } else shifts
+        if (filteredShifts.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
 
-        if (filteredShifts.isEmpty()) {
-            return HistoryUiState.Empty(selectedFilter = filter)
-        }
-
-        val filteredTrips = if (cutoffMillis > 0L) {
-            trips.filter { it.timestamp >= cutoffMillis }
-        } else {
-            trips
-        }
+        val filteredTrips = if (cutoffMillis > 0L) trips.filter { it.timestamp >= cutoffMillis } else trips
 
         val totalNetProfit = filteredShifts.sumOf { it.netProfit }
         val totalKilometers = filteredShifts.sumOf { it.totalKilometers }
-        val totalTrips = if (filteredTrips.isNotEmpty()) {
-            filteredTrips.size
-        } else {
-            filteredShifts.sumOf { it.tripsCount }
-        }
-
-        val totalGasExpense = filteredShifts.sumOf { it.totalGasExpense }
-        val totalGasolineExpense = filteredShifts.sumOf { it.totalGasolineExpense }
+        val totalTrips = if (filteredTrips.isNotEmpty()) filteredTrips.size else filteredShifts.sumOf { it.tripsCount }
 
         val savingsMetrics: BiFuelSavingsMetrics = getBiFuelSavingsUseCase(
             totalKmDriven = totalKilometers,
-            totalGasExpense = totalGasExpense,
-            totalGasolineExpense = totalGasolineExpense
+            totalGasExpense = filteredShifts.sumOf { it.totalGasExpense },
+            totalGasolineExpense = filteredShifts.sumOf { it.totalGasolineExpense }
         )
 
         val platformBreakdowns: List<PlatformAnalytics> = getPlatformAnalyticsUseCase(filteredTrips)
@@ -213,25 +238,12 @@ class HistoryViewModel @Inject constructor(
         )
     }
 
-    private fun calculatePeriodCutoff(
-        period: HistoryFilterPeriod,
-        nowMillis: Long = System.currentTimeMillis()
-    ): Long {
+    private fun calculatePeriodCutoff(period: HistoryFilterPeriod, nowMillis: Long = System.currentTimeMillis()): Long {
         val zone = ZoneId.of("America/Bogota")
         val now = Instant.ofEpochMilli(nowMillis).atZone(zone)
         return when (period) {
-            HistoryFilterPeriod.WEEK -> {
-                now.with(DayOfWeek.MONDAY)
-                    .truncatedTo(ChronoUnit.DAYS)
-                    .toInstant()
-                    .toEpochMilli()
-            }
-            HistoryFilterPeriod.MONTH -> {
-                now.with(TemporalAdjusters.firstDayOfMonth())
-                    .truncatedTo(ChronoUnit.DAYS)
-                    .toInstant()
-                    .toEpochMilli()
-            }
+            HistoryFilterPeriod.WEEK -> now.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
+            HistoryFilterPeriod.MONTH -> now.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
             HistoryFilterPeriod.ALL -> 0L
         }
     }

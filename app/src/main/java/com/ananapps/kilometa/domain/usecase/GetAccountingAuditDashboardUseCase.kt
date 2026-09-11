@@ -52,10 +52,10 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
         zoneId: ZoneId = bogotaZone
     ): Flow<AccountingAuditSummary> {
         return combine(
-            shiftRepository.getCompletedShiftsHistory(),
+            shiftRepository.getAllShiftsHistoryWithDetails(),
             syncRepository.observeSyncStatus(),
             driverProfileRepository.getVehicleProfile()
-        ) { completedShifts, syncStatus, vehicleProfile ->
+        ) { allShifts, syncStatus, vehicleProfile ->
             val targetCutoffDay = DayOfWeek.of(vehicleProfile.quotaCutoffDay.coerceIn(1, 7))
             val targetCutoffHour = vehicleProfile.quotaCutoffHour.coerceIn(0, 23)
             val weeklyTarget = if (vehicleProfile.quotaAmount > 0) vehicleProfile.quotaAmount else Constants.DEFAULT_WEEKLY_QUOTA_DOUBLE
@@ -67,8 +67,8 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
                 cutoffHour = targetCutoffHour
             )
 
-            // Filtro estricto por jornadas completadas dentro del ciclo continuo de 168 horas
-            val weeklyShifts = completedShifts.filter { shift ->
+            // Filtro estricto por jornadas del ciclo continuo de 168 horas
+            val weeklyShifts = allShifts.filter { shift ->
                 shift.startTime in cycleStartMillis..cycleEndMillis
             }
 
@@ -94,7 +94,7 @@ class GetAccountingAuditDashboardUseCase @Inject constructor(
 
             val quotaProgress = calculateDailyQuotaUseCase(
                 weeklyTarget = weeklyTarget,
-                accumulatedSoFar = netProfit.coerceAtLeast(0.0),
+                accumulatedSoFar = netProfit,
                 cycleEndMillis = cycleEndMillis,
                 cutoffDayOfWeek = targetCutoffDay,
                 cutoffHour = targetCutoffHour,

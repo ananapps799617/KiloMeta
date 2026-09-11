@@ -86,13 +86,19 @@ fun AdvancedAccountingCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "AUDITORÍA SEMANAL",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary,
-                    modifier = Modifier.weight(1f, fill = false),
-                    maxLines = 1
-                )
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Text(
+                        text = "AUDITORÍA SEMANAL",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "📅 ${formatCycleDateRange(auditSummary.cycleStartDateMillis, auditSummary.cycleEndDateMillis)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
+                }
 
                 androidx.compose.material3.Surface(
                     shape = RoundedCornerShape(6.dp),
@@ -132,13 +138,17 @@ fun AdvancedAccountingCard(
                 Text(
                     text = "${formatAccountingCop(progress.accumulatedSoFar)} / ${formatAccountingCop(progress.weeklyTarget)}",
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
+                    color = if (progress.isDeficit) StatusRed else TextPrimary
                 )
 
                 Text(
-                    text = "${progress.progressPercentage.toInt()}% Meta",
+                    text = if (progress.isDeficit) {
+                        "⚠️ Déficit ${formatAccountingCop(progress.accumulatedSoFar)}"
+                    } else {
+                        "${progress.progressPercentage.toInt()}% Meta"
+                    },
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = quotaColor
+                    color = if (progress.isDeficit) StatusRed else quotaColor
                 )
             }
 

@@ -53,6 +53,11 @@ interface ShiftRepository {
     fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>>
 
     /**
+     * Emite el histórico completo de todos los turnos (activos y finalizados) con sus detalles.
+     */
+    fun getAllShiftsHistoryWithDetails(): Flow<List<ShiftFinancialSummary>>
+
+    /**
      * Emite todas las carreras históricas registradas en el sistema.
      */
     fun getAllTrips(): Flow<List<Trip>>

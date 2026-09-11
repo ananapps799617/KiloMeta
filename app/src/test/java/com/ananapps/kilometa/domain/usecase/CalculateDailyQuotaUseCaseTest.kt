@@ -88,4 +88,26 @@ class CalculateDailyQuotaUseCaseTest {
         assertEquals(0.0, progress.suggestedDailyQuota, 0.001)
         assertTrue(progress.isWeeklyTargetAchieved)
     }
+
+    @Test
+    fun `acumulado negativo reporta deficit y porcentaje cero`() {
+        val now = ZonedDateTime.of(2026, 9, 3, 18, 0, 0, 0, bogotaZone)
+        val cycleEnd = ZonedDateTime.of(2026, 9, 8, 18, 0, 0, 0, bogotaZone)
+
+        val progress = useCase(
+            weeklyTarget = 500_000.0,
+            accumulatedSoFar = -6_500.0,
+            cycleEndMillis = cycleEnd.toInstant().toEpochMilli(),
+            cutoffDayOfWeek = DayOfWeek.TUESDAY,
+            cutoffHour = 18,
+            nowMillis = now.toInstant().toEpochMilli(),
+            zoneId = bogotaZone
+        )
+
+        assertEquals(-6_500.0, progress.accumulatedSoFar, 0.001)
+        assertTrue(progress.isDeficit)
+        assertEquals(6_500.0, progress.deficitAmount, 0.001)
+        assertEquals(0.0, progress.progressPercentage, 0.001)
+        assertEquals(506_500.0, progress.remainingTarget, 0.001)
+    }
 }

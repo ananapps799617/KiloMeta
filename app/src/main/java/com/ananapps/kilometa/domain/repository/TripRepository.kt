@@ -33,4 +33,9 @@ interface TripRepository {
      * Elimina un registro de carrera individual por su ID.
      */
     suspend fun deleteTrip(tripId: String)
+
+    /**
+     * Actualiza los datos de una carrera existente.
+     */
+    suspend fun updateTrip(trip: Trip)
 }

@@ -50,6 +50,18 @@ data class WeeklyQuotaProgress(
         get() = (progressPercentage / 100.0).toFloat()
 
     /**
+     * Indica si el balance acumulado se encuentra en déficit negativo (< $0).
+     */
+    val isDeficit: Boolean
+        get() = accumulatedSoFar < 0.0
+
+    /**
+     * Monto positivo del déficit actual (ej. 6.500 si accumulatedSoFar es -6.500).
+     */
+    val deficitAmount: Double
+        get() = if (accumulatedSoFar < 0.0) -accumulatedSoFar else 0.0
+
+    /**
      * Indica si el conductor ya superó o igualó la meta de la bolsa semanal.
      */
     val isWeeklyTargetAchieved: Boolean

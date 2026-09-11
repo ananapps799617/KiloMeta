@@ -32,4 +32,9 @@ interface FuelingRepository {
      * Elimina un registro de tanqueo por su identificador.
      */
     suspend fun deleteFueling(fuelingId: String)
+
+    /**
+     * Actualiza la información de un tanqueo existente.
+     */
+    suspend fun updateFueling(fueling: Fueling)
 }

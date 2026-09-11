@@ -180,7 +180,12 @@ fun HistoryScreen(
                         Text(text = "Error: ${state.message}", color = TextSecondary)
                     }
                 }
-                is HistoryUiState.Success -> HistoryContentList(state = state)
+                is HistoryUiState.Success -> HistoryContentList(
+                    state = state,
+                    onDeleteShift = { viewModel.onDeleteShift(it) },
+                    onEditShift = { id, start, end, notes -> viewModel.onUpdateShift(id, start, end, notes) },
+                    onConsolidateShifts = { viewModel.onConsolidateShiftsForDay(it) }
+                )
             }
         }
     }

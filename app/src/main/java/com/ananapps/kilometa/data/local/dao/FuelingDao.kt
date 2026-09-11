@@ -33,6 +33,12 @@ interface FuelingDao {
     @Query("DELETE FROM fuelings WHERE id = :fuelingId")
     suspend fun deleteFueling(fuelingId: String)
 
+    @androidx.room.Update
+    suspend fun updateFueling(fueling: FuelingEntity)
+
+    @Query("SELECT id FROM fuelings WHERE shift_id = :shiftId")
+    suspend fun getFuelingIdsByShift(shiftId: String): List<String>
+
     @Query("SELECT * FROM fuelings ORDER BY timestamp DESC")
     fun getAllFuelings(): Flow<List<FuelingEntity>>
 }

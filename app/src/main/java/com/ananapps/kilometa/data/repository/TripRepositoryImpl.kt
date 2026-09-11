@@ -14,6 +14,7 @@ import com.ananapps.kilometa.data.local.entity.PendingDeletionEntity
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
 import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
+import com.ananapps.kilometa.data.remote.mapper.toDto
 import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.TripRepository
@@ -59,6 +60,17 @@ class TripRepositoryImpl @Inject constructor(
                 if (result.isSuccess) {
                     pendingDeletionDao.deleteByEntityId(tripId)
                 }
+            }
+        }
+    }
+
+    override suspend fun updateTrip(trip: Trip) {
+        withContext(dispatchers.io) {
+            tripDao.updateTrip(trip.toEntity())
+            pendingDeletionDao.deleteByEntityId(trip.id)
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.saveTrips(user.uid, listOf(trip.toEntity().toDto()))
             }
         }
     }

@@ -8,6 +8,7 @@
 
 package com.ananapps.kilometa.presentation.history.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,12 +31,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.presentation.history.HistoryUiState
+import com.ananapps.kilometa.presentation.theme.CyanSavings
+import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Locale
 
 // ------------------------------------------------------------------------------
@@ -43,11 +53,21 @@ import java.util.Locale
 @Composable
 fun HistoryContentList(
     state: HistoryUiState.Success,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDeleteShift: (shiftId: String) -> Unit = {},
+    onEditShift: (shiftId: String, startOdo: Int, endOdo: Int?, notes: String?) -> Unit = { _, _, _, _ -> },
+    onConsolidateShifts: (shifts: List<ShiftFinancialSummary>) -> Unit = {}
 ) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
         maximumFractionDigits = 0
     }
+
+    // Detección de días con jornadas fragmentadas (>= 2 turnos el mismo día)
+    val zone = ZoneId.of("America/Bogota")
+    val shiftsByDay = state.shifts.groupBy { shift ->
+        Instant.ofEpochMilli(shift.startTime).atZone(zone).toLocalDate()
+    }
+    val fragmentedGroups = shiftsByDay.filter { it.value.size >= 2 }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -106,6 +126,47 @@ fun HistoryContentList(
 
         item { BiFuelSavingsCard(metrics = state.biFuelSavings) }
         item { PlatformBreakdownCard(breakdowns = state.platformBreakdowns) }
+
+        // Banners para unificar días con múltiples turnos fragmentados
+        fragmentedGroups.forEach { (date, group) ->
+            item(key = "unify_${date}") {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = DeepObsidianSurfaceVariant),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, CyanSavings)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                            Text(
+                                text = "⚡ Unificar Jornadas ($date)",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = CyanSavings,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${group.size} turnos detectados. Fusiona todo en 1 solo turno maestro.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+                        Button(
+                            onClick = { onConsolidateShifts(group) },
+                            colors = ButtonDefaults.buttonColors(containerColor = CyanSavings)
+                        ) {
+                            Text("UNIFICAR", color = DeepObsidianSurface, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Text(
                 text = "Jornadas Finalizadas (${state.shifts.size})",
@@ -115,8 +176,13 @@ fun HistoryContentList(
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
+
         items(items = state.shifts, key = { it.shiftId }) { shift ->
-            ShiftHistoryCard(shift = shift)
+            ShiftHistoryCard(
+                shift = shift,
+                onDeleteShift = onDeleteShift,
+                onEditShift = onEditShift
+            )
         }
     }
 }

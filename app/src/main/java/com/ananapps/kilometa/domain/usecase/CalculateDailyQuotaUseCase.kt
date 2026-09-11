@@ -48,7 +48,7 @@ class CalculateDailyQuotaUseCase @Inject constructor() {
         zoneId: ZoneId = ZoneId.of("America/Bogota")
     ): WeeklyQuotaProgress {
         require(weeklyTarget >= 0.0) { "La meta semanal no puede ser negativa" }
-        require(accumulatedSoFar >= 0.0) { "El acumulado semanal no puede ser negativo" }
+        // Se permite accumulatedSoFar negativo para reflejar déficits reales de combustible u operación
 
         val zonedDateTime = Instant.ofEpochMilli(nowMillis).atZone(zoneId)
         val daysRemaining = if (cycleEndMillis != null) {

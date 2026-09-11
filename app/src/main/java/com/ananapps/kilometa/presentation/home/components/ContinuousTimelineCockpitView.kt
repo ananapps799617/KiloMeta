@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/ContinuousTimelineCockpitView.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -37,7 +37,12 @@ fun ContinuousTimelineCockpitView(
     cashSettlement: CashSettlementSummary?,
     onStartShiftClick: () -> Unit,
     onCloseShiftClick: () -> Unit,
-    onDeleteTrip: (String) -> Unit,
+    onDeleteTrip: (String) -> Unit = {},
+    onDeleteExpense: (String) -> Unit = {},
+    onDeleteFueling: (String) -> Unit = {},
+    onEditTrip: (Trip) -> Unit = {},
+    onEditExpense: (Expense) -> Unit = {},
+    onEditFueling: (Fueling) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -109,7 +114,12 @@ fun ContinuousTimelineCockpitView(
         // Feed de Actividades del Día en Ruta
         DayActivityFeedCard(
             events = timelineSummary.events,
-            onDeleteTrip = onDeleteTrip
+            onDeleteTrip = onDeleteTrip,
+            onDeleteExpense = onDeleteExpense,
+            onDeleteFueling = onDeleteFueling,
+            onEditTrip = onEditTrip,
+            onEditExpense = onEditExpense,
+            onEditFueling = onEditFueling
         )
 
         // Liquidación de Efectivo en Mano vs Plataformas (si aplica)

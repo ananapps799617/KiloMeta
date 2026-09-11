@@ -198,6 +198,11 @@ class TripCommissionExactCalculationTest {
             savedTrips.removeAll { it.id == tripId }
         }
 
+        override suspend fun updateTrip(trip: Trip) {
+            val idx = savedTrips.indexOfFirst { it.id == trip.id }
+            if (idx != -1) savedTrips[idx] = trip else savedTrips.add(trip)
+        }
+
         override fun getTripsByShift(shiftId: String): Flow<List<Trip>> = emptyFlow()
     }
 }

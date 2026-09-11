@@ -10,19 +10,25 @@
 package com.ananapps.kilometa.data.repository
 
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
+import com.ananapps.kilometa.data.local.dao.ExpenseDao
 import com.ananapps.kilometa.data.local.dao.FuelingDao
+import com.ananapps.kilometa.data.local.dao.PendingDeletionDao
 import com.ananapps.kilometa.data.local.dao.ShiftDao
 import com.ananapps.kilometa.data.local.dao.TripDao
+import com.ananapps.kilometa.data.local.entity.PendingDeletionEntity
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
 import com.ananapps.kilometa.data.mapper.toFinancialSummary
 import com.ananapps.kilometa.data.mapper.toCashSettlement
+import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
+import com.ananapps.kilometa.data.remote.mapper.toDto
 import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.ShiftStatus
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -39,6 +45,10 @@ class ShiftRepositoryImpl @Inject constructor(
     private val shiftDao: ShiftDao,
     private val tripDao: TripDao,
     private val fuelingDao: FuelingDao,
+    private val expenseDao: ExpenseDao,
+    private val pendingDeletionDao: PendingDeletionDao,
+    private val firestoreDataSource: FirestoreDataSource,
+    private val authRepository: AuthRepository,
     private val dispatchers: CoroutineDispatchers
 ) : ShiftRepository {
 
@@ -76,6 +86,12 @@ class ShiftRepositoryImpl @Inject constructor(
 
     override fun getCompletedShiftsHistory(): Flow<List<ShiftFinancialSummary>> {
         return shiftDao.getCompletedShiftsWithDetails()
+            .map { list -> list.map { it.toFinancialSummary() } }
+            .flowOn(dispatchers.io)
+    }
+
+    override fun getAllShiftsHistoryWithDetails(): Flow<List<ShiftFinancialSummary>> {
+        return shiftDao.getAllShiftsWithDetails()
             .map { list -> list.map { it.toFinancialSummary() } }
             .flowOn(dispatchers.io)
     }
@@ -119,12 +135,47 @@ class ShiftRepositoryImpl @Inject constructor(
     override suspend fun updateShift(shift: Shift) {
         withContext(dispatchers.io) {
             shiftDao.updateShift(shift.toEntity())
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.saveShifts(user.uid, listOf(shift.toEntity().toDto()))
+            }
         }
     }
 
     override suspend fun deleteShift(shiftId: String) {
         withContext(dispatchers.io) {
+            // 1. Recopilar IDs de dependencias antes del borrado en cascada
+            val tripIds = tripDao.getTripIdsByShift(shiftId)
+            val expenseIds = expenseDao.getExpenseIdsByShift(shiftId)
+            val fuelingIds = fuelingDao.getFuelingIdsByShift(shiftId)
+
+            // 2. Registrar lápidas preventivas
+            pendingDeletionDao.insert(PendingDeletionEntity(shiftId, "SHIFT"))
+            tripIds.forEach { pendingDeletionDao.insert(PendingDeletionEntity(it, "TRIP")) }
+            expenseIds.forEach { pendingDeletionDao.insert(PendingDeletionEntity(it, "EXPENSE")) }
+            fuelingIds.forEach { pendingDeletionDao.insert(PendingDeletionEntity(it, "FUELING")) }
+
+            // 3. Borrado local en Room
             shiftDao.deleteShift(shiftId)
+
+            // 4. Purga remota en Firestore
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                val shiftResult = firestoreDataSource.deleteShift(user.uid, shiftId)
+                if (shiftResult.isSuccess) pendingDeletionDao.deleteByEntityId(shiftId)
+                tripIds.forEach { id ->
+                    val r = firestoreDataSource.deleteTrip(user.uid, id)
+                    if (r.isSuccess) pendingDeletionDao.deleteByEntityId(id)
+                }
+                expenseIds.forEach { id ->
+                    val r = firestoreDataSource.deleteExpense(user.uid, id)
+                    if (r.isSuccess) pendingDeletionDao.deleteByEntityId(id)
+                }
+                fuelingIds.forEach { id ->
+                    val r = firestoreDataSource.deleteFueling(user.uid, id)
+                    if (r.isSuccess) pendingDeletionDao.deleteByEntityId(id)
+                }
+            }
         }
     }
 
@@ -141,11 +192,20 @@ class ShiftRepositoryImpl @Inject constructor(
     override suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>) {
         withContext(dispatchers.io) {
             shiftDao.updateShift(masterShift.toEntity())
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.saveShifts(user.uid, listOf(masterShift.toEntity().toDto()))
+            }
             for (secId in secondaryShiftIds) {
                 shiftDao.reassignTripsShift(secId, masterShift.id)
                 shiftDao.reassignFuelingsShift(secId, masterShift.id)
                 shiftDao.reassignExpensesShift(secId, masterShift.id)
                 shiftDao.deleteShift(secId)
+                pendingDeletionDao.insert(PendingDeletionEntity(secId, "SHIFT"))
+                if (user != null) {
+                    val r = firestoreDataSource.deleteShift(user.uid, secId)
+                    if (r.isSuccess) pendingDeletionDao.deleteByEntityId(secId)
+                }
             }
         }
     }
