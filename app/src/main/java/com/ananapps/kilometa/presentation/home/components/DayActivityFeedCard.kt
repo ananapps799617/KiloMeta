@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayActivityFeedCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.DayActivityEvent
 import com.ananapps.kilometa.domain.model.PlatformType
+import com.ananapps.kilometa.presentation.common.PlatformAvatar
+import com.ananapps.kilometa.presentation.common.PlatformBadge
 import com.ananapps.kilometa.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -140,12 +142,6 @@ private fun DayActivityItemRow(
     timeFormatted: String,
     onDeleteRequested: () -> Unit
 ) {
-    val (nodeColor, iconEmoji) = when (event) {
-        is DayActivityEvent.TripItem -> Pair(StatusGreen, "🟢")
-        is DayActivityEvent.FuelingItem -> Pair(FuelGasoline, "⛽")
-        is DayActivityEvent.ExpenseItem -> Pair(StatusRed, "🔧")
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -160,20 +156,44 @@ private fun DayActivityItemRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.weight(1f)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(nodeColor.copy(alpha = 0.15f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = iconEmoji, fontSize = 16.sp)
+            if (event is DayActivityEvent.TripItem) {
+                PlatformAvatar(platform = event.trip.platformType, size = 36.dp)
+            } else {
+                val (nodeColor, iconEmoji) = when (event) {
+                    is DayActivityEvent.FuelingItem -> Pair(FuelGasoline, "⛽")
+                    is DayActivityEvent.ExpenseItem -> Pair(StatusRed, "🔧")
+                    else -> Pair(StatusGreen, "🟢")
+                }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(nodeColor.copy(alpha = 0.15f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = iconEmoji, fontSize = 16.sp)
+                }
             }
-            Column {
-                Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary
-                )
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (event is DayActivityEvent.TripItem) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        PlatformBadge(platform = event.trip.platformType)
+                        Text(
+                            text = "Carrera",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = TextPrimary
+                        )
+                    }
+                } else {
+                    Text(
+                        text = event.title,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary
+                    )
+                }
                 Text(
                     text = "$timeFormatted · ${event.subtitle}",
                     style = MaterialTheme.typography.bodySmall,

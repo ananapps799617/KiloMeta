@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.PaymentDestination
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.presentation.common.PlatformBadge
 import com.ananapps.kilometa.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -105,8 +106,6 @@ fun ActiveTripsLiveCard(
 
 @Composable
 private fun ActiveTripItemRow(trip: Trip, onDeleteClick: () -> Unit) {
-    val (badgeBg, badgeText) = getPlatformColors(trip.platformType)
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -118,15 +117,7 @@ private fun ActiveTripItemRow(trip: Trip, onDeleteClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(badgeBg).padding(horizontal = 7.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = trip.platformType.displayName,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
-                        color = badgeText
-                    )
-                }
+                PlatformBadge(platform = trip.platformType)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = formatTime(trip.timestamp), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Spacer(modifier = Modifier.width(6.dp))
@@ -184,15 +175,6 @@ private fun EmptyTripsState() {
             color = TextSecondary,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-private fun getPlatformColors(platform: PlatformType): Pair<Color, Color> {
-    return when (platform) {
-        PlatformType.UBER -> Color(0xFF1E1E1E) to Color.White
-        PlatformType.DIDI -> Color(0xFFFF7A00) to Color.White
-        PlatformType.INDRIVE -> Color(0xFFB4F309) to Color.Black
-        PlatformType.PRIVATE -> ElectricBluePrimary to Color.White
     }
 }
 
