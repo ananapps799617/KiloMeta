@@ -120,9 +120,10 @@ fun DrivvoTripFinancialSection(
             }
         }
 
-        // 3. Medio de Recaudo (Efectivo vs Digital)
+        // 3. Medio de Recaudo (Efectivo vs Nequi vs Saldo en App)
         val isCash = selectedPaymentMethod == PaymentMethod.CASH
-        val isDigital = selectedPaymentMethod != PaymentMethod.CASH
+        val isNequi = selectedPaymentMethod == PaymentMethod.NEQUI
+        val isAppWallet = selectedPaymentMethod == PaymentMethod.APP_WALLET
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
@@ -131,8 +132,8 @@ fun DrivvoTripFinancialSection(
                 color = TextSecondary
             )
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Opción 1: Efectivo
                 Surface(
                     modifier = Modifier
                         .weight(1f)
@@ -149,46 +150,82 @@ fun DrivvoTripFinancialSection(
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "💵 Efectivo (En Mano)",
-                            style = MaterialTheme.typography.bodyMedium.copy(
+                            text = "💵 Efectivo",
+                            style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = if (isCash) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isCash) StatusGreen else TextSecondary
+                                color = if (isCash) StatusGreen else TextSecondary,
+                                fontSize = 12.sp
                             )
                         )
                     }
                 }
 
+                // Opción 2: Nequi / Daviplata
                 Surface(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1.15f)
                         .height(48.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .border(
-                            width = if (isDigital) 2.dp else 1.dp,
-                            color = if (isDigital) ElectricBluePrimary else TextSecondary.copy(alpha = 0.2f),
+                            width = if (isNequi) 2.dp else 1.dp,
+                            color = if (isNequi) PlatformPrivate else TextSecondary.copy(alpha = 0.2f),
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .clickable { onPaymentMethodSelected(PaymentMethod.APP_WALLET) },
-                    color = if (isDigital) ElectricBluePrimary.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
+                        .clickable { onPaymentMethodSelected(PaymentMethod.NEQUI) },
+                    color = if (isNequi) PlatformPrivate.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "📱 Digital / Saldo App",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (isDigital) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isDigital) ElectricBluePrimary else TextSecondary
+                            text = "🟣 Nequi / Davi",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = if (isNequi) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isNequi) PlatformPrivate else TextSecondary,
+                                fontSize = 12.sp
+                            )
+                        )
+                    }
+                }
+
+                // Opción 3: Saldo en App
+                Surface(
+                    modifier = Modifier
+                        .weight(1.05f)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(
+                            width = if (isAppWallet) 2.dp else 1.dp,
+                            color = if (isAppWallet) ElectricBluePrimary else TextSecondary.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clickable { onPaymentMethodSelected(PaymentMethod.APP_WALLET) },
+                    color = if (isAppWallet) ElectricBluePrimary.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "📱 Saldo App",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = if (isAppWallet) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isAppWallet) ElectricBluePrimary else TextSecondary,
+                                fontSize = 12.sp
                             )
                         )
                     }
                 }
             }
 
-            if (isCash && commission > 0.0) {
+            if ((isCash || isNequi) && commission > 0.0) {
                 Text(
-                    text = "⚠️ Al cobrar en efectivo, la comisión de ${currencyFormatter.format(commission)} queda como deuda pendiente con la app.",
+                    text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(commission)} queda como deuda pendiente con la app.",
                     style = MaterialTheme.typography.labelSmall,
                     color = StatusAmber
+                )
+            } else if (isAppWallet && commission > 0.0) {
+                Text(
+                    text = "ℹ️ La app descuenta su comisión en la fuente. ${currencyFormatter.format(net)} netos ingresan a tu saldo en la app.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ElectricBluePrimary
                 )
             }
         }

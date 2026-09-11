@@ -4,6 +4,10 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+    match /app_metadata/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
     match /users/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

@@ -73,7 +73,7 @@ fun DrivvoTripTelemetrySection(
     val isOdometerError = startOdo != null && endOdo != null && endOdo < startOdo
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // 1. Vehículo Activo
+        // 1. Vehículo Activo (Formato Flat List Drivvo con icono dinámico)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = DeepObsidianSurfaceVariant,
@@ -82,18 +82,23 @@ fun DrivvoTripTelemetrySection(
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(text = "🏍️", fontSize = 18.sp)
+                Text(text = vehicleProfile.vehicleType.icon, fontSize = 24.sp)
                 Column {
                     Text(
-                        text = if (vehicleProfile.model.isNotBlank()) "${vehicleProfile.model} (${vehicleProfile.brand})" else "Furia Nocturna (TVS Raider 125 Fi)",
+                        text = "Vehículo",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = if (vehicleProfile.model.isNotBlank()) "${vehicleProfile.model} (${vehicleProfile.brand}) (${vehicleProfile.vehiclePlate})" else "S6 (BYD) (HQX882)",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
                     Text(
-                        text = "Placa: ${if (vehicleProfile.vehiclePlate.isNotBlank()) vehicleProfile.vehiclePlate else "TVS-125"} · Base: ${lastKnownOdometer} km",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Base odómetro: ${lastKnownOdometer} km",
+                        style = MaterialTheme.typography.labelSmall,
                         color = TextSecondary
                     )
                 }

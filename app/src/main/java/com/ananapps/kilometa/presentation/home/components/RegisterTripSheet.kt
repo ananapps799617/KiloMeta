@@ -29,6 +29,10 @@ import com.ananapps.kilometa.presentation.theme.*
 import java.text.NumberFormat
 import java.util.Locale
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.Alignment
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterTripSheet(
@@ -94,33 +98,30 @@ fun RegisterTripSheet(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cabecera Drivvo
-            Row(
+            // Cabecera Oficial Drivvo (Barra Verde Sólida con Flecha e "Ingreso")
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                color = Color(0xFF1B5E20), // Verde Esmeralda Drivvo
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Column {
-                    Text(
-                        text = "Registrar Carrera",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = "Ingreso de servicio en ruta",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
-
-                Surface(
-                    color = StatusGreen.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(8.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = Color.White
+                        )
+                    }
                     Text(
-                        text = "DRIVVO MODE",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = StatusGreen,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        text = "Ingreso",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                        modifier = Modifier.padding(start = 4.dp)
                     )
                 }
             }
@@ -156,18 +157,22 @@ fun RegisterTripSheet(
                 commissionAmountText = commissionAmountText,
                 onCommissionAmountChange = { commissionAmountText = it },
                 selectedPaymentMethod = selectedPaymentMethod,
-                onPaymentMethodSelected = { selectedPaymentMethod = it }
+                onPaymentMethodSelected = {
+                    selectedPaymentMethod = it
+                    if (commissionAmountText.isBlank() && grossAmountText.isNotBlank()) {
+                        updateSuggestedCommission(grossAmountText, selectedPlatform)
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 4. Botón Único Principal GUARDAR CARRERA (58dp de altura, color verde StatusGreen)
+            // 4. Botón Único Principal GUARDAR (58dp de altura, color verde StatusGreen)
             Button(
                 onClick = {
-                    val dest = if (selectedPaymentMethod == PaymentMethod.CASH) {
-                        PaymentDestination.CASH_IN_HAND
-                    } else {
-                        PaymentDestination.APP_RETAINED
+                    val dest = when (selectedPaymentMethod) {
+                        PaymentMethod.CASH, PaymentMethod.NEQUI -> PaymentDestination.CASH_IN_HAND
+                        PaymentMethod.APP_WALLET -> PaymentDestination.APP_RETAINED
                     }
 
                     onConfirmTrip(
@@ -193,7 +198,7 @@ fun RegisterTripSheet(
                 )
             ) {
                 Text(
-                    text = if (gross > 0.0) "GUARDAR CARRERA (+${currencyFormatter.format(net)})" else "GUARDAR CARRERA",
+                    text = if (gross > 0.0) "GUARDAR (+${currencyFormatter.format(net)})" else "GUARDAR",
                     color = if (isFormValid) Color.Black else TextSecondary,
                     fontWeight = FontWeight.Black,
                     fontSize = 16.sp
