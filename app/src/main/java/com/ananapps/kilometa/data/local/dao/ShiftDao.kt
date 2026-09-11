@@ -65,6 +65,8 @@ interface ShiftDao {
         SELECT MAX(odo) FROM (
             SELECT MAX(COALESCE(end_odometer, start_odometer)) AS odo FROM shifts
             UNION ALL
+            SELECT MAX(COALESCE(end_odometer, start_odometer)) AS odo FROM trips
+            UNION ALL
             SELECT MAX(odometer) AS odo FROM fuelings
             UNION ALL
             SELECT MAX(odometer) AS odo FROM maintenance_records

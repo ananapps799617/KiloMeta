@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/usecase/GetDayContinuousTimelineUseCase.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -94,18 +94,23 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 "0h 0m"
             }
 
-            val firstOdo = if (activeShift != null) {
-                activeShift.startOdometer
-            } else {
-                todayFuelings.minByOrNull { it.timestamp }?.odometer
-            }
+            val tripMinOdo = todayTrips.mapNotNull { it.startOdometer ?: it.endOdometer }.minOrNull()
+            val fuelMinOdo = todayFuelings.map { it.odometer }.minOrNull()
+            val firstOdoCandidates = listOfNotNull(activeShift?.startOdometer, tripMinOdo, fuelMinOdo)
+            val firstOdo = firstOdoCandidates.minOrNull()
 
-            val effectiveLastOdo = lastOdo ?: firstOdo ?: 0
-            val distanceKm = if (firstOdo != null && effectiveLastOdo >= firstOdo) {
+            val tripMaxOdo = todayTrips.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
+            val fuelMaxOdo = todayFuelings.map { it.odometer }.maxOrNull()
+            val lastOdoCandidates = listOfNotNull(lastOdo, tripMaxOdo, fuelMaxOdo, activeShift?.endOdometer, activeShift?.startOdometer)
+            val effectiveLastOdo = lastOdoCandidates.maxOrNull() ?: firstOdo ?: 0
+
+            val sumTripKm = todayTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()
+            val odoDistanceKm = if (firstOdo != null && effectiveLastOdo >= firstOdo) {
                 effectiveLastOdo - firstOdo
             } else {
                 0
             }
+            val distanceKm = maxOf(odoDistanceKm, sumTripKm)
 
             DayContinuousSummary(
                 totalNetIncome = totalNetIncome,

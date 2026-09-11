@@ -21,17 +21,18 @@ sealed class DayActivityEvent(
     data class TripItem(val trip: Trip) : DayActivityEvent(
         id = trip.id,
         timestamp = trip.timestamp,
-        title = "Carrera ${trip.platformType.name}",
-        subtitle = "Cobro: ${trip.paymentMethod.name}",
+        title = trip.platformType.displayName,
+        subtitle = formatTripSubtitle(trip),
         amount = trip.netAmount,
-        isIncome = true
+        isIncome = true,
+        odometer = trip.endOdometer ?: trip.startOdometer
     )
 
     data class FuelingItem(val fueling: Fueling) : DayActivityEvent(
         id = fueling.id,
         timestamp = fueling.timestamp,
-        title = "Tanqueo ${fueling.fuelType.name}",
-        subtitle = "${fueling.volume} gal/m³ · Km ${fueling.odometer}",
+        title = "Tanqueo ${fueling.fuelType.displayName}",
+        subtitle = "${fueling.volume} ${fueling.fuelType.unitLabel} · Km ${fueling.odometer}",
         amount = fueling.amountPaid,
         isIncome = false,
         odometer = fueling.odometer
@@ -45,6 +46,16 @@ sealed class DayActivityEvent(
         amount = expense.amount,
         isIncome = false
     )
+}
+
+private fun formatTripSubtitle(trip: Trip): String {
+    val payLabel = trip.paymentMethod.displayName
+    val km = trip.tripDistanceKm
+    return if (km != null && km > 0) {
+        "${km.toInt()} km · $payLabel"
+    } else {
+        payLabel
+    }
 }
 
 data class DayContinuousSummary(

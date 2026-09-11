@@ -111,7 +111,8 @@ class ManageShiftUseCase @Inject constructor(
      */
     suspend fun getOrCreateShiftForDay(
         timestamp: Long = System.currentTimeMillis(),
-        odometer: Int? = null,
+        startOdometer: Int? = null,
+        endOdometer: Int? = null,
         notes: String = "Jornada diaria"
     ): Shift {
         val zone = java.time.ZoneId.systemDefault()
@@ -121,21 +122,36 @@ class ManageShiftUseCase @Inject constructor(
 
         val existingShifts = shiftRepository.getShiftsForDay(dayStart, dayEnd)
 
-        // 1. Si hay una jornada activa en ese día, la retornamos de inmediato
+        // 1. Si hay una jornada activa en ese día, la retornamos y actualizamos odómetros si aplica
         val activeShift = existingShifts.firstOrNull { it.status == ShiftStatus.ACTIVE }
         if (activeShift != null) {
+            val updatedEnd: Int? = listOfNotNull(activeShift.endOdometer, endOdometer, startOdometer).maxOrNull()
+            val updatedStart: Int = if (activeShift.startOdometer <= 0 && startOdometer != null && startOdometer > 0) {
+                startOdometer
+            } else {
+                activeShift.startOdometer
+            }
+            if (updatedEnd != activeShift.endOdometer || updatedStart != activeShift.startOdometer) {
+                val updatedShift = activeShift.copy(startOdometer = updatedStart, endOdometer = updatedEnd)
+                shiftRepository.updateShift(updatedShift)
+                return updatedShift
+            }
             return activeShift
         }
 
         // 2. Si no hay turnos para esa fecha, creamos la jornada única para el día
         if (existingShifts.isEmpty()) {
-            val odo = odometer ?: getLastKnownOdometerUseCase?.getSync() ?: (shiftRepository.getLastKnownOdometer().first() ?: 0)
+            val fallbackOdo: Int = getLastKnownOdometerUseCase?.getSync()
+                ?: shiftRepository.getLastKnownOdometer().first()
+                ?: 0
+            val startOdo: Int = startOdometer ?: endOdometer ?: fallbackOdo
+            val endOdo: Int = endOdometer ?: startOdometer ?: startOdo
             val shift = Shift(
                 id = UUID.randomUUID().toString(),
                 startTime = timestamp,
                 endTime = timestamp,
-                startOdometer = odo,
-                endOdometer = odo,
+                startOdometer = startOdo,
+                endOdometer = endOdo,
                 dailyQuotaTarget = 0.0,
                 status = ShiftStatus.COMPLETED,
                 notes = notes
@@ -154,10 +170,10 @@ class ManageShiftUseCase @Inject constructor(
         val allEnds = listOfNotNull(master.endTime ?: master.startTime, timestamp) + secondaries.map { it.endTime ?: it.startTime }
         val maxEnd = allEnds.maxOrNull() ?: master.startTime
 
-        val allStartOdos = listOfNotNull(master.startOdometer, odometer) + secondaries.map { it.startOdometer }
+        val allStartOdos = listOfNotNull(master.startOdometer, startOdometer, endOdometer) + secondaries.mapNotNull { it.startOdometer }
         val minOdo = allStartOdos.minOrNull() ?: master.startOdometer
 
-        val allEndOdos = listOfNotNull(master.endOdometer ?: master.startOdometer, odometer) + secondaries.map { it.endOdometer ?: it.startOdometer }
+        val allEndOdos = listOfNotNull(master.endOdometer ?: master.startOdometer, endOdometer, startOdometer) + secondaries.mapNotNull { it.endOdometer ?: it.startOdometer }
         val maxOdo = allEndOdos.maxOrNull() ?: (master.endOdometer ?: master.startOdometer)
 
         val consolidatedMaster = master.copy(
@@ -182,5 +198,5 @@ class ManageShiftUseCase @Inject constructor(
     suspend fun createSporadicShift(
         odometer: Int? = null,
         notes: String = "Movimiento esporádico"
-    ): Shift = getOrCreateShiftForDay(System.currentTimeMillis(), odometer, notes)
+    ): Shift = getOrCreateShiftForDay(System.currentTimeMillis(), startOdometer = odometer, endOdometer = odometer, notes = notes)
 }

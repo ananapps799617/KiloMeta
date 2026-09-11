@@ -142,7 +142,8 @@ class HomeViewModel @Inject constructor(
             val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
                 manageShiftUseCase.getOrCreateShiftForDay(
                     timestamp = timestamp,
-                    odometer = startOdometer ?: endOdometer,
+                    startOdometer = startOdometer,
+                    endOdometer = endOdometer,
                     notes = "Jornada diaria"
                 ).id
             } else {
@@ -171,7 +172,12 @@ class HomeViewModel @Inject constructor(
 
     fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(System.currentTimeMillis(), odo, "Jornada diaria").id
+            manageShiftUseCase.getOrCreateShiftForDay(
+                timestamp = System.currentTimeMillis(),
+                startOdometer = odo,
+                endOdometer = odo,
+                notes = "Jornada diaria"
+            ).id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
@@ -180,7 +186,10 @@ class HomeViewModel @Inject constructor(
 
     fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(System.currentTimeMillis(), null, "Jornada diaria").id
+            manageShiftUseCase.getOrCreateShiftForDay(
+                timestamp = System.currentTimeMillis(),
+                notes = "Jornada diaria"
+            ).id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
