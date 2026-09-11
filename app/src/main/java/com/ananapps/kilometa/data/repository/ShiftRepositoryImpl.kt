@@ -131,4 +131,22 @@ class ShiftRepositoryImpl @Inject constructor(
     override fun getLastKnownOdometer(): Flow<Int?> {
         return shiftDao.getLastKnownOdometer()
     }
+
+    override suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<Shift> {
+        return withContext(dispatchers.io) {
+            shiftDao.getShiftsForDay(dayStart, dayEnd).map { it.toDomain() }
+        }
+    }
+
+    override suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>) {
+        withContext(dispatchers.io) {
+            shiftDao.updateShift(masterShift.toEntity())
+            for (secId in secondaryShiftIds) {
+                shiftDao.reassignTripsShift(secId, masterShift.id)
+                shiftDao.reassignFuelingsShift(secId, masterShift.id)
+                shiftDao.reassignExpensesShift(secId, masterShift.id)
+                shiftDao.deleteShift(secId)
+            }
+        }
+    }
 }

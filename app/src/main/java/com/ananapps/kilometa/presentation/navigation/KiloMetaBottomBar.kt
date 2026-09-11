@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/navigation/KiloMetaBottomBar.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Barra de navegación inferior M3 de 5 destinos inspirada en el benchmark de Drivvo.
+// Barra de navegación inferior M3 de 5 destinos inspirada en el benchmark de KiloMeta.
 // Incluye botón central flotante (+) para registro express y pestañas ergonómicas
 // de pulgar para Ruta, Informes, Recordatorios y Más.
 // ==============================================================================

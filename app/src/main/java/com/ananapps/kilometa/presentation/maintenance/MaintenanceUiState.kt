@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/maintenance/MaintenanceUiState.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Estado inmutable de la pantalla independiente de Mantenimiento Preventivo (estilo Drivvo).
+// Estado inmutable de la pantalla independiente de Mantenimiento Preventivo (estilo KiloMeta).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.maintenance

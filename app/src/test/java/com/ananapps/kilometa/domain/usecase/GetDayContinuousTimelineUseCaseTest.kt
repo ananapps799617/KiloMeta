@@ -3,7 +3,7 @@
 // ARCHIVO: app/src/test/java/com/ananapps/kilometa/domain/usecase/GetDayContinuousTimelineUseCaseTest.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Pruebas unitarias para validar el cálculo automático de jornada y resumen continuo
-// al estilo Drivvo (desde el primer registro del día al último).
+// al estilo KiloMeta (desde el primer registro del día al último).
 // ==============================================================================
 
 package com.ananapps.kilometa.domain.usecase

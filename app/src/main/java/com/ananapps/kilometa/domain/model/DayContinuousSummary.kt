@@ -3,7 +3,7 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/model/DayContinuousSummary.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Modelo de Dominio para el Timeline Continuo y resumen implícito de jornada
-// al estilo Drivvo. Unifica carreras, tanqueos y gastos de la jornada sin obligar
+// al estilo KiloMeta. Unifica carreras, tanqueos y gastos de la jornada sin obligar
 // a una pantalla bloqueante de inicio de turno.
 // ==============================================================================
 

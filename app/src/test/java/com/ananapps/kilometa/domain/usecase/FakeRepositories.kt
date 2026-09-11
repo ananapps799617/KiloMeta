@@ -90,4 +90,18 @@ class FakeShiftRepository : ShiftRepository {
             allFuelingsList.map { it.odometer }.maxOrNull()
         ).maxOrNull()
     )
+
+    override suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<Shift> {
+        return shifts.filter { (it.startTime in dayStart..dayEnd) || ((it.endTime ?: it.startTime) in dayStart..dayEnd) }
+    }
+
+    override suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>) {
+        val idx = shifts.indexOfFirst { it.id == masterShift.id }
+        if (idx != -1) {
+            shifts[idx] = masterShift
+        } else {
+            shifts.add(masterShift)
+        }
+        shifts.removeAll { secondaryShiftIds.contains(it.id) }
+    }
 }

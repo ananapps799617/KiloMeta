@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/maintenance/components/MaintenanceAlertsCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Tarjeta de alertas predictivas estilo Drivvo. Muestra un semáforo mecánico
+// Tarjeta de alertas predictivas estilo KiloMeta. Muestra un semáforo mecánico
 // del vehículo según los kilómetros restantes para cada servicio crítico.
 // ==============================================================================
 

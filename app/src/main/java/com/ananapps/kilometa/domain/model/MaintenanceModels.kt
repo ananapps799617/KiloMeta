@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/model/MaintenanceModels.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Modelos de Dominio para el Módulo de Mantenimiento Preventivo estilo Drivvo.
+// Modelos de Dominio para el Módulo de Mantenimiento Preventivo estilo KiloMeta.
 // Representa registros de servicio, intervalos recomendados por kilometraje y
 // alertas predictivas para evitar averías mecánicas y optimizar costos de flota.
 // ==============================================================================

@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/maintenance/MaintenanceScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla independiente de Mantenimiento Preventivo (estilo Drivvo) para KiloMeta.
+// Pantalla independiente de Mantenimiento Preventivo (estilo KiloMeta) para KiloMeta.
 // Permite al conductor gestionar el ciclo de vida mecánico del vehículo, alertas
 // predictivas por kilometraje y registro contable de egresos de taller.
 // Regla inquebrantable: Archivo < 280 líneas.
@@ -110,7 +110,7 @@ fun MaintenanceScreen(
             }
         }
 
-        // Semáforo Mecánico Predictivo Drivvo
+        // Semáforo Mecánico Predictivo KiloMeta
         MaintenanceAlertsCard(
             alerts = state.alerts,
             currentOdometer = state.currentOdometer

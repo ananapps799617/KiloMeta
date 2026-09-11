@@ -67,6 +67,14 @@ class FakeShiftDao : ShiftDao {
     override fun getLastKnownOdometer(): Flow<Int?> = flowOf(
         shifts.values.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
     )
+
+    override suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<ShiftEntity> {
+        return shifts.values.filter { (it.startTime in dayStart..dayEnd) || ((it.endTime ?: it.startTime) in dayStart..dayEnd) }
+    }
+
+    override suspend fun reassignTripsShift(sourceShiftId: String, targetShiftId: String) {}
+    override suspend fun reassignFuelingsShift(sourceShiftId: String, targetShiftId: String) {}
+    override suspend fun reassignExpensesShift(sourceShiftId: String, targetShiftId: String) {}
 }
 
 // ------------------------------------------------------------------------------

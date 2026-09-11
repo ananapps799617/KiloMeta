@@ -1,8 +1,8 @@
-// ==============================================================================
+﻿// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
-// ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DrivvoTripPlatformSelector.kt
-// DESCRIPCIÓN PEDAGÓGICA:
-// Selector ergonómico de plataforma de transporte estilo Drivvo (Fila con ícono y chips de 1 toque).
+// ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripPlatformSelector.kt
+// DESCRIPCIÃ“N PEDAGÃ“GICA:
+// Selector ergonÃ³mico de plataforma de transporte estilo Cockpit KiloMeta (Fila con Ã­cono y chips de 1 toque).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -28,7 +28,7 @@ import com.ananapps.kilometa.presentation.theme.visualToken
 import com.ananapps.kilometa.presentation.theme.*
 
 @Composable
-fun DrivvoTripPlatformSelector(
+fun TripPlatformSelector(
     selectedPlatform: PlatformType,
     onPlatformSelected: (PlatformType) -> Unit,
     modifier: Modifier = Modifier
@@ -83,3 +83,4 @@ fun DrivvoTripPlatformSelector(
         }
     }
 }
+

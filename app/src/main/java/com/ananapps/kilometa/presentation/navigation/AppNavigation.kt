@@ -19,7 +19,7 @@ enum class AppDestination(
 ) {
     COCKPIT("Cabina en Vivo", "En Turno"),
     HISTORY("Historial & Analíticas", "Auditoría Contable"),
-    MAINTENANCE("Mantenimientos", "Alertas Drivvo & Odómetro"),
+    MAINTENANCE("Mantenimientos", "Alertas Predictivas & Odómetro"),
     EXPENSES("Gastos en Ruta", "Lavadas, Despinchadas & Comida"),
     PROFILE("Mi Perfil & Vehículo", "Configuración Técnica"),
     PLACES("Mis Bombas & Talleres", "Ruta directa a Waze & Maps"),

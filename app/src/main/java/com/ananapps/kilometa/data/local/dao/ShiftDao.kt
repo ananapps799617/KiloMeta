@@ -71,4 +71,21 @@ interface ShiftDao {
         )
     """)
     fun getLastKnownOdometer(): Flow<Int?>
+
+    @Query("""
+        SELECT * FROM shifts 
+        WHERE (start_time BETWEEN :dayStart AND :dayEnd) 
+           OR (end_time BETWEEN :dayStart AND :dayEnd)
+        ORDER BY CASE WHEN status = 'ACTIVE' THEN 0 ELSE 1 END, start_time ASC
+    """)
+    suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<ShiftEntity>
+
+    @Query("UPDATE trips SET shift_id = :targetShiftId WHERE shift_id = :sourceShiftId")
+    suspend fun reassignTripsShift(sourceShiftId: String, targetShiftId: String)
+
+    @Query("UPDATE fuelings SET shift_id = :targetShiftId WHERE shift_id = :sourceShiftId")
+    suspend fun reassignFuelingsShift(sourceShiftId: String, targetShiftId: String)
+
+    @Query("UPDATE expenses SET shift_id = :targetShiftId WHERE shift_id = :sourceShiftId")
+    suspend fun reassignExpensesShift(sourceShiftId: String, targetShiftId: String)
 }

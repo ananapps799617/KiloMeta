@@ -91,4 +91,14 @@ interface ShiftRepository {
      * Emite el último kilometraje conocido registrado en el sistema.
      */
     fun getLastKnownOdometer(): Flow<Int?>
+
+    /**
+     * Obtiene todos los turnos que intersecten un rango de fecha/día calendario.
+     */
+    suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<Shift>
+
+    /**
+     * Consolida de forma atómica múltiples turnos secundarios en un turno maestro.
+     */
+    suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>)
 }

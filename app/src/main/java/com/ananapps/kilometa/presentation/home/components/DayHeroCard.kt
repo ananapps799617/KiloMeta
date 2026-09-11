@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayHeroCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Tarjeta de cabecera financiera para el Timeline Continuo estilo Drivvo.
+// Tarjeta de cabecera financiera para el Timeline Continuo estilo KiloMeta.
 // Muestra el neto en mano de hoy, producido bruto, combustible y gastos,
 // junto con el indicador dinámico de la jornada (horas y km recorridos).
 // ==============================================================================

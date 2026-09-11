@@ -1,10 +1,10 @@
-// ==============================================================================
+﻿// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
-// ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DrivvoTripTelemetrySection.kt
-// DESCRIPCIÓN PEDAGÓGICA:
-// Sección de telemetría estilo Drivvo: vehículo activo, fecha/hora interactiva
-// con Date/Time pickers, odómetro inicial editable con cálculo de km en vacío
-// y odómetro final con cálculo de km de carrera con pasajero.
+// ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripTelemetrySection.kt
+// DESCRIPCIÃ“N PEDAGÃ“GICA:
+// SecciÃ³n de telemetrÃ­a estilo Cockpit KiloMeta: vehÃ­culo activo, fecha/hora interactiva
+// con Date/Time pickers, odÃ³metro inicial editable con cÃ¡lculo de km en vacÃ­o
+// y odÃ³metro final con cÃ¡lculo de km de carrera con pasajero.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -38,7 +38,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun DrivvoTripTelemetrySection(
+fun TripTelemetrySection(
     vehicleProfile: VehicleProfile,
     selectedDateTimeMillis: Long,
     onDateTimeSelected: (Long) -> Unit,
@@ -60,12 +60,12 @@ fun DrivvoTripTelemetrySection(
     val startOdo = startOdometerText.toIntOrNull()
     val endOdo = endOdometerText.toIntOrNull()
 
-    // Cálculo reactivo de km en vacío
+    // CÃ¡lculo reactivo de km en vacÃ­o
     val emptyKm = if (startOdo != null && lastKnownOdometer > 0 && startOdo > lastKnownOdometer) {
         startOdo - lastKnownOdometer
     } else null
 
-    // Cálculo reactivo de km con pasajero
+    // CÃ¡lculo reactivo de km con pasajero
     val passengerKm = if (startOdo != null && endOdo != null && endOdo >= startOdo) {
         endOdo - startOdo
     } else null
@@ -73,7 +73,7 @@ fun DrivvoTripTelemetrySection(
     val isOdometerError = startOdo != null && endOdo != null && endOdo < startOdo
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // 1. Vehículo Activo (Formato Flat List Drivvo con icono dinámico)
+        // 1. VehÃ­culo Activo (Formato Flat List Cockpit KiloMeta con icono dinÃ¡mico)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = DeepObsidianSurfaceVariant,
@@ -87,7 +87,7 @@ fun DrivvoTripTelemetrySection(
                 Text(text = vehicleProfile.vehicleType.icon, fontSize = 24.sp)
                 Column {
                     Text(
-                        text = "Vehículo",
+                        text = "VehÃ­culo",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextSecondary
                     )
@@ -97,7 +97,7 @@ fun DrivvoTripTelemetrySection(
                         color = TextPrimary
                     )
                     Text(
-                        text = "Base odómetro: ${lastKnownOdometer} km",
+                        text = "Base odÃ³metro: ${lastKnownOdometer} km",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextSecondary
                     )
@@ -179,12 +179,12 @@ fun DrivvoTripTelemetrySection(
             }
         }
 
-        // 3. Odómetros: Inicial (editable) y Final (opcional)
+        // 3. OdÃ³metros: Inicial (editable) y Final (opcional)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(
                 value = startOdometerText,
                 onValueChange = onStartOdometerChange,
-                label = { Text("Odómetro Inicial (km)") },
+                label = { Text("OdÃ³metro Inicial (km)") },
                 placeholder = { Text(lastKnownOdometer.toString()) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
@@ -200,7 +200,7 @@ fun DrivvoTripTelemetrySection(
             OutlinedTextField(
                 value = endOdometerText,
                 onValueChange = onEndOdometerChange,
-                label = { Text("Odómetro Final") },
+                label = { Text("OdÃ³metro Final") },
                 placeholder = { Text("Opcional") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = isOdometerError,
@@ -215,10 +215,10 @@ fun DrivvoTripTelemetrySection(
             )
         }
 
-        // 4. Indicadores en vivo de Km en vacío y Km de carrera
+        // 4. Indicadores en vivo de Km en vacÃ­o y Km de carrera
         if (emptyKm != null && emptyKm > 0) {
             Text(
-                text = "💨 $emptyKm km rodados en vacío antes de este viaje",
+                text = "ðŸ’¨ $emptyKm km rodados en vacÃ­o antes de este viaje",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = StatusAmber
             )
@@ -226,7 +226,7 @@ fun DrivvoTripTelemetrySection(
 
         if (passengerKm != null) {
             Text(
-                text = "🚗 $passengerKm km recorridos con pasajero en esta carrera",
+                text = "ðŸš— $passengerKm km recorridos con pasajero en esta carrera",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = StatusGreen
             )
@@ -234,10 +234,11 @@ fun DrivvoTripTelemetrySection(
 
         if (isOdometerError) {
             Text(
-                text = "⚠️ El odómetro final no puede ser menor al inicial ($startOdo km)",
+                text = "âš ï¸ El odÃ³metro final no puede ser menor al inicial ($startOdo km)",
                 style = MaterialTheme.typography.labelSmall,
                 color = StatusRed
             )
         }
     }
 }
+

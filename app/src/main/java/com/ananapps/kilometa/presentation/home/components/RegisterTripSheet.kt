@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/RegisterTripSheet.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// ModalBottomSheet ergonómico y minimalista estilo Drivvo para el registro de carreras.
+// ModalBottomSheet ergonómico y minimalista estilo Cockpit KiloMeta para el registro de carreras.
 // Erradica la saturación de botones y estructura la información en filas verticales limpias:
 // plataforma, fecha/hora, odómetros inicial/final, finanzas en pesos y botón GUARDAR verde.
 // ==============================================================================
@@ -98,10 +98,10 @@ fun RegisterTripSheet(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cabecera Oficial Drivvo (Barra Verde Sólida con Flecha e "Ingreso")
+            // Cabecera Oficial KiloMeta (Barra Verde Sólida con Flecha e "Ingreso")
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF1B5E20), // Verde Esmeralda Drivvo
+                color = Color(0xFF1B5E20), // Verde Esmeralda KiloMeta
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
@@ -127,7 +127,7 @@ fun RegisterTripSheet(
             }
 
             // 1. Selector de Plataforma
-            DrivvoTripPlatformSelector(
+            TripPlatformSelector(
                 selectedPlatform = selectedPlatform,
                 onPlatformSelected = { newPlatform ->
                     selectedPlatform = newPlatform
@@ -136,7 +136,7 @@ fun RegisterTripSheet(
             )
 
             // 2. Fila Telemetría (Vehículo, Fecha, Hora, Odómetros inicial/final)
-            DrivvoTripTelemetrySection(
+            TripTelemetrySection(
                 vehicleProfile = vehicleProfile,
                 selectedDateTimeMillis = selectedDateTimeMillis,
                 onDateTimeSelected = { selectedDateTimeMillis = it },
@@ -148,7 +148,7 @@ fun RegisterTripSheet(
             )
 
             // 3. Fila Financiera (Cobrado, Descuento, Ganancia Neta, Medio de cobro)
-            DrivvoTripFinancialSection(
+            TripFinancialSection(
                 grossAmountText = grossAmountText,
                 onGrossAmountChange = {
                     grossAmountText = it

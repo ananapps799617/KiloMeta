@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayActivityFeedCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Feed vertical de actividades cronológicas de hoy estilo Drivvo (carreras,
+// Feed vertical de actividades cronológicas de hoy estilo KiloMeta (carreras,
 // tanqueos y gastos) con nodos visuales diferenciados por color y opción de borrado.
 // ==============================================================================
 

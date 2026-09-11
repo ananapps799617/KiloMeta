@@ -135,7 +135,11 @@ class HomeViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.createSporadicShift(odometer = startOdometer ?: endOdometer, notes = "Carrera").id
+                manageShiftUseCase.getOrCreateShiftForDay(
+                    timestamp = timestamp,
+                    odometer = startOdometer ?: endOdometer,
+                    notes = "Jornada diaria"
+                ).id
             } else {
                 (uiState.value as HomeUiState.ActiveShift).summary.shiftId
             }
@@ -160,7 +164,11 @@ class HomeViewModel @Inject constructor(
     fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false) {
         viewModelScope.launch {
             val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.createSporadicShift(odometer = odo, notes = "Tanqueo esporádico").id
+                manageShiftUseCase.getOrCreateShiftForDay(
+                    timestamp = System.currentTimeMillis(),
+                    odometer = odo,
+                    notes = "Jornada diaria"
+                ).id
             } else {
                 (uiState.value as HomeUiState.ActiveShift).summary.shiftId
             }
@@ -171,7 +179,10 @@ class HomeViewModel @Inject constructor(
     fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false) {
         viewModelScope.launch {
             val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.createSporadicShift(notes = "Gasto esporádico").id
+                manageShiftUseCase.getOrCreateShiftForDay(
+                    timestamp = System.currentTimeMillis(),
+                    notes = "Jornada diaria"
+                ).id
             } else {
                 (uiState.value as HomeUiState.ActiveShift).summary.shiftId
             }

@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/ContinuousTimelineCockpitView.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Vista principal continua de cabina inspirada en Drivvo.
+// Vista principal continua de cabina inspirada en KiloMeta.
 // Erradica el estado bloqueante de "Cabina en Espera" y mantiene la pantalla
 // 100% viva mostrando el odómetro real del vehículo, el hero del día y las actividades.
 // ==============================================================================
@@ -47,7 +47,7 @@ fun ContinuousTimelineCockpitView(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Encabezado Compacto de Vehículo Activo & Odómetro Real (Benchmark Drivvo)
+        // Encabezado Compacto de Vehículo Activo & Odómetro Real (Benchmark KiloMeta)
         Row(
             modifier = Modifier
                 .fillMaxWidth()

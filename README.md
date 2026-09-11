@@ -25,13 +25,13 @@ Los conductores modernos —especialmente aquellos que operan vehículos de alto
    Arquitectura de borrado atómico bidireccional con tabla de lápidas locales `pending_deletions` en Room SQLite v6 y purga asíncrona en Google Cloud Firestore. Al borrar un viaje, tanqueo o gasto, el motor de sincronización descarta cualquier registro remoto zombi en el `pull`, garantizando que jamás vuelva a aparecer un viaje eliminado.
 4. **Sistema de Auto-Actualización In-App OTA (Over-The-Air Update Engine):**  
    Distribución y actualización autónoma desde cabina vehicular sin depender de intermediarios. Consulta remota en Firestore `/app_metadata/kilo_meta`, descarga en segundo plano con barra de progreso y solicitud de instalación desatendida mediante Android `FileProvider`.
-5. **Telemetría de Odómetro y Kilómetros en Vacío (Estilo Drivvo):**  
+5. **Telemetría de Odómetro y Kilómetros en Vacío (Estilo Cockpit KiloMeta):**  
    Formulario lineal y vertical con captura precisa de odómetros. Si el conductor rodó desocupado buscando carrera, KiloMeta detecta y calcula automáticamente los *"km rodados en vacío"* separándolos de los *"km de carrera con pasajero"*.
 6. **El Estrés de la "Cuota Semanal" Dinámica:**  
    Prorrateo dinámico de la cuota semanal pactada de alquiler (ej. `$500,000 COP` con día y hora de corte personalizables). La **Bolsa de Reserva Diaria** alimenta el **Semáforo Financiero**, indicando el punto de equilibrio exacto del día.
 7. **Costo Real de Combustible en Surtidor y Eficiencia Bi-Combustible:**  
    Auditoría de gasto monetario real desembolsado en surtidor (GNV vs. Gasolina), calculando el costo por kilómetro y el ahorro acumulado frente al uso de gasolina corriente para vehículos a gas.
-8. **Navegación Ergonómica de Cabina Estilo Drivvo (4 Pestañas + Speed Dial):**  
+8. **Navegación Ergonómica de Cabina Estilo Cockpit KiloMeta (4 Pestañas + Speed Dial):**  
    Barra inferior en la *Thumb Zone* (Ruta, Informes, Alertas, Más) y botón flotante central (+) elevado de 56dp con menú radial para registrar Carreras, Tanqueos y Gastos en $\le 3$ toques.
 9. **Lugares Frecuentes ("Mis Bombas & Talleres") con Mapas Nativos OSMDroid:**  
    Catálogo personal de estaciones de servicio, talleres, lavaderos y parqueaderos con renderizado 100% nativo en Android Canvas con **OSMDroid 6.1.20** (cero WebViews lentos, cero APIs comerciales) y lanzador directo de 1 tap a **Waze** y **Google Maps**.
@@ -70,7 +70,7 @@ El sistema de diseño de KiloMeta está optimizado para la cabina vehicular bajo
 
 * **Paleta Cockpit Deep Obsidian:**  
   Fondo `#0B0E14`, Superficies `#151B26` / `#1E2638`, Texto principal `#E6EDF3` (reduce el cansancio ocular y previene reflejos en el parabrisas).
-* **Barra Inferior Ergonómica Estilo Drivvo:**
+* **Barra Inferior Ergonómica Estilo Cockpit KiloMeta:**
   * 🚗 **Ruta:** Timeline continuo en vivo, odómetro inteligente, tarjeta Hero de dinero neto en bolsillo, card de liquidación de efectivo y billeteras separadas, y feed reactivo de actividad.
   * 📊 **Informes:** Analíticas por plataforma, balance bi-combustible (GNV vs. Gasolina), histórico de turnos y exportador contable CSV.
   * 🔔 **Alertas:** Notificaciones de vencimiento de cuota, recordatorios de mantenimiento preventivo y alertas mecánicas.
@@ -107,8 +107,8 @@ KiloMeta/
 │   │   │       ├── common/        # Badges de nube, tokens de plataforma, diálogos comunes
 │   │   │       ├── expenses/      # Gestión independiente de gastos operativos en ruta
 │   │   │       ├── history/       # Analíticas multi-plataforma, ahorro bi-combustible, exportador CSV
-│   │   │       ├── home/          # Cockpit continuo, tarjeta Hero, feed, Drivvo sheets, billeteras
-│   │   │       ├── maintenance/   # Mantenimiento preventivo estilo Drivvo, alertas de odómetro
+│   │   │       ├── home/          # Cockpit continuo, tarjeta Hero, feed, KiloMeta sheets, billeteras
+│   │   │       ├── maintenance/   # Mantenimiento preventivo estilo Cockpit KiloMeta, alertas de odómetro
 │   │   │       ├── more/          # Menú central "Más", OTA updater, accesos a subsistemas y perfil
 │   │   │       ├── navigation/    # KiloMetaBottomBar, TopBar vehicular, AppNavigation
 │   │   │       ├── places/        # Mis Bombas & Talleres, OSMDroid nativo, Waze/Maps launcher
@@ -152,22 +152,22 @@ KiloMeta/
 | **Orden #011** | Login Gatekeeper Mandatorio, Perfil Multi-Propulsión e Ícono Oficial | `v1.0.0-rc2` | 🟢 **COMPLETADO** |
 | **Orden #012** | Descongestión de TopAppBar, Refactor del Perfil y Segregación Conductor/Vehículo | `v1.0.1-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #013** | Motor de Cuota Dinámica para Arrendados y Liquidación Doble Bolsillo | `v1.0.2-alpha.1` | 🟢 **COMPLETADO** |
-| **Orden #014** | Módulo de Mantenimiento Preventivo Estilo Drivvo y Gastos en Ruta | `v1.1.0-alpha.1` | 🟢 **COMPLETADO — CIERRE FASE 4** |
+| **Orden #014** | Módulo de Mantenimiento Preventivo Estilo Cockpit KiloMeta y Gastos en Ruta | `v1.1.0-alpha.1` | 🟢 **COMPLETADO — CIERRE FASE 4** |
 | **Orden #015** | Onboarding Obligatorio de Cabina, Selector de Corte Vehicular y Dev Reset | `v1.2.0-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #016** | Sincronización Dinámica de Corte Vehicular en Cabina y Formato de Horas | `v1.2.1-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #017** | Aislamiento Multicuenta, Clean Session Handshake y Purga Atómica Local | `v1.3.0-alpha.1` | 🟢 **COMPLETADO** |
-| **Orden #018** | Reestructuración Visual de Cabina, Timeline en Vivo y Adopción Benchmark Drivvo | `v1.4.0-alpha.1` | 🟢 **COMPLETADO** |
+| **Orden #018** | Reestructuración Visual de Cabina, Timeline en Vivo y Adopción Estándar Cockpit KiloMeta | `v1.4.0-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #019** | Desacoplamiento de Registro sin Turno, Combustible Real y Cruce Billetera | `v1.5.0-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #020** | "Mis Bombas & Talleres" (Lanzador Waze/Maps) y Catálogo Vehicular Colombia | `v1.6.0-alpha.1` | 🟢 **COMPLETADO** |
-| **Orden #021** | Timeline Continuo Estilo Drivvo, Odómetro Inteligente y Selector GPS | `v1.7.0-alpha.1` | 🟢 **COMPLETADO** |
+| **Orden #021** | Timeline Continuo Estilo Cockpit KiloMeta, Odómetro Inteligente y Selector GPS | `v1.7.0-alpha.1` | 🟢 **COMPLETADO** |
 | **Hotfix #021.1** | Empaquetado Offline Local de Leaflet en Assets (Parche Temporal) | `v1.7.1-alpha.1` | 🟢 **COMPLETADO** |
 | **Hotfix #021.2** | Erradicación Definitiva de WebViews y Migración Nativa a OSMDroid | `v1.7.2-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #022** | Vista General de Mapa OSMDroid con Todos los Lugares y Tarjeta Flotante | `v1.8.0-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #023** | Diferenciación Visual de Plataformas (Colores Oficiales, Monogramas y Badges) | `v1.8.1-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #024** | Motor de Cálculo Exacto de Comisiones de Plataformas (Dual Capture & Calibration) | `v1.9.0-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #025** | Sistema de Auto-Actualización In-App OTA (Over-The-Air Update Engine) | `v1.9.0-alpha.1` | 🟢 **COMPLETADO** |
-| **Orden #026** | Simplificación Radical de Registro Estilo Drivvo y Telemetría de Odómetro (Room v5) | `v1.9.1-alpha.1` | 🟢 **COMPLETADO** |
-| **Orden #026.1**| Fidelidad Absoluta a Drivvo, Tríada de Pagos (Nequi/Efectivo/App) y Fix OTA Firestore | `v1.9.2-alpha.1` | 🟢 **COMPLETADO** |
+| **Orden #026** | Simplificación Radical de Registro Estilo Cockpit KiloMeta y Telemetría de Odómetro (Room v5) | `v1.9.1-alpha.1` | 🟢 **COMPLETADO** |
+| **Orden #026.1**| Fidelidad Absoluta a KiloMeta, Tríada de Pagos (Nequi/Efectivo/App) y Fix OTA Firestore | `v1.9.2-alpha.1` | 🟢 **COMPLETADO** |
 | **Orden #027** | Erradicación del Zombie Bug (Room v6 Lápidas + Purga Firestore), Cero % y Multi-Billetera | `v1.9.3-alpha.1` | 🟢 **COMPLETADO** |
 
 ---

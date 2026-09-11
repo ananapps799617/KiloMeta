@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/test/java/com/ananapps/kilometa/domain/usecase/MaintenanceUseCasesTest.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pruebas unitarias para los casos de uso del módulo de mantenimiento preventivo (Drivvo).
+// Pruebas unitarias para los casos de uso del módulo de mantenimiento preventivo (KiloMeta).
 // Evalúa semáforo mecánico predictivo, proyecciones de kilometraje e integridad contable.
 // ==============================================================================
 

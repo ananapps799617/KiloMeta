@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/more/MoreScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla de configuración secundaria (Pestaña "Más") inspirada en Drivvo.
+// Pantalla de configuración secundaria (Pestaña "Más") inspirada en KiloMeta.
 // Reemplaza por completo el menú hamburguesa, centralizando Perfil, Vehículo,
 // Mantenimientos, Gastos, Sincronización y Sesión en una lista táctil ergonómica.
 // ==============================================================================

@@ -3,7 +3,7 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/maintenance/MaintenanceViewModel.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // ViewModel para el Módulo de Mantenimiento Preventivo (@HiltViewModel).
-// Orquesta alertas de cambio de aceite/frenos, cálculo de odómetro e historial Drivvo.
+// Orquesta alertas de cambio de aceite/frenos, cálculo de odómetro e historial KiloMeta.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.maintenance

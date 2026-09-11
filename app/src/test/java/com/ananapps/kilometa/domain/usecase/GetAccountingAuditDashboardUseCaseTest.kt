@@ -55,8 +55,8 @@ private class TestShiftRepository : ShiftRepository {
     override fun getAllFuelings(): Flow<List<Fueling>> = emptyFlow()
     override suspend fun startShift(shift: Shift) {}; override suspend fun closeShift(shiftId: String, endOdometer: Int, endTime: Long, notes: String?) {}
     override suspend fun updateShift(shift: Shift) {}; override suspend fun deleteShift(shiftId: String) {}
-    override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null)
-    override fun getActiveShiftTrips(): Flow<List<Trip>> = emptyFlow(); override fun getLastKnownOdometer(): Flow<Int?> = flowOf(null)
+    override fun getActiveShiftCashSettlement(): Flow<com.ananapps.kilometa.domain.model.CashSettlementSummary?> = flowOf(null); override fun getActiveShiftTrips(): Flow<List<Trip>> = emptyFlow(); override fun getLastKnownOdometer(): Flow<Int?> = flowOf(null)
+    override suspend fun getShiftsForDay(dayStart: Long, dayEnd: Long): List<Shift> = emptyList(); override suspend fun consolidateShifts(masterShift: Shift, secondaryShiftIds: List<String>) {}
 }
 
 private class TestExpenseRepository : ExpenseRepository {

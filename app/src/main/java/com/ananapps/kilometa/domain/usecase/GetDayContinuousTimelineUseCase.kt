@@ -2,7 +2,7 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/usecase/GetDayContinuousTimelineUseCase.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Caso de uso que orquesta el Timeline Continuo estilo Drivvo.
+// Caso de uso que orquesta el Timeline Continuo estilo KiloMeta.
 // Agrupa cronológicamente todas las actividades del día (carreras, tanqueos, gastos)
 // y calcula dinámicamente la jornada entre el primer y último registro sin exigir
 // un botón bloqueante de "Iniciar Turno".
