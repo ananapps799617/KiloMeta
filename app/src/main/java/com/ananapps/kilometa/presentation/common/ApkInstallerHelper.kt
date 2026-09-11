@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/common/ApkInstallerHelper.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -40,11 +40,26 @@ object ApkInstallerHelper {
             val tempFile = File(updateDir, "update_temp.apk")
             val targetFile = File(updateDir, "update.apk")
 
-            val url = URL(apkUrl)
+            // Normalización defensiva para enlaces de Google Drive (> 10MB)
+            val resolvedUrl = if (apkUrl.contains("drive.google.com/uc?export=download&id=")) {
+                val fileId = apkUrl.substringAfter("id=").substringBefore("&")
+                "https://drive.usercontent.google.com/download?id=$fileId&export=download&confirm=t"
+            } else if (apkUrl.contains("drive.google.com") && !apkUrl.contains("confirm=t")) {
+                "$apkUrl&confirm=t"
+            } else {
+                apkUrl
+            }
+
+            val url = URL(resolvedUrl)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 15000
                 readTimeout = 30000
                 instanceFollowRedirects = true
+            }
+
+            val contentType = connection.contentType ?: ""
+            if (contentType.contains("text/html", ignoreCase = true)) {
+                throw IllegalStateException("El servidor devolvió una página web HTML en lugar del binario APK.")
             }
 
             val totalBytes = connection.contentLength.toLong()
@@ -61,6 +76,11 @@ object ApkInstallerHelper {
                         emit(DownloadState.Downloading(progress, downloadedBytes, totalBytes))
                     }
                 }
+            }
+
+            // Validación de integridad del archivo
+            if (tempFile.length() < 100_000) {
+                throw IllegalStateException("El archivo descargado está incompleto (${tempFile.length()} bytes).")
             }
 
             // Renombrado atómico
