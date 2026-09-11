@@ -1,11 +1,13 @@
 # 🚗 KiloMeta — Plataforma Operativa & Financiera para Socios Conductores
 
-[![Ecosistema](https://img.shields.io/badge/Ecosistema-AnAnApps%202.0-blue)](https://github.com)
-[![Fase](https://img.shields.io/badge/Fase-05--EXPERIENCIA%20DRIVVO%20%26%20TELEMETR%C3%8DA%20EN%20RUTA-blue)](https://github.com)
-[![Plataforma](https://img.shields.io/badge/Plataforma-Android%20Nativa%20(Kotlin%202.x)-green)](https://developer.android.com)
-[![Arquitectura](https://img.shields.io/badge/Arquitectura-Clean%20%2B%20Hilt%20%2B%20Room%20v6%20SSOT%20%2B%20OSMDroid%20%2B%20OTA-purple)](https://developer.android.com/jetpack/compose)
-[![Seguridad](https://img.shields.io/badge/Seguridad-Zero--Trust%20(DataGuard%20Tier%203)-red)](https://github.com)
-[![Versión](https://img.shields.io/badge/Versi%C3%B3n-v1.9.3--alpha.1%20(code%20193)-success)](https://github.com)
+<p align="left">
+  <img src="https://img.shields.io/badge/Ecosistema-AnAnApps_2.0-blue?style=for-the-badge&logo=android" alt="Ecosistema" />
+  <img src="https://img.shields.io/badge/Fase-05_Incubaci%C3%B3n-blue?style=for-the-badge&logo=googleplay" alt="Fase" />
+  <img src="https://img.shields.io/badge/Plataforma-Android_Nativa_(Kotlin)-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Plataforma" />
+  <img src="https://img.shields.io/badge/Arquitectura-Clean_%2B_Room_%2B_OSMDroid-purple?style=for-the-badge&logo=sqlite" alt="Arquitectura" />
+  <img src="https://img.shields.io/badge/Seguridad-Zero_Trust-red?style=for-the-badge&logo=firebase" alt="Seguridad" />
+  <img src="https://img.shields.io/badge/Versi%C3%B3n-v1.9.3_alpha.1-00C853?style=for-the-badge" alt="Versión" />
+</p>
 
 > **KiloMeta** es una plataforma móvil nativa de alto rendimiento desarrollada bajo el **Ecosistema AnAnApps 2.0 (División de Movilidad y Finanzas Operativas)**. Creada a la medida de la realidad operativa de los socios conductores de plataformas (Uber, DiDi, inDrive, Cabify, Particular) y vehículos bi-combustibles o de alquiler semanal en Colombia.
 

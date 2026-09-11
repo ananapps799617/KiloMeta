@@ -43,3 +43,10 @@ Thumbs.db
 
 # Firebase & Google Services
 google-services.json
+
+# Security & AnAnApps v2.0 Ecosystem
+.env
+.env.*
+credentials.json
+token.json
+
