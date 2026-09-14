@@ -2,26 +2,29 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayActivityItemRow.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Fila de actividad individual para el Feed de Hoy con arquitectura ergonómica en 2 niveles.
-// Nivel 1: Avatar, Identidad de servicio y Cifra monetaria neta.
-// Nivel 2: Telemetría de ruta completa (sin truncamientos) y controles táctiles de cabina.
+// Fila de actividad individual con arquitectura de acordeón interactivo estilo Drivvo.
+// Estado Colapsado: 2 filas limpias de borde a borde sin botones (cero texto truncado).
+// Estado Expandido: Ficha técnica tipo tabla clave-valor con botonera protegida en esquina inferior.
 // Regla inquebrantable: Modularidad estricta < 280 líneas de código.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,15 +47,19 @@ fun DayActivityItemRow(
     onDeleteRequested: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(DeepObsidianSurfaceVariant)
+            .clickable { expanded = !expanded }
+            .animateContentSize()
             .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // --- NIVEL 1: IDENTIDAD VISUAL Y FINANZAS ---
+        // --- 1. VISTA COLAPSADA: LÍNEA 1 (IDENTIDAD Y FINANZAS) ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -100,53 +107,129 @@ fun DayActivityItemRow(
             )
         }
 
-        // --- NIVEL 2: TELEMETRÍA DE RUTA Y CONTROLES ERGONÓMICOS ---
+        // --- 2. VISTA COLAPSADA: LÍNEA 2 (MÉTRICAS Y HORA — BORDE A BORDE) ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f).padding(end = 8.dp)
-            ) {
-                Text(
-                    text = "⏰ $timeFormatted · ${event.subtitle}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Text(
+                text = event.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
+            )
+            Text(
+                text = timeFormatted,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+
+        // --- 3. PANEL DESPLEGADO: FICHA TÉCNICA CLAVE-VALOR ---
+        if (expanded) {
+            HorizontalDivider(
+                color = DeepObsidianSurface.copy(alpha = 0.7f),
+                thickness = 1.dp,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            when (event) {
+                is DayActivityEvent.TripItem -> {
+                    val trip = event.trip
+                    DetailRow("TARIFA BRUTA", "$ ${String.format(Locale.US, "%,.0f", trip.grossAmount)}")
+                    DetailRow("COMISIÓN DESCONTADA", "- $ ${String.format(Locale.US, "%,.0f", trip.commissionAmount)}")
+                    DetailRow("GANANCIA LIMPIA", "$ ${String.format(Locale.US, "%,.0f", trip.netAmount)}", isHighlight = true)
+                    DetailRow("MEDIO DE PAGO", trip.paymentMethod.displayName)
+                    if (trip.startOdometer != null || trip.endOdometer != null) {
+                        val odoText = "${trip.startOdometer ?: "-"} km ➔ ${trip.endOdometer ?: "-"} km"
+                        val distText = trip.tripDistanceKm?.let { " (${it.toInt()} km)" } ?: ""
+                        DetailRow("ODÓMETRO", "$odoText$distText")
+                    }
+                    DetailRow("HORA REGISTRO", timeFormatted)
+                }
+                is DayActivityEvent.FuelingItem -> {
+                    val fueling = event.fueling
+                    val unitPrice = if (fueling.volume > 0) fueling.amountPaid / fueling.volume else 0.0
+                    DetailRow("COMBUSTIBLE", fueling.fuelType.displayName)
+                    DetailRow("VOLUMEN CARGADO", "${fueling.volume} ${fueling.fuelType.unitLabel}")
+                    DetailRow("PRECIO UNITARIO", "$ ${String.format(Locale.US, "%,.0f", unitPrice)} / ${fueling.fuelType.unitLabel}")
+                    DetailRow("TOTAL PAGADO", "$ ${String.format(Locale.US, "%,.0f", fueling.amountPaid)}")
+                    DetailRow("ODÓMETRO SURTIDOR", "${fueling.odometer} km")
+                    DetailRow("HORA REGISTRO", timeFormatted)
+                }
+                is DayActivityEvent.ExpenseItem -> {
+                    val expense = event.expense
+                    DetailRow("CATEGORÍA", "${expense.concept.icon} ${expense.concept.displayName}")
+                    DetailRow("TOTAL GASTO", "$ ${String.format(Locale.US, "%,.0f", expense.amount)}")
+                    DetailRow("HORA REGISTRO", timeFormatted)
+                }
             }
 
+            // --- 4. BOTONERA INFERIOR DERECHA PROTEGIDA (≥ 40dp) ---
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = onEditRequested,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                IconButton(
                     onClick = onDeleteRequested,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(44.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Borrar",
                         tint = StatusRed.copy(alpha = 0.85f),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                IconButton(
+                    onClick = onEditRequested,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar",
+                        tint = ElectricBluePrimary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+    isHighlight: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextSecondary,
+            fontSize = 11.sp
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal,
+                fontFamily = FontFamily.Monospace
+            ),
+            color = if (isHighlight) StatusGreen else TextPrimary,
+            fontSize = 12.sp
+        )
     }
 }
