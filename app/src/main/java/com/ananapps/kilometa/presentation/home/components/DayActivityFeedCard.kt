@@ -8,31 +8,19 @@
 
 package com.ananapps.kilometa.presentation.home.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.DayActivityEvent
 import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
-import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.Trip
-import com.ananapps.kilometa.presentation.common.PlatformAvatar
-import com.ananapps.kilometa.presentation.common.PlatformBadge
 import com.ananapps.kilometa.presentation.theme.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -161,100 +149,3 @@ fun DayActivityFeedCard(
     }
 }
 
-@Composable
-private fun DayActivityItemRow(
-    event: DayActivityEvent,
-    timeFormatted: String,
-    onEditRequested: () -> Unit,
-    onDeleteRequested: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(DeepObsidianSurfaceVariant)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            if (event is DayActivityEvent.TripItem) {
-                PlatformAvatar(platform = event.trip.platformType, size = 36.dp)
-            } else {
-                val (nodeColor, iconEmoji) = when (event) {
-                    is DayActivityEvent.FuelingItem -> Pair(FuelGasoline, "⛽")
-                    is DayActivityEvent.ExpenseItem -> Pair(StatusRed, "🔧")
-                    else -> Pair(StatusGreen, "🟢")
-                }
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(nodeColor.copy(alpha = 0.15f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = iconEmoji, fontSize = 16.sp)
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f, fill = false),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                if (event is DayActivityEvent.TripItem) {
-                    PlatformBadge(platform = event.trip.platformType)
-                } else {
-                    Text(
-                        text = event.title,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Text(
-                    text = "$timeFormatted · ${event.subtitle}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "${if (event.isIncome) "+" else "-"} $ ${String.format(Locale.US, "%,.0f", event.amount)}",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                ),
-                color = if (event.isIncome) StatusGreen else StatusRed
-            )
-
-            IconButton(onClick = onEditRequested, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Editar",
-                    tint = TextSecondary,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            IconButton(onClick = onDeleteRequested, modifier = Modifier.size(28.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Borrar",
-                    tint = StatusRed.copy(alpha = 0.8f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    }
-}
