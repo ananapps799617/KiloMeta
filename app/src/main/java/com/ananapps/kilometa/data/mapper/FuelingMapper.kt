@@ -22,6 +22,12 @@ fun FuelingEntity.toDomain(): Fueling {
         FuelType.GAS
     }
 
+    val payment = try {
+        com.ananapps.kilometa.domain.model.WalletType.valueOf(this.paymentSource)
+    } catch (_: Exception) {
+        com.ananapps.kilometa.domain.model.WalletType.CASH_PHYSICAL
+    }
+
     return Fueling(
         id = this.id,
         shiftId = this.shiftId,
@@ -29,7 +35,8 @@ fun FuelingEntity.toDomain(): Fueling {
         amountPaid = this.amountPaid,
         volume = this.volume,
         odometer = this.odometer,
-        timestamp = this.timestamp
+        timestamp = this.timestamp,
+        paymentSource = payment
     )
 }
 
@@ -41,7 +48,8 @@ fun Fueling.toEntity(): FuelingEntity {
         amountPaid = this.amountPaid,
         volume = this.volume,
         odometer = this.odometer,
-        timestamp = this.timestamp
+        timestamp = this.timestamp,
+        paymentSource = this.paymentSource.name
     )
 }
 

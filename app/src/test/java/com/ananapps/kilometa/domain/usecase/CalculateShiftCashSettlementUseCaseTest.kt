@@ -191,4 +191,85 @@ class CalculateShiftCashSettlementUseCaseTest {
         // 4. Ganancia limpia total: 10.000 + 12.000 + 16.000 = 38.000 (o 35.000 cash + 7.000 uber - 4.000 didi = 38.000)
         assertEquals(38_000.0, result.totalNet, 0.001)
     }
+
+    @Test
+    fun whenTransfersAndPaymentSourcesApplied_calculatesAll4WalletsAccurately() {
+        // Viaje 1: Uber pago app 20.000 bruto, 5.000 comision -> 15.000 neto Uber
+        // Viaje 2: DiDi efectivo 30.000 bruto, 6.000 comision -> 30.000 cash físico, -6.000 deuda DiDi
+        // Tanqueo: 10.000 pagado con Billetera Digital (Nequi)
+        // Gasto: 5.000 pagado con Efectivo Físico
+        // Transferencia: Dispersión de Uber a Nequi por 7.000
+        val trips = listOf(
+            Trip(
+                id = "u1",
+                shiftId = "s1",
+                platformType = PlatformType.UBER,
+                grossAmount = 20_000.0,
+                commissionAmount = 5_000.0,
+                netAmount = 15_000.0,
+                paymentMethod = PaymentMethod.APP_WALLET,
+                paymentDestination = PaymentDestination.APP_RETAINED,
+                timestamp = 1000L
+            ),
+            Trip(
+                id = "d1",
+                shiftId = "s1",
+                platformType = PlatformType.DIDI,
+                grossAmount = 30_000.0,
+                commissionAmount = 6_000.0,
+                netAmount = 24_000.0,
+                paymentMethod = PaymentMethod.CASH,
+                paymentDestination = PaymentDestination.CASH_IN_HAND,
+                timestamp = 2000L
+            )
+        )
+
+        val fuelings = listOf(
+            Fueling(
+                id = "f1",
+                shiftId = "s1",
+                fuelType = FuelType.GAS,
+                amountPaid = 10_000.0,
+                volume = 4.0,
+                odometer = 100_020,
+                timestamp = 2500L,
+                paymentSource = com.ananapps.kilometa.domain.model.WalletType.DIGITAL_WALLET
+            )
+        )
+
+        val expenses = listOf(
+            Expense(
+                id = "e1",
+                shiftId = "s1",
+                concept = ExpenseConcept.WASH,
+                amount = 5_000.0,
+                timestamp = 2600L,
+                paymentSource = com.ananapps.kilometa.domain.model.WalletType.CASH_PHYSICAL
+            )
+        )
+
+        val transfers = listOf(
+            com.ananapps.kilometa.domain.model.WalletTransfer(
+                id = "wt1",
+                timestamp = 2700L,
+                sourceWallet = com.ananapps.kilometa.domain.model.WalletType.UBER,
+                destinationWallet = com.ananapps.kilometa.domain.model.WalletType.DIGITAL_WALLET,
+                amount = 7_000.0,
+                transferType = com.ananapps.kilometa.domain.model.TransferType.PLATFORM_PAYOUT
+            )
+        )
+
+        val result = useCase(trips = trips, fuelings = fuelings, expenses = expenses, transfers = transfers)
+
+        // 1. Efectivo físico: 30.000 cash - 5.000 gasto = 25.000
+        assertEquals(25_000.0, result.cashPhysicalBalance, 0.001)
+        // 2. Digital (Nequi): 0 inicial - 10.000 tanqueo + 7.000 transfer = -3.000
+        assertEquals(-3_000.0, result.digitalWalletBalance, 0.001)
+        // 3. Uber: 15.000 saldo base - 7.000 transferido a Nequi = 8.000
+        assertEquals(8_000.0, result.uberWalletBalance, 0.001)
+        // 4. DiDi: -6.000 comisión adeudada
+        assertEquals(-6_000.0, result.didiWalletBalance, 0.001)
+        // 5. Total Net Assets: 25.000 - 3.000 + 8.000 - 6.000 = 24.000
+        assertEquals(24_000.0, result.totalNetAssets, 0.001)
+    }
 }

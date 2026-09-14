@@ -46,6 +46,7 @@ data class TripDto(
     val timestamp: Long = 0L,
     val startOdometer: Int? = null,
     val endOdometer: Int? = null,
+    val platformPromoDiscount: Double = 0.0,
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false
 )
@@ -64,6 +65,7 @@ data class FuelingDto(
     val volume: Double = 0.0,
     val odometer: Int = 0,
     val timestamp: Long = 0L,
+    val paymentSource: String = "CASH_PHYSICAL",
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false
 )
@@ -80,6 +82,25 @@ data class ExpenseDto(
     val concept: String = "",
     val amount: Double = 0.0,
     val timestamp: Long = 0L,
+    val paymentSource: String = "CASH_PHYSICAL",
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false
+)
+
+// ------------------------------------------------------------------------------
+// BLOQUE 5: DTO REMOTO PARA TRANSFERENCIAS INTER-BILLETERAS (WALLET TRANSFERS)
+// ------------------------------------------------------------------------------
+/**
+ * Representación serializable de una transferencia entre bolsillos (Orden #033).
+ */
+data class WalletTransferDto(
+    val id: String = "",
+    val timestamp: Long = 0L,
+    val sourceWallet: String = "",
+    val destinationWallet: String = "",
+    val amount: Double = 0.0,
+    val transferType: String = "",
+    val notes: String? = null,
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false
 )

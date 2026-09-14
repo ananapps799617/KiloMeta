@@ -29,7 +29,8 @@ data class Fueling(
     val amountPaid: Double,
     val volume: Double,
     val odometer: Int,
-    val timestamp: Long
+    val timestamp: Long,
+    val paymentSource: WalletType = WalletType.CASH_PHYSICAL
 ) {
     // --------------------------------------------------------------------------
     // BLOQUE 2: PROPIEDADES CALCULADAS DE EFICIENCIA

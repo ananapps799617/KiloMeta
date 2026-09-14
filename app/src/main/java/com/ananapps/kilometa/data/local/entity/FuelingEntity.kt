@@ -52,5 +52,8 @@ data class FuelingEntity(
     val odometer: Int,
 
     @ColumnInfo(name = "timestamp")
-    val timestamp: Long
+    val timestamp: Long,
+
+    @ColumnInfo(name = "payment_source", defaultValue = "CASH_PHYSICAL")
+    val paymentSource: String = "CASH_PHYSICAL"
 )

@@ -14,10 +14,12 @@ import com.ananapps.kilometa.domain.model.Shift
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.ShiftStatus
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.model.WalletTransfer
 import com.ananapps.kilometa.domain.repository.ExpenseRepository
 import com.ananapps.kilometa.domain.repository.FuelingRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.TripRepository
+import com.ananapps.kilometa.domain.repository.WalletTransferRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -117,4 +119,16 @@ class FakeShiftRepository : ShiftRepository {
         }
         shifts.removeAll { secondaryShiftIds.contains(it.id) }
     }
+}
+
+// ------------------------------------------------------------------------------
+// BLOQUE 5: FAKE DE REPOSITORIO DE TRANSFERENCIAS
+// ------------------------------------------------------------------------------
+class FakeWalletTransferRepository : WalletTransferRepository {
+    val savedTransfers = mutableListOf<WalletTransfer>()
+    override fun getAllTransfers(): Flow<List<WalletTransfer>> = flowOf(savedTransfers)
+    override fun getTransfersByDateRange(from: Long, to: Long): Flow<List<WalletTransfer>> =
+        flowOf(savedTransfers.filter { it.timestamp in from..to })
+    override suspend fun insertTransfer(transfer: WalletTransfer) { savedTransfers.add(transfer) }
+    override suspend fun deleteTransfer(id: String) { savedTransfers.removeAll { it.id == id } }
 }

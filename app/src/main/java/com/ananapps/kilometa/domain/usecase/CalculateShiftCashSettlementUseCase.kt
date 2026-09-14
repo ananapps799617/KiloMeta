@@ -13,9 +13,12 @@ import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.PaymentDestination
+import com.ananapps.kilometa.domain.model.PaymentMethod
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.PlatformWalletBalance
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.model.WalletTransfer
+import com.ananapps.kilometa.domain.model.WalletType
 import javax.inject.Inject
 
 class CalculateShiftCashSettlementUseCase @Inject constructor() {
@@ -23,9 +26,11 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
     operator fun invoke(
         trips: List<Trip>,
         fuelings: List<Fueling>,
-        expenses: List<Expense>
+        expenses: List<Expense>,
+        transfers: List<WalletTransfer> = emptyList()
     ): CashSettlementSummary {
-        var cashGross = 0.0
+        var cashPhysicalGross = 0.0
+        var digitalWalletGross = 0.0
         var digitalGross = 0.0
         var digitalCommissions = 0.0
         var cashCommissions = 0.0
@@ -38,31 +43,58 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
 
         trips.forEach { trip ->
             val acc = platformMap.getOrPut(trip.platformType) { MutablePlatformAccumulator(trip.platformType) }
-            if (trip.paymentDestination == PaymentDestination.CASH_IN_HAND) {
-                cashGross += trip.grossAmount
-                cashCommissions += trip.commissionAmount
-                acc.cashGross += trip.grossAmount
-                acc.cashCommissionOwed += trip.commissionAmount
-            } else {
-                digitalGross += trip.grossAmount
-                digitalCommissions += trip.commissionAmount
-                acc.digitalGross += trip.grossAmount
-                acc.digitalCommission += trip.commissionAmount
+            val netTripCash = (trip.grossAmount - trip.platformPromoDiscount).coerceAtLeast(0.0)
+
+            when (trip.paymentMethod) {
+                PaymentMethod.CASH -> {
+                    cashPhysicalGross += netTripCash
+                    cashCommissions += trip.commissionAmount
+                    acc.cashGross += trip.grossAmount
+                    acc.cashCommissionOwed += trip.commissionAmount
+                }
+                PaymentMethod.NEQUI -> {
+                    digitalWalletGross += netTripCash
+                    cashCommissions += trip.commissionAmount
+                    acc.cashGross += trip.grossAmount
+                    acc.cashCommissionOwed += trip.commissionAmount
+                }
+                PaymentMethod.APP_WALLET -> {
+                    digitalGross += trip.grossAmount
+                    digitalCommissions += trip.commissionAmount
+                    acc.digitalGross += trip.grossAmount
+                    acc.digitalCommission += trip.commissionAmount
+                }
             }
             totalCommission += trip.commissionAmount
         }
 
-        val totalGross = cashGross + digitalGross
+        // Deducción de combustible y gastos por origen soberano de fondos
+        val fuelCash = fuelings.filter { it.paymentSource == WalletType.CASH_PHYSICAL }.sumOf { it.amountPaid }
+        val fuelDigital = fuelings.filter { it.paymentSource == WalletType.DIGITAL_WALLET }.sumOf { it.amountPaid }
+
+        val expenseCash = expenses.filter { it.paymentSource == WalletType.CASH_PHYSICAL }.sumOf { it.amount }
+        val expenseDigital = expenses.filter { it.paymentSource == WalletType.DIGITAL_WALLET }.sumOf { it.amount }
+
+        // Transferencias inter-bolsillos (entradas y salidas por cada cartera)
+        fun netTransfersFor(wallet: WalletType): Double {
+            val incoming = transfers.filter { it.destinationWallet == wallet }.sumOf { it.amount }
+            val outgoing = transfers.filter { it.sourceWallet == wallet }.sumOf { it.amount }
+            return incoming - outgoing
+        }
+
+        val cashPhysicalBalance = cashPhysicalGross - fuelCash - expenseCash + netTransfersFor(WalletType.CASH_PHYSICAL)
+        val digitalWalletBalance = digitalWalletGross - fuelDigital - expenseDigital + netTransfersFor(WalletType.DIGITAL_WALLET)
+
+        val uberBase = (platformMap[PlatformType.UBER]?.let { it.digitalGross - it.digitalCommission - it.cashCommissionOwed } ?: 0.0)
+        val uberWalletBalance = uberBase + netTransfersFor(WalletType.UBER)
+
+        val didiBase = (platformMap[PlatformType.DIDI]?.let { it.digitalGross - it.digitalCommission - it.cashCommissionOwed } ?: 0.0)
+        val didiWalletBalance = didiBase + netTransfersFor(WalletType.DIDI)
+
+        val totalNetAssets = cashPhysicalBalance + digitalWalletBalance + uberWalletBalance + didiWalletBalance
+
+        val totalGross = cashPhysicalGross + digitalWalletGross + digitalGross
         val totalNet = totalGross - totalCommission
-
-        val totalFueling = fuelings.sumOf { it.amountPaid }
-        val totalExpenses = expenses.sumOf { it.amount }
-
-        // El combustible y los gastos en ruta se descuentan de la caja física disponible
-        val cashAvailable = cashGross - totalFueling - totalExpenses
-        val digitalPending = (digitalGross - digitalCommissions).coerceAtLeast(0.0)
-        // Cruce global referencial
-        val netPlatformBalance = (digitalGross - digitalCommissions) - cashCommissions
 
         val wallets = platformMap.mapValues { (_, acc) ->
             PlatformWalletBalance(
@@ -75,13 +107,18 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         }
 
         return CashSettlementSummary(
-            cashInHandGross = cashGross,
-            digitalBalanceGross = digitalGross,
+            cashPhysicalBalance = cashPhysicalBalance,
+            digitalWalletBalance = digitalWalletBalance,
+            uberWalletBalance = uberWalletBalance,
+            didiWalletBalance = didiWalletBalance,
+            totalNetAssets = totalNetAssets,
+            cashInHandGross = cashPhysicalGross,
+            digitalBalanceGross = digitalGross + digitalWalletGross,
             totalNet = totalNet,
-            cashInHandAvailable = cashAvailable,
-            digitalPendingDisbursement = digitalPending,
+            cashInHandAvailable = cashPhysicalBalance,
+            digitalPendingDisbursement = (digitalGross - digitalCommissions).coerceAtLeast(0.0),
             cashCommissionsOwed = cashCommissions,
-            netPlatformBalance = netPlatformBalance,
+            netPlatformBalance = (digitalGross - digitalCommissions) - cashCommissions,
             uberWallet = wallets[PlatformType.UBER] ?: PlatformWalletBalance(PlatformType.UBER),
             didiWallet = wallets[PlatformType.DIDI] ?: PlatformWalletBalance(PlatformType.DIDI),
             indriveWallet = wallets[PlatformType.INDRIVE] ?: PlatformWalletBalance(PlatformType.INDRIVE),

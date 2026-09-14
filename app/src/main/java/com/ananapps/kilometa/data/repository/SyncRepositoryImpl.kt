@@ -74,6 +74,7 @@ class SyncRepositoryImpl @Inject constructor(
                     "FUELING" -> firestoreDataSource.deleteFueling(user.uid, del.entityId)
                     "EXPENSE" -> firestoreDataSource.deleteExpense(user.uid, del.entityId)
                     "SHIFT" -> firestoreDataSource.deleteShift(user.uid, del.entityId)
+                    "WALLET_TRANSFER" -> firestoreDataSource.deleteWalletTransfer(user.uid, del.entityId)
                 }
                 database.pendingDeletionDao().deleteByEntityId(del.entityId)
             }
@@ -145,9 +146,7 @@ class SyncRepositoryImpl @Inject constructor(
                     val merged = remoteTrip.copy(
                         startOdometer = remoteTrip.startOdometer ?: localTrip.startOdometer,
                         endOdometer = remoteTrip.endOdometer ?: localTrip.endOdometer,
-                        paymentDestination = if (remoteTrip.paymentDestination != "CASH_IN_HAND"
-                            || localTrip.paymentDestination == "CASH_IN_HAND")
-                            remoteTrip.paymentDestination else localTrip.paymentDestination
+                        paymentDestination = if (remoteTrip.paymentDestination != "CASH_IN_HAND" || localTrip.paymentDestination == "CASH_IN_HAND") remoteTrip.paymentDestination else localTrip.paymentDestination
                     )
                     tripDao.updateTrip(merged)
                 }

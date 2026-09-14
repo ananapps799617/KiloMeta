@@ -46,6 +46,15 @@ sealed class DayActivityEvent(
         amount = expense.amount,
         isIncome = false
     )
+
+    data class TransferItem(val transfer: WalletTransfer) : DayActivityEvent(
+        id = transfer.id,
+        timestamp = transfer.timestamp,
+        title = "⇄ ${transfer.transferType.displayName}",
+        subtitle = "${transfer.sourceWallet.displayName} ➔ ${transfer.destinationWallet.displayName}",
+        amount = transfer.amount,
+        isIncome = false
+    )
 }
 
 private fun formatTripSubtitle(trip: Trip): String {

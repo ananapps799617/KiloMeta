@@ -12,10 +12,12 @@ import com.ananapps.kilometa.data.local.entity.ExpenseEntity
 import com.ananapps.kilometa.data.local.entity.FuelingEntity
 import com.ananapps.kilometa.data.local.entity.ShiftEntity
 import com.ananapps.kilometa.data.local.entity.TripEntity
+import com.ananapps.kilometa.data.local.entity.WalletTransferEntity
 import com.ananapps.kilometa.data.remote.dto.ExpenseDto
 import com.ananapps.kilometa.data.remote.dto.FuelingDto
 import com.ananapps.kilometa.data.remote.dto.ShiftDto
 import com.ananapps.kilometa.data.remote.dto.TripDto
+import com.ananapps.kilometa.data.remote.dto.WalletTransferDto
 
 // ------------------------------------------------------------------------------
 // BLOQUE 1: MAPEO BIDIRECCIONAL DE JORNADAS (SHIFTS)
@@ -68,6 +70,7 @@ fun TripEntity.toDto(
     timestamp = this.timestamp,
     startOdometer = this.startOdometer,
     endOdometer = this.endOdometer,
+    platformPromoDiscount = this.platformPromoDiscount,
     updatedAt = updatedAt,
     deleted = deleted
 )
@@ -83,7 +86,8 @@ fun TripDto.toEntity(): TripEntity = TripEntity(
     paymentDestination = if (this.paymentDestination.isNotBlank()) this.paymentDestination else "CASH_IN_HAND",
     timestamp = this.timestamp,
     startOdometer = this.startOdometer,
-    endOdometer = this.endOdometer
+    endOdometer = this.endOdometer,
+    platformPromoDiscount = this.platformPromoDiscount
 )
 
 fun List<TripEntity>.toTripDtoList(): List<TripDto> = map { it.toDto() }
@@ -103,6 +107,7 @@ fun FuelingEntity.toDto(
     volume = this.volume,
     odometer = this.odometer,
     timestamp = this.timestamp,
+    paymentSource = this.paymentSource,
     updatedAt = updatedAt,
     deleted = deleted
 )
@@ -114,7 +119,8 @@ fun FuelingDto.toEntity(): FuelingEntity = FuelingEntity(
     amountPaid = this.amountPaid,
     volume = this.volume,
     odometer = this.odometer,
-    timestamp = this.timestamp
+    timestamp = this.timestamp,
+    paymentSource = this.paymentSource
 )
 
 fun List<FuelingEntity>.toFuelingDtoList(): List<FuelingDto> = map { it.toDto() }
@@ -132,6 +138,7 @@ fun ExpenseEntity.toDto(
     concept = this.concept,
     amount = this.amount,
     timestamp = this.timestamp,
+    paymentSource = this.paymentSource,
     updatedAt = updatedAt,
     deleted = deleted
 )
@@ -141,8 +148,40 @@ fun ExpenseDto.toEntity(): ExpenseEntity = ExpenseEntity(
     shiftId = this.shiftId,
     concept = this.concept,
     amount = this.amount,
-    timestamp = this.timestamp
+    timestamp = this.timestamp,
+    paymentSource = this.paymentSource
 )
 
 fun List<ExpenseEntity>.toExpenseDtoList(): List<ExpenseDto> = map { it.toDto() }
 fun List<ExpenseDto>.toExpenseEntityList(): List<ExpenseEntity> = map { it.toEntity() }
+
+// ------------------------------------------------------------------------------
+// BLOQUE 5: MAPEO BIDIRECCIONAL DE TRANSFERENCIAS (WALLET TRANSFERS)
+// ------------------------------------------------------------------------------
+fun WalletTransferEntity.toDto(
+    updatedAt: Long = System.currentTimeMillis(),
+    deleted: Boolean = false
+): WalletTransferDto = WalletTransferDto(
+    id = this.id,
+    timestamp = this.timestamp,
+    sourceWallet = this.sourceWallet,
+    destinationWallet = this.destinationWallet,
+    amount = this.amount,
+    transferType = this.transferType,
+    notes = this.notes,
+    updatedAt = updatedAt,
+    deleted = deleted
+)
+
+fun WalletTransferDto.toEntity(): WalletTransferEntity = WalletTransferEntity(
+    id = this.id,
+    timestamp = this.timestamp,
+    sourceWallet = this.sourceWallet,
+    destinationWallet = this.destinationWallet,
+    amount = this.amount,
+    transferType = this.transferType,
+    notes = this.notes
+)
+
+fun List<WalletTransferEntity>.toTransferDtoList(): List<WalletTransferDto> = map { it.toDto() }
+fun List<WalletTransferDto>.toTransferEntityList(): List<WalletTransferEntity> = map { it.toEntity() }

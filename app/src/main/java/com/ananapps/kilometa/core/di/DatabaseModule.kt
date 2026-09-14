@@ -103,6 +103,29 @@ object DatabaseModule {
         }
     }
 
+    val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `wallet_transfers` (
+                    `id` TEXT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `source_wallet` TEXT NOT NULL,
+                    `destination_wallet` TEXT NOT NULL,
+                    `amount` REAL NOT NULL,
+                    `transfer_type` TEXT NOT NULL,
+                    `notes` TEXT,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_wallet_transfers_timestamp` ON `wallet_transfers` (`timestamp`)")
+            db.execSQL("ALTER TABLE `fuelings` ADD COLUMN `payment_source` TEXT NOT NULL DEFAULT 'CASH_PHYSICAL'")
+            db.execSQL("ALTER TABLE `expenses` ADD COLUMN `payment_source` TEXT NOT NULL DEFAULT 'CASH_PHYSICAL'")
+            db.execSQL("ALTER TABLE `trips` ADD COLUMN `platform_promo_discount` REAL NOT NULL DEFAULT 0.0")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideKiloMetaDatabase(
@@ -113,7 +136,7 @@ object DatabaseModule {
             KiloMetaDatabase::class.java,
             KiloMetaDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -147,4 +170,9 @@ object DatabaseModule {
     fun providePendingDeletionDao(
         database: KiloMetaDatabase
     ): com.ananapps.kilometa.data.local.dao.PendingDeletionDao = database.pendingDeletionDao()
+
+    @Provides
+    fun provideWalletTransferDao(
+        database: KiloMetaDatabase
+    ): com.ananapps.kilometa.data.local.dao.WalletTransferDao = database.walletTransferDao()
 }

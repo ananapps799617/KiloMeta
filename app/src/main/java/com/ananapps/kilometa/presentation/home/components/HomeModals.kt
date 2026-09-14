@@ -33,6 +33,9 @@ fun HomeCockpitModals(
     showExpenseSheet: Boolean = false,
     onDismissExpenseSheet: () -> Unit = {},
     expenseSheetState: SheetState? = null,
+    showTransferSheet: Boolean = false,
+    onDismissTransferSheet: () -> Unit = {},
+    transferSheetState: SheetState? = null,
     isSporadic: Boolean = false,
     showStartShiftDialog: Boolean,
     onDismissStartShiftDialog: () -> Unit,
@@ -90,8 +93,8 @@ fun HomeCockpitModals(
             sheetState = fuelSheetState,
             onDismiss = onDismissFuelingSheet,
             propulsionType = profile.propulsionType,
-            onConfirmFueling = { fuelType, amount, volume, odo ->
-                viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic)
+            onConfirmFueling = { fuelType, amount, volume, odo, paymentSource ->
+                viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic, paymentSource = paymentSource)
             }
         )
     }
@@ -100,8 +103,18 @@ fun HomeCockpitModals(
         RegisterExpenseSheet(
             sheetState = expenseSheetState,
             onDismiss = onDismissExpenseSheet,
-            onConfirmExpense = { concept, amount ->
-                viewModel.registerExpense(concept, amount, isSporadic = isSporadic)
+            onConfirmExpense = { concept, amount, paymentSource ->
+                viewModel.registerExpense(concept, amount, isSporadic = isSporadic, paymentSource = paymentSource)
+            }
+        )
+    }
+
+    if (showTransferSheet && transferSheetState != null) {
+        TransferBetweenWalletsSheet(
+            sheetState = transferSheetState,
+            onDismiss = onDismissTransferSheet,
+            onConfirmTransfer = { source, destination, amount, type, notes ->
+                viewModel.registerWalletTransfer(source, destination, amount, type, notes)
             }
         )
     }

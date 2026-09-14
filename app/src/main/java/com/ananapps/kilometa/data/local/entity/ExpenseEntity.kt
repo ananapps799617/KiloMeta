@@ -46,5 +46,8 @@ data class ExpenseEntity(
     val amount: Double,
 
     @ColumnInfo(name = "timestamp")
-    val timestamp: Long
+    val timestamp: Long,
+
+    @ColumnInfo(name = "payment_source", defaultValue = "CASH_PHYSICAL")
+    val paymentSource: String = "CASH_PHYSICAL"
 )

@@ -40,9 +40,11 @@ fun ContinuousTimelineCockpitView(
     onDeleteTrip: (String) -> Unit = {},
     onDeleteExpense: (String) -> Unit = {},
     onDeleteFueling: (String) -> Unit = {},
+    onDeleteTransfer: (String) -> Unit = {},
     onEditTrip: (Trip) -> Unit = {},
     onEditExpense: (Expense) -> Unit = {},
     onEditFueling: (Fueling) -> Unit = {},
+    onTransferClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -117,6 +119,7 @@ fun ContinuousTimelineCockpitView(
             onDeleteTrip = onDeleteTrip,
             onDeleteExpense = onDeleteExpense,
             onDeleteFueling = onDeleteFueling,
+            onDeleteTransfer = onDeleteTransfer,
             onEditTrip = onEditTrip,
             onEditExpense = onEditExpense,
             onEditFueling = onEditFueling
@@ -124,7 +127,7 @@ fun ContinuousTimelineCockpitView(
 
         // Liquidación de Efectivo en Mano vs Plataformas (Continua 24/7)
         val effectiveSettlement = cashSettlement ?: timelineSummary.cashSettlement
-        effectiveSettlement?.let { CockpitCashSettlementCard(settlement = it) }
+        effectiveSettlement?.let { CockpitCashSettlementCard(settlement = it, onTransferClick = onTransferClick) }
 
 
         // Auditoría Semanal o Progreso de Cuota

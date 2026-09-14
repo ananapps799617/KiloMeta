@@ -39,7 +39,8 @@ class RegisterExpenseUseCase @Inject constructor(
         shiftId: String,
         concept: ExpenseConcept,
         amount: Double,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
+        paymentSource: com.ananapps.kilometa.domain.model.WalletType = com.ananapps.kilometa.domain.model.WalletType.CASH_PHYSICAL
     ): Expense {
         // Domain Guards
         require(shiftId.isNotBlank()) { "El identificador del turno no puede estar vacío" }
@@ -50,7 +51,8 @@ class RegisterExpenseUseCase @Inject constructor(
             shiftId = shiftId,
             concept = concept,
             amount = amount,
-            timestamp = timestamp
+            timestamp = timestamp,
+            paymentSource = paymentSource
         )
 
         expenseRepository.addExpense(expense)

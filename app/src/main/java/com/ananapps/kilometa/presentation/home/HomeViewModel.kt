@@ -49,7 +49,9 @@ class HomeViewModel @Inject constructor(
     private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase,
     private val driverProfileRepository: DriverProfileRepository,
     private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase,
-    private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase
+    private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
+    private val executeWalletTransferUseCase: ExecuteWalletTransferUseCase,
+    private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
@@ -170,30 +172,30 @@ class HomeViewModel @Inject constructor(
     fun updateExpense(expense: Expense) = viewModelScope.launch { updateExpenseUseCase(expense) }
     fun updateFueling(fueling: Fueling) = viewModelScope.launch { updateFuelingUseCase(fueling) }
 
-    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false) = viewModelScope.launch {
+    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(
-                timestamp = System.currentTimeMillis(),
-                startOdometer = odo,
-                endOdometer = odo,
-                notes = "Jornada diaria"
-            ).id
+            manageShiftUseCase.getOrCreateShiftForDay(timestamp = System.currentTimeMillis(), startOdometer = odo, endOdometer = odo, notes = "Jornada diaria").id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
-        registerFuelingUseCase(shiftId, type, amount, volume, odo)
+        registerFuelingUseCase(shiftId, type, amount, volume, odo, paymentSource = paymentSource)
     }
 
-    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false) = viewModelScope.launch {
+    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(
-                timestamp = System.currentTimeMillis(),
-                notes = "Jornada diaria"
-            ).id
+            manageShiftUseCase.getOrCreateShiftForDay(timestamp = System.currentTimeMillis(), notes = "Jornada diaria").id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
-        registerExpenseUseCase(shiftId, concept, amount)
+        registerExpenseUseCase(shiftId, concept, amount, paymentSource = paymentSource)
+    }
+
+    fun registerWalletTransfer(source: WalletType, dest: WalletType, amount: Double, type: TransferType, notes: String? = null) = viewModelScope.launch {
+        executeWalletTransferUseCase(source, dest, amount, type, notes)
+    }
+
+    fun deleteWalletTransfer(id: String) = viewModelScope.launch {
+        walletTransferRepository.deleteTransfer(id)
     }
 
     fun startShift(startOdometer: Int, dailyQuota: Double? = null) {
@@ -237,20 +239,16 @@ class HomeViewModel @Inject constructor(
     fun signInWithGoogle(idToken: String) = viewModelScope.launch {
         _isAuthLoading.value = true; _authError.value = null
         val result = authenticateUserUseCase.signInWithGoogle(idToken)
-        if (result.isSuccess) {
-            result.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
-        } else {
-            _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google"
-        }
+        result.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
+            ?: run { _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google" }
         _isAuthLoading.value = false
     }
 
     fun signInWithEmail(email: String, pass: String) = viewModelScope.launch {
         _isAuthLoading.value = true; _authError.value = null
         val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
-        if (signIn.isSuccess) {
-            signIn.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
-        } else {
+        if (signIn.isSuccess) signIn.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
+        else {
             val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
             if (signUp.isFailure) _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error auth"
         }

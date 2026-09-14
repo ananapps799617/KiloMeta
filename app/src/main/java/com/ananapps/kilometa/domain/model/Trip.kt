@@ -22,7 +22,8 @@ data class Trip(
     val paymentDestination: PaymentDestination = PaymentDestination.CASH_IN_HAND,
     val timestamp: Long,
     val startOdometer: Int? = null,
-    val endOdometer: Int? = null
+    val endOdometer: Int? = null,
+    val platformPromoDiscount: Double = 0.0
 ) {
     // --------------------------------------------------------------------------
     // BLOQUE 2: PROPIEDADES DE VALIDACIÓN Y RENDIMIENTO

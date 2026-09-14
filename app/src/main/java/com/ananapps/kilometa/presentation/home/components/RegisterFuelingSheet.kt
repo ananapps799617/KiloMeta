@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.core.util.Constants
 import com.ananapps.kilometa.domain.model.FuelType
 import com.ananapps.kilometa.domain.model.PropulsionType
+import com.ananapps.kilometa.domain.model.WalletType
 import com.ananapps.kilometa.presentation.theme.CyanSavings
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
@@ -66,7 +67,7 @@ fun RegisterFuelingSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     propulsionType: PropulsionType = PropulsionType.BI_FUEL,
-    onConfirmFueling: (fuelType: FuelType, amountPaid: Double, volume: Double, odometer: Int) -> Unit
+    onConfirmFueling: (fuelType: FuelType, amountPaid: Double, volume: Double, odometer: Int, paymentSource: WalletType) -> Unit
 ) {
     val availableFuels = when (propulsionType) {
         PropulsionType.ELECTRIC_100 -> listOf(FuelType.ELECTRICITY)
@@ -77,6 +78,7 @@ fun RegisterFuelingSheet(
     }
 
     var selectedFuelType by remember(propulsionType) { mutableStateOf(availableFuels.first()) }
+    var paymentSource by remember { mutableStateOf(WalletType.CASH_PHYSICAL) }
     var amountText by remember(selectedFuelType) {
         val defaultAmt = when (selectedFuelType) {
             FuelType.GAS -> "25000"
@@ -209,13 +211,30 @@ fun RegisterFuelingSheet(
                 )
             }
 
+            // Origen de Fondos (Bolsillo de Pago)
+            Text(text = "Origen de Fondos", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                FilterChip(
+                    selected = paymentSource == WalletType.CASH_PHYSICAL,
+                    onClick = { paymentSource = WalletType.CASH_PHYSICAL },
+                    label = { Text("💵 Efectivo Físico", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = paymentSource == WalletType.DIGITAL_WALLET,
+                    onClick = { paymentSource = WalletType.DIGITAL_WALLET },
+                    label = { Text("🟣 Billetera Digital", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
 
             // Botón de Confirmación Ergonómico (>= 56dp)
             Button(
                 onClick = {
                     if (finalAmount > 0.0 && finalVolume > 0.0) {
-                        onConfirmFueling(selectedFuelType, finalAmount, finalVolume, finalOdometer)
+                        onConfirmFueling(selectedFuelType, finalAmount, finalVolume, finalOdometer, paymentSource)
                         onDismiss()
                     }
                 },

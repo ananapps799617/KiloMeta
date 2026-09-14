@@ -13,6 +13,7 @@ import com.ananapps.kilometa.data.remote.dto.ExpenseDto
 import com.ananapps.kilometa.data.remote.dto.FuelingDto
 import com.ananapps.kilometa.data.remote.dto.ShiftDto
 import com.ananapps.kilometa.data.remote.dto.TripDto
+import com.ananapps.kilometa.data.remote.dto.WalletTransferDto
 import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -86,6 +87,19 @@ class FirestoreDataSource @Inject constructor(
         batch.commit().await()
     }
 
+    suspend fun saveWalletTransfers(userId: String, transfers: List<WalletTransferDto>): Result<Unit> = runCatching {
+        if (transfers.isEmpty()) return@runCatching
+        val db = getFirestoreSafe()
+            ?: throw IllegalStateException("⚠️ PENDIENTE DE CONEXIÓN REAL: FirebaseFirestore no inicializado")
+
+        val batch = db.batch()
+        for (transfer in transfers) {
+            val docRef = db.collection("users").document(userId).collection("transfers").document(transfer.id)
+            batch.set(docRef, transfer, SetOptions.merge())
+        }
+        batch.commit().await()
+    }
+
     // --------------------------------------------------------------------------
     // BLOQUE 2.1: ELIMINACIÓN REMOTA EN LA NUBE (ANTI-RESURRECCIÓN)
     // --------------------------------------------------------------------------
@@ -107,6 +121,11 @@ class FirestoreDataSource @Inject constructor(
     suspend fun deleteShift(userId: String, shiftId: String): Result<Unit> = runCatching {
         val db = getFirestoreSafe() ?: return@runCatching
         db.collection("users").document(userId).collection("shifts").document(shiftId).delete().await()
+    }
+
+    suspend fun deleteWalletTransfer(userId: String, transferId: String): Result<Unit> = runCatching {
+        val db = getFirestoreSafe() ?: return@runCatching
+        db.collection("users").document(userId).collection("transfers").document(transferId).delete().await()
     }
 
     suspend fun saveDriverProfile(userId: String, profileMap: Map<String, Any>): Result<Unit> = runCatching {
@@ -177,6 +196,19 @@ class FirestoreDataSource @Inject constructor(
             .await()
 
         snapshot.toObjects(ExpenseDto::class.java)
+    }
+
+    suspend fun getWalletTransfers(userId: String, sinceTimestamp: Long = 0L): Result<List<WalletTransferDto>> = runCatching {
+        val db = getFirestoreSafe()
+            ?: throw IllegalStateException("⚠️ PENDIENTE DE CONEXIÓN REAL: FirebaseFirestore no inicializado")
+
+        val snapshot = db.collection("users").document(userId)
+            .collection("transfers")
+            .whereGreaterThanOrEqualTo("updatedAt", sinceTimestamp)
+            .get()
+            .await()
+
+        snapshot.toObjects(WalletTransferDto::class.java)
     }
 
     // --------------------------------------------------------------------------

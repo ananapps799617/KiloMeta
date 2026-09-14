@@ -70,4 +70,10 @@ abstract class RepositoryModule {
     abstract fun bindPlaceRepository(
         impl: com.ananapps.kilometa.data.repository.PlaceRepositoryImpl
     ): com.ananapps.kilometa.domain.repository.PlaceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindWalletTransferRepository(
+        impl: com.ananapps.kilometa.data.repository.WalletTransferRepositoryImpl
+    ): com.ananapps.kilometa.domain.repository.WalletTransferRepository
 }

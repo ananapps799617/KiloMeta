@@ -43,7 +43,8 @@ class RegisterFuelingUseCase @Inject constructor(
         amountPaid: Double,
         volume: Double,
         odometer: Int,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
+        paymentSource: com.ananapps.kilometa.domain.model.WalletType = com.ananapps.kilometa.domain.model.WalletType.CASH_PHYSICAL
     ): Fueling {
         // Domain Guards: Validaciones estrictas de volumen, valor y odometría
         require(shiftId.isNotBlank()) { "El identificador del turno no puede estar vacío" }
@@ -58,7 +59,8 @@ class RegisterFuelingUseCase @Inject constructor(
             amountPaid = amountPaid,
             volume = volume,
             odometer = odometer,
-            timestamp = timestamp
+            timestamp = timestamp,
+            paymentSource = paymentSource
         )
 
         fuelingRepository.addFueling(fueling)

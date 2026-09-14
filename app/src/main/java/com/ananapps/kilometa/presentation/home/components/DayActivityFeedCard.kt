@@ -32,6 +32,7 @@ fun DayActivityFeedCard(
     onDeleteTrip: (String) -> Unit = {},
     onDeleteExpense: (String) -> Unit = {},
     onDeleteFueling: (String) -> Unit = {},
+    onDeleteTransfer: (String) -> Unit = {},
     onEditTrip: (Trip) -> Unit = {},
     onEditExpense: (Expense) -> Unit = {},
     onEditFueling: (Fueling) -> Unit = {},
@@ -101,6 +102,7 @@ fun DayActivityFeedCard(
                                     is DayActivityEvent.TripItem -> onEditTrip(event.trip)
                                     is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
                                     is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
+                                    is DayActivityEvent.TransferItem -> Unit
                                 }
                             },
                             onDeleteRequested = { eventPendingDeletion = event }
@@ -116,6 +118,7 @@ fun DayActivityFeedCard(
             is DayActivityEvent.TripItem -> Pair("¿Eliminar Carrera?", "Esta carrera se descontará del producido de hoy y de la nube.")
             is DayActivityEvent.FuelingItem -> Pair("¿Eliminar Tanqueo?", "Este gasto de combustible se reintegrará a tu caja de hoy.")
             is DayActivityEvent.ExpenseItem -> Pair("¿Eliminar Gasto?", "Este gasto operativo se reintegrará a tu caja disponible.")
+            is DayActivityEvent.TransferItem -> Pair("¿Eliminar Transferencia?", "Esta transferencia inter-bolsillos se revertirá contablemente.")
             null -> Pair("", "")
         }
 
@@ -130,6 +133,7 @@ fun DayActivityFeedCard(
                             is DayActivityEvent.TripItem -> onDeleteTrip(ev.id)
                             is DayActivityEvent.FuelingItem -> onDeleteFueling(ev.id)
                             is DayActivityEvent.ExpenseItem -> onDeleteExpense(ev.id)
+                            is DayActivityEvent.TransferItem -> onDeleteTransfer(ev.id)
                             null -> Unit
                         }
                         eventPendingDeletion = null

@@ -47,7 +47,8 @@ fun TripEntity.toDomain(): Trip {
         paymentDestination = destination,
         timestamp = this.timestamp,
         startOdometer = this.startOdometer,
-        endOdometer = this.endOdometer
+        endOdometer = this.endOdometer,
+        platformPromoDiscount = this.platformPromoDiscount
     )
 }
 
@@ -63,7 +64,8 @@ fun Trip.toEntity(): TripEntity {
         paymentDestination = this.paymentDestination.name,
         timestamp = this.timestamp,
         startOdometer = this.startOdometer,
-        endOdometer = this.endOdometer
+        endOdometer = this.endOdometer,
+        platformPromoDiscount = this.platformPromoDiscount
     )
 }
 

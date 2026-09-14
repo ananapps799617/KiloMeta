@@ -61,5 +61,8 @@ data class TripEntity(
     val startOdometer: Int? = null,
 
     @ColumnInfo(name = "end_odometer", defaultValue = "NULL")
-    val endOdometer: Int? = null
+    val endOdometer: Int? = null,
+
+    @ColumnInfo(name = "platform_promo_discount", defaultValue = "0.0")
+    val platformPromoDiscount: Double = 0.0
 )

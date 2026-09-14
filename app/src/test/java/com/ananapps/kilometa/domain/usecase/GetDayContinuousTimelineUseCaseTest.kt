@@ -20,15 +20,18 @@ class GetDayContinuousTimelineUseCaseTest {
 
     private lateinit var fakeShiftRepository: FakeShiftRepository
     private lateinit var fakeExpenseRepository: FakeExpenseRepository
+    private lateinit var fakeWalletTransferRepository: FakeWalletTransferRepository
     private lateinit var useCase: GetDayContinuousTimelineUseCase
 
     @Before
     fun setUp() {
         fakeShiftRepository = FakeShiftRepository()
         fakeExpenseRepository = FakeExpenseRepository()
+        fakeWalletTransferRepository = FakeWalletTransferRepository()
         useCase = GetDayContinuousTimelineUseCase(
             fakeShiftRepository,
             fakeExpenseRepository,
+            fakeWalletTransferRepository,
             CalculateShiftCashSettlementUseCase()
         )
     }
@@ -111,5 +114,42 @@ class GetDayContinuousTimelineUseCaseTest {
         assertEquals(30000.0, settlement.cashInHandAvailable, 0.001) // 50k cash - 20k fuel
         assertEquals(25000.0, settlement.uberWallet.netBalance, 0.001) // 25k app wallet
         assertEquals(-10000.0, settlement.didiWallet.netBalance, 0.001) // -10k debt
+    }
+
+    @Test
+    fun testTimelineIncludesTransfersAndReflectsInSettlement() = runBlocking {
+        val now = System.currentTimeMillis()
+        val trip = Trip(
+            id = "t1",
+            shiftId = "s1",
+            platformType = PlatformType.UBER,
+            grossAmount = 40000.0,
+            commissionAmount = 10000.0,
+            netAmount = 30000.0,
+            paymentMethod = PaymentMethod.APP_WALLET,
+            paymentDestination = PaymentDestination.APP_RETAINED,
+            timestamp = now
+        )
+        val transfer = WalletTransfer(
+            id = "wt1",
+            sourceWallet = WalletType.UBER,
+            destinationWallet = WalletType.DIGITAL_WALLET,
+            amount = 20000.0,
+            timestamp = now + 1000,
+            transferType = TransferType.PLATFORM_PAYOUT,
+            notes = "Dispersión semanal Uber a Nequi"
+        )
+        fakeShiftRepository.allTripsList.add(trip)
+        fakeWalletTransferRepository.savedTransfers.add(transfer)
+
+        val summary = useCase().first()
+        assertEquals(2, summary.events.size)
+        assertTrue(summary.events.any { it is DayActivityEvent.TransferItem })
+
+        val settlement = summary.cashSettlement
+        assertNotNull(settlement)
+        assertEquals(10000.0, settlement!!.uberWalletBalance, 0.001) // 30k neto - 20k transferido
+        assertEquals(20000.0, settlement.digitalWalletBalance, 0.001) // 20k recibido en Nequi
+        assertEquals(30000.0, settlement.totalNetAssets, 0.001) // 10k Uber + 20k Nequi
     }
 }

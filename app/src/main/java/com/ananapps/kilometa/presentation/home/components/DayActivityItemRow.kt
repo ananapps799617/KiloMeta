@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayActivityItemRow.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -167,6 +167,15 @@ fun DayActivityItemRow(
                     DetailRow("TOTAL GASTO", "$ ${String.format(Locale.US, "%,.0f", expense.amount)}")
                     DetailRow("HORA REGISTRO", timeFormatted)
                 }
+                is DayActivityEvent.TransferItem -> {
+                    val transfer = event.transfer
+                    DetailRow("TIPO MOVIMIENTO", transfer.transferType.displayName)
+                    DetailRow("ORIGEN", transfer.sourceWallet.displayName)
+                    DetailRow("DESTINO", transfer.destinationWallet.displayName)
+                    DetailRow("MONTO TRANSFERIDO", "$ ${String.format(Locale.US, "%,.0f", transfer.amount)}", isHighlight = true)
+                    transfer.notes?.takeIf { it.isNotBlank() }?.let { DetailRow("NOTAS", it) }
+                    DetailRow("HORA REGISTRO", timeFormatted)
+                }
             }
 
             // --- 4. BOTONERA INFERIOR DERECHA PROTEGIDA (≥ 40dp) ---
@@ -188,17 +197,19 @@ fun DayActivityItemRow(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(6.dp))
-                IconButton(
-                    onClick = onEditRequested,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar",
-                        tint = ElectricBluePrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                if (event !is DayActivityEvent.TransferItem) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    IconButton(
+                        onClick = onEditRequested,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar",
+                            tint = ElectricBluePrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }

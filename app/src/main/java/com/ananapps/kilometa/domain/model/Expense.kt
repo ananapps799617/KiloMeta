@@ -25,5 +25,6 @@ data class Expense(
     val shiftId: String,
     val concept: ExpenseConcept,
     val amount: Double,
-    val timestamp: Long
+    val timestamp: Long,
+    val paymentSource: WalletType = WalletType.CASH_PHYSICAL
 )

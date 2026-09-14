@@ -1,16 +1,18 @@
-// ==============================================================================
+﻿// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/CockpitCashSettlementCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Tarjeta de cabina que muestra el desglose de doble bolsillo contable:
-// 1. Dinero físico líquido en mano (recaudo cash menos gastos y combustible).
-// 2. Saldo y billeteras independientes por plataforma (Uber, DiDi, inDrive).
-// Regla inquebrantable: Archivo pedagógico < 280 líneas.
+// Tarjeta de cabina con arquitectura contable de 4 bolsillos soberanos (Orden #033):
+// 1. 💵 Efectivo Físico en Mano
+// 2. 🟣 Billetera Digital (Nequi / Daviplata)
+// 3. 🖤 Billetera Uber
+// 4. 🧡 Billetera DiDi
+// Incluye botón interactivo de transferencia inter-billeteras y patrimonio neto.
+// Regla inquebrantable: Modularidad estricta < 280 líneas de código.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,24 +23,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
-import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.StatusGreenContainer
@@ -46,14 +47,14 @@ import com.ananapps.kilometa.presentation.theme.StatusRed
 import com.ananapps.kilometa.presentation.theme.StatusRedContainer
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
-import com.ananapps.kilometa.presentation.theme.visualToken
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
 fun CockpitCashSettlementCard(
     settlement: CashSettlementSummary,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTransferClick: () -> Unit = {}
 ) {
     val copFormat = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
         maximumFractionDigits = 0
@@ -66,204 +67,108 @@ fun CockpitCashSettlementCard(
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Cabecera con Título y Botón Transferir
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "💼 FLUJO DE CAJA DE CABINA",
+                    text = "💼 4 BOLSILLOS SOBERANOS",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = ElectricBluePrimary
                 )
-                Text(
-                    text = "Doble Bolsillo",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
-                )
+                OutlinedButton(
+                    onClick = onTransferClick,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ElectricBluePrimary),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text(
+                        text = "⇄ Transferir",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    )
+                }
             }
 
+            // Fila 1: Líquidos Personales (Efectivo y Digital)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Bolsillo 1: Efectivo en Mano
-                val isCashPositive = settlement.cashInHandAvailable >= 0
-                val cashContainerColor = if (isCashPositive) StatusGreenContainer else StatusRedContainer
-                val cashTextColor = if (isCashPositive) StatusGreen else StatusRed
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(cashContainerColor)
-                        .border(1.dp, cashTextColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = "💵 En Mano (Líquido)",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = cashTextColor
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = copFormat.format(settlement.cashInHandAvailable),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Caja física hoy",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
-                        )
-                    }
-                }
-
-                // Bolsillo 2: Saldo en Plataformas (Retenido)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(DeepObsidianSurfaceVariant)
-                        .border(1.dp, ElectricBluePrimary.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                        .padding(12.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = "📱 Saldo en Apps",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = ElectricBluePrimary
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = copFormat.format(settlement.digitalPendingDisbursement),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Corte semanal",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
-                        )
-                    }
-                }
-            }
-
-            // Desglose de Billeteras por Plataforma (Uber, DiDi, inDrive)
-            val activeWallets = listOf(
-                settlement.uberWallet,
-                settlement.didiWallet,
-                settlement.indriveWallet
-            ).filter { it.digitalGross > 0 || it.cashCommissionOwed > 0 || it.cashGross > 0 }
-
-            if (activeWallets.isNotEmpty()) {
-                Text(
-                    text = "Billeteras por Aplicación",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = TextSecondary
+                CockpitPocketBox(
+                    title = "💵 Efectivo Físico",
+                    subtitle = "En mano",
+                    amount = settlement.cashPhysicalBalance,
+                    accentColor = StatusGreen,
+                    modifier = Modifier.weight(1f)
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    activeWallets.forEach { wallet ->
-                        val token = wallet.platformType.visualToken
-                        val isPositive = wallet.netBalance >= 0
-                        val valColor = if (isPositive) StatusGreen else StatusRed
-
-                        Surface(
-                            modifier = Modifier.weight(1f),
-                            color = DeepObsidianSurfaceVariant,
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, token.backgroundColor.copy(alpha = 0.5f))
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clip(CircleShape)
-                                            .background(token.backgroundColor),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = token.monogram,
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 8.sp,
-                                                fontWeight = FontWeight.Black
-                                            ),
-                                            color = token.contentColor
-                                        )
-                                    }
-                                    Text(
-                                        text = token.badgeLabel,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        color = TextPrimary
-                                    )
-                                }
-                                Text(
-                                    text = (if (isPositive && wallet.netBalance > 0) "+" else "") + copFormat.format(wallet.netBalance),
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                                    color = valColor
-                                )
-                                Text(
-                                    text = if (isPositive) "A cobrar" else "Deuda app",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                    color = TextSecondary
-                                )
-                            }
-                        }
-                    }
-                }
+                CockpitPocketBox(
+                    title = "🟣 Digital (Nequi)",
+                    subtitle = "Billetera digital",
+                    amount = settlement.digitalWalletBalance,
+                    accentColor = Color(0xFFCE93D8),
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            // Cruce Global Referencial
-            val isPlatformNetPositive = settlement.netPlatformBalance >= 0
-            val balanceColor = if (isPlatformNetPositive) StatusGreen else StatusRed
-            val balanceBg = if (isPlatformNetPositive) StatusGreenContainer else StatusRedContainer
+            // Fila 2: Plataformas Estancas (Uber y DiDi)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                CockpitPocketBox(
+                    title = "🖤 Uber",
+                    subtitle = if (settlement.uberWalletBalance >= 0) "A favor" else "Deuda app",
+                    amount = settlement.uberWalletBalance,
+                    accentColor = Color.White,
+                    modifier = Modifier.weight(1f)
+                )
+                CockpitPocketBox(
+                    title = "🧡 DiDi",
+                    subtitle = if (settlement.didiWalletBalance >= 0) "A favor" else "Deuda app",
+                    amount = settlement.didiWalletBalance,
+                    accentColor = Color(0xFFFF7A00),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Patrimonio Neto Total
+            val isTotalPositive = settlement.totalNetAssets >= 0
+            val totalColor = if (isTotalPositive) StatusGreen else StatusRed
+            val totalBg = if (isTotalPositive) StatusGreenContainer else StatusRedContainer
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(balanceBg)
-                    .border(1.dp, balanceColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .background(totalBg)
+                    .border(1.dp, totalColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column {
                         Text(
-                            text = if (isPlatformNetPositive) "⚖️ Cruce: Saldo a favor" else "⚠️ Cruce: Comisión adeudada",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = balanceColor
+                            text = "💰 PATRIMONIO NETO LÍQUIDO",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = totalColor
                         )
                         Text(
-                            text = if (isPlatformNetPositive)
-                                "Tus viajes en app cubren las comisiones de efectivo"
-                            else
-                                "Comisión efectivo: ${copFormat.format(settlement.cashCommissionsOwed)}",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = "Suma real de los 4 compartimentos",
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = TextSecondary
                         )
                     }
                     Text(
-                        text = copFormat.format(settlement.netPlatformBalance),
+                        text = copFormat.format(settlement.totalNetAssets),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = balanceColor
+                        color = totalColor
                     )
                 }
             }

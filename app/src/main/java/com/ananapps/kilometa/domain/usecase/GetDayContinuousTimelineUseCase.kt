@@ -12,8 +12,14 @@ package com.ananapps.kilometa.domain.usecase
 
 import com.ananapps.kilometa.domain.model.DayActivityEvent
 import com.ananapps.kilometa.domain.model.DayContinuousSummary
+import com.ananapps.kilometa.domain.model.Expense
+import com.ananapps.kilometa.domain.model.Fueling
+import com.ananapps.kilometa.domain.model.Shift
+import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.model.WalletTransfer
 import com.ananapps.kilometa.domain.repository.ExpenseRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
+import com.ananapps.kilometa.domain.repository.WalletTransferRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.util.Calendar
@@ -25,17 +31,27 @@ import javax.inject.Inject
 class GetDayContinuousTimelineUseCase @Inject constructor(
     private val shiftRepository: ShiftRepository,
     private val expenseRepository: ExpenseRepository,
+    private val walletTransferRepository: WalletTransferRepository,
     private val calculateShiftCashSettlementUseCase: CalculateShiftCashSettlementUseCase
 ) {
 
+    @Suppress("UNCHECKED_CAST")
     operator fun invoke(): Flow<DayContinuousSummary> {
         return combine(
             shiftRepository.getActiveShift(),
             shiftRepository.getAllTrips(),
             shiftRepository.getAllFuelings(),
             expenseRepository.getAllExpenses(),
-            shiftRepository.getLastKnownOdometer()
-        ) { activeShift, allTrips, allFuelings, allExpenses, lastOdo ->
+            shiftRepository.getLastKnownOdometer(),
+            walletTransferRepository.getAllTransfers()
+        ) { args: Array<Any?> ->
+            val activeShift = args[0] as? Shift
+            val allTrips = args[1] as List<Trip>
+            val allFuelings = args[2] as List<Fueling>
+            val allExpenses = args[3] as List<Expense>
+            val lastOdo = args[4] as? Int
+            val allTransfers = args[5] as List<WalletTransfer>
+
             val calendar = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
                 set(Calendar.MINUTE, 0)
@@ -55,12 +71,16 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             val todayExpenses = allExpenses.filter {
                 it.timestamp >= todayStartMillis || (activeShiftId != null && it.shiftId == activeShiftId)
             }
+            val todayTransfers = allTransfers.filter {
+                it.timestamp >= todayStartMillis
+            }
 
             // Construir lista polimórfica de eventos del día
             val events = mutableListOf<DayActivityEvent>()
             todayTrips.forEach { events.add(DayActivityEvent.TripItem(it)) }
             todayFuelings.forEach { events.add(DayActivityEvent.FuelingItem(it)) }
             todayExpenses.forEach { events.add(DayActivityEvent.ExpenseItem(it)) }
+            todayTransfers.forEach { events.add(DayActivityEvent.TransferItem(it)) }
 
             // Ordenar de más reciente a más antiguo
             events.sortByDescending { it.timestamp }
@@ -113,7 +133,7 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             }
             val distanceKm = maxOf(odoDistanceKm, sumTripKm)
 
-            val cashSettlement = calculateShiftCashSettlementUseCase(todayTrips, todayFuelings, todayExpenses)
+            val cashSettlement = calculateShiftCashSettlementUseCase(todayTrips, todayFuelings, todayExpenses, todayTransfers)
 
             DayContinuousSummary(
                 totalNetIncome = totalNetIncome,

@@ -86,6 +86,7 @@ fun HomeScreen(
     var showTripSheet by remember { mutableStateOf(false) }
     var showFuelingSheet by remember { mutableStateOf(false) }
     var showExpenseSheet by remember { mutableStateOf(false) }
+    var showTransferSheet by remember { mutableStateOf(false) }
     var showStartShiftDialog by remember { mutableStateOf(false) }
     var showCloseShiftDialog by remember { mutableStateOf(false) }
     var showShiftPromptDialog by remember { mutableStateOf(false) }
@@ -126,6 +127,7 @@ fun HomeScreen(
     val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val expenseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val transferSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         containerColor = DeepObsidianBackground
@@ -167,9 +169,11 @@ fun HomeScreen(
                         onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) },
                         onDeleteExpense = { expenseId -> viewModel.deleteExpense(expenseId) },
                         onDeleteFueling = { fuelingId -> viewModel.deleteFueling(fuelingId) },
+                        onDeleteTransfer = { transferId -> viewModel.deleteWalletTransfer(transferId) },
                         onEditTrip = { editingTrip = it },
                         onEditExpense = { editingExpense = it },
-                        onEditFueling = { editingFueling = it }
+                        onEditFueling = { editingFueling = it },
+                        onTransferClick = { showTransferSheet = true }
                     )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
@@ -191,6 +195,9 @@ fun HomeScreen(
         showExpenseSheet = showExpenseSheet,
         onDismissExpenseSheet = { showExpenseSheet = false; isSporadicAction = false },
         expenseSheetState = expenseSheetState,
+        showTransferSheet = showTransferSheet,
+        onDismissTransferSheet = { showTransferSheet = false },
+        transferSheetState = transferSheetState,
         isSporadic = isSporadicAction,
         showStartShiftDialog = showStartShiftDialog,
         onDismissStartShiftDialog = { showStartShiftDialog = false },

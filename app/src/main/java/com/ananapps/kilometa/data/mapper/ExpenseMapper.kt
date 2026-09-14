@@ -22,12 +22,19 @@ fun ExpenseEntity.toDomain(): Expense {
         ExpenseConcept.OTHER
     }
 
+    val payment = try {
+        com.ananapps.kilometa.domain.model.WalletType.valueOf(this.paymentSource)
+    } catch (_: Exception) {
+        com.ananapps.kilometa.domain.model.WalletType.CASH_PHYSICAL
+    }
+
     return Expense(
         id = this.id,
         shiftId = this.shiftId,
         concept = conceptEnum,
         amount = this.amount,
-        timestamp = this.timestamp
+        timestamp = this.timestamp,
+        paymentSource = payment
     )
 }
 
@@ -37,7 +44,8 @@ fun Expense.toEntity(): ExpenseEntity {
         shiftId = this.shiftId,
         concept = this.concept.name,
         amount = this.amount,
-        timestamp = this.timestamp
+        timestamp = this.timestamp,
+        paymentSource = this.paymentSource.name
     )
 }
 

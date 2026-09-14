@@ -47,14 +47,17 @@ import java.util.Locale
 // ------------------------------------------------------------------------------
 // BLOQUE 1: HOJA MODAL DE GASTOS INCIDENTALES
 // ------------------------------------------------------------------------------
+import com.ananapps.kilometa.domain.model.WalletType
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterExpenseSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onConfirmExpense: (concept: ExpenseConcept, amount: Double) -> Unit
+    onConfirmExpense: (concept: ExpenseConcept, amount: Double, paymentSource: WalletType) -> Unit
 ) {
     var selectedConcept by remember { mutableStateOf(ExpenseConcept.WASH) }
+    var paymentSource by remember { mutableStateOf(WalletType.CASH_PHYSICAL) }
     var expenseAmount by remember { mutableDoubleStateOf(10_000.0) }
 
     ModalBottomSheet(
@@ -98,6 +101,27 @@ fun RegisterExpenseSheet(
             }
 
             Text(
+                text = "Origen de Fondos",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = paymentSource == WalletType.CASH_PHYSICAL,
+                    onClick = { paymentSource = WalletType.CASH_PHYSICAL },
+                    label = { Text("💵 Efectivo Físico") }
+                )
+                FilterChip(
+                    selected = paymentSource == WalletType.DIGITAL_WALLET,
+                    onClick = { paymentSource = WalletType.DIGITAL_WALLET },
+                    label = { Text("🟣 Billetera Digital") }
+                )
+            }
+
+            Text(
                 text = "Monto: ${formatCop(expenseAmount)}",
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary
@@ -116,7 +140,7 @@ fun RegisterExpenseSheet(
 
             Button(
                 onClick = {
-                    onConfirmExpense(selectedConcept, expenseAmount)
+                    onConfirmExpense(selectedConcept, expenseAmount, paymentSource)
                     onDismiss()
                 },
                 modifier = Modifier

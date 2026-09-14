@@ -9,11 +9,25 @@
 package com.ananapps.kilometa.domain.model
 
 // ------------------------------------------------------------------------------
-// BLOQUE 1: DESTINO DE FONDOS
+// BLOQUE 1: DESTINO DE FONDOS Y BOLSAS SOBERANAS (ORDEN #033)
 // ------------------------------------------------------------------------------
 enum class PaymentDestination(val displayName: String) {
     CASH_IN_HAND("Efectivo en Mano"),
     APP_RETAINED("Saldo en App")
+}
+
+enum class WalletType(val displayName: String) {
+    CASH_PHYSICAL("Efectivo en Mano"),
+    DIGITAL_WALLET("Nequi / Daviplata"),
+    UBER("Billetera Uber"),
+    DIDI("Billetera DiDi")
+}
+
+enum class TransferType(val displayName: String) {
+    PLATFORM_PAYOUT("Dispersión / Cobro de App"),
+    CASH_DEPOSIT("Consignación Efectivo a Digital"),
+    CASH_WITHDRAWAL("Retiro de Digital a Efectivo"),
+    COMMISSION_PAYMENT("Pago de Comisión a App")
 }
 
 // ------------------------------------------------------------------------------
@@ -57,16 +71,21 @@ data class PlatformWalletBalance(
 }
 
 // ------------------------------------------------------------------------------
-// BLOQUE 4: RESUMEN DE LIQUIDACIÓN DE DOBLE BOLSILLO Y MULTI-BILLETERAS
+// BLOQUE 4: RESUMEN DE LIQUIDACIÓN DE 4 BOLSILLOS SOBERANOS (ORDEN #033)
 // ------------------------------------------------------------------------------
 data class CashSettlementSummary(
+    val cashPhysicalBalance: Double = 0.0, // Bolsillo 1: Billetes físicos en mano
+    val digitalWalletBalance: Double = 0.0, // Bolsillo 2: Nequi / Daviplata / Banco
+    val uberWalletBalance: Double = 0.0,    // Bolsillo 3: Saldo neto Uber
+    val didiWalletBalance: Double = 0.0,    // Bolsillo 4: Saldo neto DiDi
+    val totalNetAssets: Double = 0.0,       // Patrimonio neto total líquido
     val cashInHandGross: Double = 0.0,
     val digitalBalanceGross: Double = 0.0,
     val totalNet: Double = 0.0,
-    val cashInHandAvailable: Double = 0.0, // Efectivo disponible tras combustible y gastos
-    val digitalPendingDisbursement: Double = 0.0, // Saldo neto en apps por cobrar
-    val cashCommissionsOwed: Double = 0.0, // Comisiones que se adeudan a la app por viajes en efectivo
-    val netPlatformBalance: Double = 0.0, // Cruce neto global
+    val cashInHandAvailable: Double = cashPhysicalBalance, // Compatibilidad retroactiva
+    val digitalPendingDisbursement: Double = digitalWalletBalance,
+    val cashCommissionsOwed: Double = 0.0,
+    val netPlatformBalance: Double = 0.0,
     val uberWallet: PlatformWalletBalance = PlatformWalletBalance(PlatformType.UBER),
     val didiWallet: PlatformWalletBalance = PlatformWalletBalance(PlatformType.DIDI),
     val indriveWallet: PlatformWalletBalance = PlatformWalletBalance(PlatformType.INDRIVE),
