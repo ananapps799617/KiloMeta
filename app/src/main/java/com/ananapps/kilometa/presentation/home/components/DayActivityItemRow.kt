@@ -28,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,8 +77,10 @@ fun DayActivityItemRow(
                 } else {
                     val (nodeColor, iconEmoji) = when (event) {
                         is DayActivityEvent.FuelingItem -> Pair(FuelGasoline, "⛽")
-                        is DayActivityEvent.ExpenseItem -> Pair(StatusRed, "🔧")
-                        else -> Pair(StatusGreen, "🟢")
+                        is DayActivityEvent.ExpenseItem -> Pair(StatusRed, "🔴")
+                        is DayActivityEvent.TransferItem -> Pair(Color(0xFF7E57C2), "⇄")
+                        is DayActivityEvent.MaintenanceItem -> Pair(Color(0xFF8D6E63), "🔧")
+                        else -> Pair(StatusGreen, "🚗")
                     }
                     Box(
                         modifier = Modifier
@@ -176,39 +179,30 @@ fun DayActivityItemRow(
                     transfer.notes?.takeIf { it.isNotBlank() }?.let { DetailRow("NOTAS", it) }
                     DetailRow("HORA REGISTRO", timeFormatted)
                 }
+                is DayActivityEvent.MaintenanceItem -> {
+                    val m = event.maintenance
+                    DetailRow("SERVICIO", m.serviceTitle ?: m.type.displayName)
+                    DetailRow("TOTAL SERVICIO", "$ ${String.format(Locale.US, "%,.0f", m.costCop)}", isHighlight = true)
+                    DetailRow("ODÓMETRO", "${m.odometer} km")
+                    m.location?.let { DetailRow("TALLER", it) }
+                    DetailRow("MEDIO DE PAGO", m.paymentSource.displayName)
+                    DetailRow("HORA REGISTRO", timeFormatted)
+                }
             }
 
             // --- 4. BOTONERA INFERIOR DERECHA PROTEGIDA (≥ 40dp) ---
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = onDeleteRequested,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Borrar",
-                        tint = StatusRed.copy(alpha = 0.85f),
-                        modifier = Modifier.size(20.dp)
-                    )
+                IconButton(onClick = onDeleteRequested, modifier = Modifier.size(44.dp)) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Borrar", tint = StatusRed.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
                 }
-                if (event !is DayActivityEvent.TransferItem) {
+                if (event !is DayActivityEvent.TransferItem && event !is DayActivityEvent.MaintenanceItem) {
                     Spacer(modifier = Modifier.width(6.dp))
-                    IconButton(
-                        onClick = onEditRequested,
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar",
-                            tint = ElectricBluePrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    IconButton(onClick = onEditRequested, modifier = Modifier.size(44.dp)) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = ElectricBluePrimary, modifier = Modifier.size(20.dp))
                     }
                 }
             }

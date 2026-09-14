@@ -14,10 +14,11 @@ import com.ananapps.kilometa.domain.model.DayActivityEvent
 import com.ananapps.kilometa.domain.model.DayContinuousSummary
 import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
-import com.ananapps.kilometa.domain.model.Shift
+import com.ananapps.kilometa.domain.model.MaintenanceRecord
 import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.domain.model.WalletTransfer
 import com.ananapps.kilometa.domain.repository.ExpenseRepository
+import com.ananapps.kilometa.domain.repository.MaintenanceRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.WalletTransferRepository
 import kotlinx.coroutines.flow.Flow
@@ -26,31 +27,32 @@ import java.util.Calendar
 import javax.inject.Inject
 
 // ------------------------------------------------------------------------------
-// BLOQUE 1: CASO DE USO DEL TIMELINE CONTINUO
+// BLOQUE 1: CASO DE USO DEL TIMELINE CONTINUO (JORNADA 24/7 AUTOMÁTICA)
 // ------------------------------------------------------------------------------
 class GetDayContinuousTimelineUseCase @Inject constructor(
     private val shiftRepository: ShiftRepository,
     private val expenseRepository: ExpenseRepository,
     private val walletTransferRepository: WalletTransferRepository,
+    private val maintenanceRepository: MaintenanceRepository,
     private val calculateShiftCashSettlementUseCase: CalculateShiftCashSettlementUseCase
 ) {
 
     @Suppress("UNCHECKED_CAST")
     operator fun invoke(): Flow<DayContinuousSummary> {
         return combine(
-            shiftRepository.getActiveShift(),
             shiftRepository.getAllTrips(),
             shiftRepository.getAllFuelings(),
             expenseRepository.getAllExpenses(),
             shiftRepository.getLastKnownOdometer(),
-            walletTransferRepository.getAllTransfers()
+            walletTransferRepository.getAllTransfers(),
+            maintenanceRepository.getAllMaintenances()
         ) { args: Array<Any?> ->
-            val activeShift = args[0] as? Shift
-            val allTrips = args[1] as List<Trip>
-            val allFuelings = args[2] as List<Fueling>
-            val allExpenses = args[3] as List<Expense>
-            val lastOdo = args[4] as? Int
-            val allTransfers = args[5] as List<WalletTransfer>
+            val allTrips = args[0] as List<Trip>
+            val allFuelings = args[1] as List<Fueling>
+            val allExpenses = args[2] as List<Expense>
+            val lastOdo = args[3] as? Int
+            val allTransfers = args[4] as List<WalletTransfer>
+            val allMaintenances = args[5] as List<MaintenanceRecord>
 
             val calendar = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -60,20 +62,12 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             }
             val todayStartMillis = calendar.timeInMillis
 
-            // Filtrar actividades del día de hoy o del turno activo si existe
-            val activeShiftId = activeShift?.id
-            val todayTrips = allTrips.filter {
-                it.timestamp >= todayStartMillis || (activeShiftId != null && it.shiftId == activeShiftId)
-            }
-            val todayFuelings = allFuelings.filter {
-                it.timestamp >= todayStartMillis || (activeShiftId != null && it.shiftId == activeShiftId)
-            }
-            val todayExpenses = allExpenses.filter {
-                it.timestamp >= todayStartMillis || (activeShiftId != null && it.shiftId == activeShiftId)
-            }
-            val todayTransfers = allTransfers.filter {
-                it.timestamp >= todayStartMillis
-            }
+            // Filtrar estrictamente actividades del día de hoy (00:00:00 a 23:59:59)
+            val todayTrips = allTrips.filter { it.timestamp >= todayStartMillis }
+            val todayFuelings = allFuelings.filter { it.timestamp >= todayStartMillis }
+            val todayExpenses = allExpenses.filter { it.timestamp >= todayStartMillis }
+            val todayTransfers = allTransfers.filter { it.timestamp >= todayStartMillis }
+            val todayMaintenances = allMaintenances.filter { it.timestamp >= todayStartMillis }
 
             // Construir lista polimórfica de eventos del día
             val events = mutableListOf<DayActivityEvent>()
@@ -81,29 +75,21 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             todayFuelings.forEach { events.add(DayActivityEvent.FuelingItem(it)) }
             todayExpenses.forEach { events.add(DayActivityEvent.ExpenseItem(it)) }
             todayTransfers.forEach { events.add(DayActivityEvent.TransferItem(it)) }
+            todayMaintenances.forEach { events.add(DayActivityEvent.MaintenanceItem(it)) }
 
             // Ordenar de más reciente a más antiguo
             events.sortByDescending { it.timestamp }
 
-            // Calcular totales financieros
+            // Totales financieros de hoy
             val totalNetIncome = todayTrips.sumOf { it.netAmount }
             val totalGrossProduced = todayTrips.sumOf { it.grossAmount }
             val totalFuelSpent = todayFuelings.sumOf { it.amountPaid }
-            val totalExpenses = todayExpenses.sumOf { it.amount }
+            val totalExpenses = todayExpenses.sumOf { it.amount } + todayMaintenances.sumOf { it.costCop }
             val pocketNet = totalNetIncome - totalFuelSpent - totalExpenses
 
-            // Determinar extremos de la jornada
-            val firstEventTime = if (activeShift != null) {
-                activeShift.startTime
-            } else {
-                events.minByOrNull { it.timestamp }?.timestamp
-            }
-
-            val lastEventTime = if (activeShift != null) {
-                System.currentTimeMillis()
-            } else {
-                events.maxByOrNull { it.timestamp }?.timestamp
-            }
+            // Horario de actividad del día
+            val firstEventTime = events.minByOrNull { it.timestamp }?.timestamp
+            val lastEventTime = events.maxByOrNull { it.timestamp }?.timestamp
 
             val elapsedHoursFormatted = if (firstEventTime != null && lastEventTime != null && lastEventTime >= firstEventTime) {
                 val diffMs = lastEventTime - firstEventTime
@@ -115,18 +101,21 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 "0h 0m"
             }
 
+            // Odómetros automáticos de hoy
             val tripMinOdo = todayTrips.mapNotNull { it.startOdometer ?: it.endOdometer }.minOrNull()
             val fuelMinOdo = todayFuelings.map { it.odometer }.minOrNull()
-            val firstOdoCandidates = listOfNotNull(activeShift?.startOdometer, tripMinOdo, fuelMinOdo)
-            val firstOdo = firstOdoCandidates.minOrNull()
+            val maintMinOdo = todayMaintenances.map { it.odometer }.minOrNull()
+            val firstOdoCandidates = listOfNotNull(tripMinOdo, fuelMinOdo, maintMinOdo)
+            val firstOdo = firstOdoCandidates.minOrNull() ?: lastOdo
 
             val tripMaxOdo = todayTrips.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
             val fuelMaxOdo = todayFuelings.map { it.odometer }.maxOrNull()
-            val lastOdoCandidates = listOfNotNull(lastOdo, tripMaxOdo, fuelMaxOdo, activeShift?.endOdometer, activeShift?.startOdometer)
+            val maintMaxOdo = todayMaintenances.map { it.odometer }.maxOrNull()
+            val lastOdoCandidates = listOfNotNull(tripMaxOdo, fuelMaxOdo, maintMaxOdo, lastOdo, firstOdo)
             val effectiveLastOdo = lastOdoCandidates.maxOrNull() ?: firstOdo ?: 0
 
             val sumTripKm = todayTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()
-            val odoDistanceKm = if (firstOdo != null && effectiveLastOdo >= firstOdo) {
+            val odoDistanceKm = if (firstOdo != null && effectiveLastOdo > firstOdo && events.isNotEmpty()) {
                 effectiveLastOdo - firstOdo
             } else {
                 0
@@ -148,12 +137,11 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 lastEventOdometer = effectiveLastOdo,
                 elapsedHoursFormatted = elapsedHoursFormatted,
                 distanceTraversedKm = distanceKm,
-                hasActiveShift = activeShift != null,
-                activeShiftId = activeShift?.id,
+                hasActiveShift = false,
+                activeShiftId = null,
                 cashSettlement = cashSettlement,
                 events = events
             )
-
         }
     }
 }

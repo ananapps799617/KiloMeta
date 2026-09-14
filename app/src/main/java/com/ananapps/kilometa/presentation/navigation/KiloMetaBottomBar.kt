@@ -42,24 +42,30 @@ import com.ananapps.kilometa.presentation.theme.StatusGreen
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
 
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import com.ananapps.kilometa.presentation.theme.StatusAmber
+
 // ------------------------------------------------------------------------------
 // BLOQUE 1: DEFINICIÓN DE DESTINOS DE LA BARRA
 // ------------------------------------------------------------------------------
 enum class KiloMetaNavTab(val label: String, val icon: ImageVector) {
     ROUTE("Ruta", Icons.Default.LocationOn),
+    HISTORY("Historial", Icons.Default.List),
     REPORTS("Informes", Icons.Default.DateRange),
-    REMINDERS("Alertas", Icons.Default.Build),
     MORE("Más", Icons.Default.MoreVert)
 }
 
 // ------------------------------------------------------------------------------
-// BLOQUE 2: COMPOSABLE DE LA BARRA INFERIOR
+// BLOQUE 2: COMPOSABLE DE LA BARRA INFERIOR (5 DESTINOS CANÓNICOS)
 // ------------------------------------------------------------------------------
 @Composable
 fun KiloMetaBottomBar(
     currentTab: KiloMetaNavTab,
     onTabSelected: (KiloMetaNavTab) -> Unit,
     onQuickActionClick: () -> Unit,
+    hasPendingAlerts: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     NavigationBar(
@@ -67,7 +73,7 @@ fun KiloMetaBottomBar(
         containerColor = DeepObsidianSurface,
         tonalElevation = 8.dp
     ) {
-        // Tab 1: Ruta / Cabina en Vivo
+        // Tab 1: Ruta / Cabina en Vivo de Hoy
         NavigationBarItem(
             selected = currentTab == KiloMetaNavTab.ROUTE,
             onClick = { onTabSelected(KiloMetaNavTab.ROUTE) },
@@ -76,16 +82,16 @@ fun KiloMetaBottomBar(
             colors = navigationItemColors()
         )
 
-        // Tab 2: Informes
+        // Tab 2: Historial (Bitácora continua de jornadas anteriores)
         NavigationBarItem(
-            selected = currentTab == KiloMetaNavTab.REPORTS,
-            onClick = { onTabSelected(KiloMetaNavTab.REPORTS) },
-            icon = { Icon(KiloMetaNavTab.REPORTS.icon, contentDescription = KiloMetaNavTab.REPORTS.label) },
-            label = { Text(KiloMetaNavTab.REPORTS.label, fontWeight = FontWeight.SemiBold) },
+            selected = currentTab == KiloMetaNavTab.HISTORY,
+            onClick = { onTabSelected(KiloMetaNavTab.HISTORY) },
+            icon = { Icon(KiloMetaNavTab.HISTORY.icon, contentDescription = KiloMetaNavTab.HISTORY.label) },
+            label = { Text(KiloMetaNavTab.HISTORY.label, fontWeight = FontWeight.SemiBold) },
             colors = navigationItemColors()
         )
 
-        // Botón Central (+) Elevado
+        // Botón Central (+) Elevado 56dp
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -95,7 +101,7 @@ fun KiloMetaBottomBar(
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .shadow(8.dp, CircleShape)
+                    .shadow(12.dp, CircleShape)
                     .clip(CircleShape)
                     .background(StatusGreen)
                     .clickable { onQuickActionClick() },
@@ -110,20 +116,28 @@ fun KiloMetaBottomBar(
             }
         }
 
-        // Tab 3: Recordatorios / Alertas
+        // Tab 3: Informes (Dashboard analítico 2x2 Drivvo)
         NavigationBarItem(
-            selected = currentTab == KiloMetaNavTab.REMINDERS,
-            onClick = { onTabSelected(KiloMetaNavTab.REMINDERS) },
-            icon = { Icon(KiloMetaNavTab.REMINDERS.icon, contentDescription = KiloMetaNavTab.REMINDERS.label) },
-            label = { Text(KiloMetaNavTab.REMINDERS.label, fontWeight = FontWeight.SemiBold) },
+            selected = currentTab == KiloMetaNavTab.REPORTS,
+            onClick = { onTabSelected(KiloMetaNavTab.REPORTS) },
+            icon = { Icon(KiloMetaNavTab.REPORTS.icon, contentDescription = KiloMetaNavTab.REPORTS.label) },
+            label = { Text(KiloMetaNavTab.REPORTS.label, fontWeight = FontWeight.SemiBold) },
             colors = navigationItemColors()
         )
 
-        // Tab 4: Más Opciones (Sustituye a la hamburguesa)
+        // Tab 4: Más Opciones (con badge de alerta preventiva)
         NavigationBarItem(
             selected = currentTab == KiloMetaNavTab.MORE,
             onClick = { onTabSelected(KiloMetaNavTab.MORE) },
-            icon = { Icon(KiloMetaNavTab.MORE.icon, contentDescription = KiloMetaNavTab.MORE.label) },
+            icon = {
+                if (hasPendingAlerts) {
+                    BadgedBox(badge = { Badge(containerColor = StatusAmber) }) {
+                        Icon(KiloMetaNavTab.MORE.icon, contentDescription = KiloMetaNavTab.MORE.label)
+                    }
+                } else {
+                    Icon(KiloMetaNavTab.MORE.icon, contentDescription = KiloMetaNavTab.MORE.label)
+                }
+            },
             label = { Text(KiloMetaNavTab.MORE.label, fontWeight = FontWeight.SemiBold) },
             colors = navigationItemColors()
         )

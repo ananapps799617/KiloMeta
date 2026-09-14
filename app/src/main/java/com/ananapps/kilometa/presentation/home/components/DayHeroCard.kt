@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayHeroCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -29,8 +29,6 @@ import java.util.Locale
 @Composable
 fun DayHeroCard(
     summary: DayContinuousSummary,
-    onStartShiftClick: () -> Unit,
-    onCloseShiftClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -44,7 +42,7 @@ fun DayHeroCard(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Fila de Encabezado con Indicador de Jornada
+            // Fila de Encabezado con Indicador de Estado de Cabina
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -59,23 +57,16 @@ fun DayHeroCard(
                     color = TextSecondary
                 )
 
-                if (summary.hasActiveShift) {
-                    AssistChip(
-                        onClick = onCloseShiftClick,
-                        label = { Text("⏹ Cerrar Turno", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusRed) },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = StatusRedContainer.copy(alpha = 0.5f)
-                        ),
-                        border = null
-                    )
-                } else {
-                    AssistChip(
-                        onClick = onStartShiftClick,
-                        label = { Text("🚀 Iniciar Turno", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ElectricBluePrimary) },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = ElectricBluePrimary.copy(alpha = 0.15f)
-                        ),
-                        border = null
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (summary.totalTripsCount > 0 || summary.events.isNotEmpty()) StatusGreen.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant)
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = if (summary.totalTripsCount > 0 || summary.events.isNotEmpty()) "🟢 En Ruta" else "⚪ Cabina Lista",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (summary.totalTripsCount > 0 || summary.events.isNotEmpty()) StatusGreen else TextSecondary
                     )
                 }
             }
@@ -103,9 +94,9 @@ fun DayHeroCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (summary.hasActiveShift) "🟢 Turno en Vivo" else "⏱️ Jornada de Hoy",
+                        text = "⏱️ Actividad de Hoy",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = if (summary.hasActiveShift) StatusGreen else ElectricBluePrimary
+                        color = ElectricBluePrimary
                     )
                     Text(
                         text = "${summary.elapsedHoursFormatted} · ${summary.distanceTraversedKm} km",

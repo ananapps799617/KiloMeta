@@ -39,7 +39,8 @@ class HomeViewModel @Inject constructor(
     private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase, private val driverProfileRepository: DriverProfileRepository,
     private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase, private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
     private val executeWalletTransferUseCase: ExecuteWalletTransferUseCase,
-    private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository
+    private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository,
+    private val maintenanceRepository: com.ananapps.kilometa.domain.repository.MaintenanceRepository
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
@@ -206,17 +207,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun startShift(startOdometer: Int, dailyQuota: Double? = null) = viewModelScope.launch {
-        manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0)
-    }
-
+    fun deleteMaintenance(id: String) = viewModelScope.launch { maintenanceRepository.deleteMaintenance(id) }
+    fun startShift(startOdometer: Int, dailyQuota: Double? = null) = viewModelScope.launch { manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0) }
     fun closeShift(endOdometer: Int, notes: String? = null) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch {
-            manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, notes = notes)
-            notifyQuotaMilestoneUseCase.checkAndNotifyShiftMilestone(state.summary)
-            notifyQuotaMilestoneUseCase.checkAndNotifyWeeklyMilestone(state.weeklyProgress)
-        }
+        viewModelScope.launch { manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, notes = notes) }
     }
 
     fun syncNow() = viewModelScope.launch { syncDataUseCase() }

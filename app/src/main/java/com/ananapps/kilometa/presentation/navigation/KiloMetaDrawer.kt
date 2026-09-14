@@ -227,7 +227,8 @@ private fun DrawerItem(
 ) {
     val (icon, activeColor) = when (destination) {
         AppDestination.COCKPIT -> "⚡" to StatusGreen
-        AppDestination.HISTORY -> "📊" to CyanSavings
+        AppDestination.HISTORY -> "📜" to CyanSavings
+        AppDestination.REPORTS -> "📊" to ElectricBluePrimary
         AppDestination.MAINTENANCE -> "🛠️" to ElectricBluePrimary
         AppDestination.EXPENSES -> "💸" to StatusRed
         AppDestination.PROFILE -> "🚗" to ElectricBluePrimary

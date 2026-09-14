@@ -55,6 +55,16 @@ sealed class DayActivityEvent(
         amount = transfer.amount,
         isIncome = false
     )
+
+    data class MaintenanceItem(val maintenance: MaintenanceRecord) : DayActivityEvent(
+        id = maintenance.id,
+        timestamp = maintenance.timestamp,
+        title = "🔧 ${maintenance.serviceTitle ?: maintenance.type.displayName}",
+        subtitle = "Servicio · Km ${maintenance.odometer}${maintenance.location?.let { " · $it" } ?: ""}",
+        amount = maintenance.costCop,
+        isIncome = false,
+        odometer = maintenance.odometer
+    )
 }
 
 private fun formatTripSubtitle(trip: Trip): String {

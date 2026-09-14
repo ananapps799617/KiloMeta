@@ -33,6 +33,7 @@ fun DayActivityFeedCard(
     onDeleteExpense: (String) -> Unit = {},
     onDeleteFueling: (String) -> Unit = {},
     onDeleteTransfer: (String) -> Unit = {},
+    onDeleteMaintenance: (String) -> Unit = {},
     onEditTrip: (Trip) -> Unit = {},
     onEditExpense: (Expense) -> Unit = {},
     onEditFueling: (Fueling) -> Unit = {},
@@ -84,7 +85,7 @@ fun DayActivityFeedCard(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Toca el botón central (+) para registrar tu primera carrera, tanqueo o gasto.",
+                            text = "Toca el botón central (+) para registrar tu primera carrera, tanqueo, gasto o servicio.",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -94,19 +95,30 @@ fun DayActivityFeedCard(
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     events.forEach { event ->
-                        DayActivityItemRow(
-                            event = event,
-                            timeFormatted = timeFormatter.format(Date(event.timestamp)),
-                            onEditRequested = {
-                                when (event) {
-                                    is DayActivityEvent.TripItem -> onEditTrip(event.trip)
-                                    is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
-                                    is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
-                                    is DayActivityEvent.TransferItem -> Unit
-                                }
-                            },
-                            onDeleteRequested = { eventPendingDeletion = event }
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            RoadTrackTimelineNode(
+                                event = event,
+                                modifier = Modifier.padding(top = 10.dp)
+                            )
+                            DayActivityItemRow(
+                                event = event,
+                                timeFormatted = timeFormatter.format(Date(event.timestamp)),
+                                onEditRequested = {
+                                    when (event) {
+                                        is DayActivityEvent.TripItem -> onEditTrip(event.trip)
+                                        is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
+                                        is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
+                                        else -> Unit
+                                    }
+                                },
+                                onDeleteRequested = { eventPendingDeletion = event },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -119,6 +131,7 @@ fun DayActivityFeedCard(
             is DayActivityEvent.FuelingItem -> Pair("¿Eliminar Tanqueo?", "Este gasto de combustible se reintegrará a tu caja de hoy.")
             is DayActivityEvent.ExpenseItem -> Pair("¿Eliminar Gasto?", "Este gasto operativo se reintegrará a tu caja disponible.")
             is DayActivityEvent.TransferItem -> Pair("¿Eliminar Transferencia?", "Esta transferencia inter-bolsillos se revertirá contablemente.")
+            is DayActivityEvent.MaintenanceItem -> Pair("¿Eliminar Servicio?", "Este registro de mantenimiento preventivo se eliminará.")
             null -> Pair("", "")
         }
 
@@ -134,6 +147,7 @@ fun DayActivityFeedCard(
                             is DayActivityEvent.FuelingItem -> onDeleteFueling(ev.id)
                             is DayActivityEvent.ExpenseItem -> onDeleteExpense(ev.id)
                             is DayActivityEvent.TransferItem -> onDeleteTransfer(ev.id)
+                            is DayActivityEvent.MaintenanceItem -> onDeleteMaintenance(ev.id)
                             null -> Unit
                         }
                         eventPendingDeletion = null

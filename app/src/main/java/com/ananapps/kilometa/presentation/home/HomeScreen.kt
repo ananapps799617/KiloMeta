@@ -58,7 +58,6 @@ import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
     showTopBar: Boolean = false,
-    triggerCloseShift: Boolean = false, onResetCloseShiftTrigger: () -> Unit = {},
     triggerQuickTrip: Boolean = false, onResetQuickTripTrigger: () -> Unit = {},
     triggerQuickFueling: Boolean = false, onResetQuickFuelingTrigger: () -> Unit = {},
     triggerQuickExpense: Boolean = false, onResetQuickExpenseTrigger: () -> Unit = {},
@@ -84,16 +83,10 @@ fun HomeScreen(
     var showExpenseSheet by remember { mutableStateOf(false) }
     var showMaintenanceSheet by remember { mutableStateOf(false) }
     var showTransferSheet by remember { mutableStateOf(false) }
-    var showStartShiftDialog by remember { mutableStateOf(false) }
-    var showCloseShiftDialog by remember { mutableStateOf(false) }
-    var showShiftPromptDialog by remember { mutableStateOf(false) }
-    var pendingPromptAction by remember { mutableStateOf<String?>(null) }
-    var isSporadicAction by remember { mutableStateOf(false) }
     var editingTrip by remember { mutableStateOf<Trip?>(null) }
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var editingFueling by remember { mutableStateOf<Fueling?>(null) }
 
-    LaunchedEffect(triggerCloseShift) { if (triggerCloseShift) { showCloseShiftDialog = true; onResetCloseShiftTrigger() } }
     LaunchedEffect(triggerQuickTrip) { if (triggerQuickTrip) { showTripSheet = true; onResetQuickTripTrigger() } }
     LaunchedEffect(triggerQuickFueling) { if (triggerQuickFueling) { showFuelingSheet = true; onResetQuickFuelingTrigger() } }
     LaunchedEffect(triggerQuickExpense) { if (triggerQuickExpense) { showExpenseSheet = true; onResetQuickExpenseTrigger() } }
@@ -123,7 +116,6 @@ fun HomeScreen(
                     val cashSettlement = (state as? HomeUiState.ActiveShift)?.cashSettlement
                         ?: dayContinuousTimeline.cashSettlement
                     val weeklyProgress = when (state) {
-
                         is HomeUiState.NoActiveShift -> state.weeklyProgress
                         is HomeUiState.ActiveShift -> state.weeklyProgress
                         else -> null
@@ -140,12 +132,11 @@ fun HomeScreen(
                         weeklyProgress = weeklyProgress,
                         auditSummary = auditSummary,
                         cashSettlement = cashSettlement,
-                        onStartShiftClick = { showStartShiftDialog = true },
-                        onCloseShiftClick = { showCloseShiftDialog = true },
                         onDeleteTrip = { tripId -> viewModel.deleteTrip(tripId) },
                         onDeleteExpense = { expenseId -> viewModel.deleteExpense(expenseId) },
                         onDeleteFueling = { fuelingId -> viewModel.deleteFueling(fuelingId) },
                         onDeleteTransfer = { transferId -> viewModel.deleteWalletTransfer(transferId) },
+                        onDeleteMaintenance = { maintenanceId -> viewModel.deleteMaintenance(maintenanceId) },
                         onEditTrip = { editingTrip = it },
                         onEditExpense = { editingExpense = it },
                         onEditFueling = { editingFueling = it },
@@ -163,56 +154,24 @@ fun HomeScreen(
         viewModel = viewModel,
         uiState = uiState,
         showTripSheet = showTripSheet,
-        onDismissTripSheet = { showTripSheet = false; isSporadicAction = false },
+        onDismissTripSheet = { showTripSheet = false },
         tripSheetState = tripSheetState,
         showFuelingSheet = showFuelingSheet,
-        onDismissFuelingSheet = { showFuelingSheet = false; isSporadicAction = false },
+        onDismissFuelingSheet = { showFuelingSheet = false },
         fuelSheetState = fuelSheetState,
         showExpenseSheet = showExpenseSheet,
-        onDismissExpenseSheet = { showExpenseSheet = false; isSporadicAction = false },
+        onDismissExpenseSheet = { showExpenseSheet = false },
         expenseSheetState = expenseSheetState,
         showMaintenanceSheet = showMaintenanceSheet,
-        onDismissMaintenanceSheet = { showMaintenanceSheet = false; isSporadicAction = false },
+        onDismissMaintenanceSheet = { showMaintenanceSheet = false },
         maintenanceSheetState = maintenanceSheetState,
         showTransferSheet = showTransferSheet,
         onDismissTransferSheet = { showTransferSheet = false },
         transferSheetState = transferSheetState,
-        isSporadic = isSporadicAction,
-        showStartShiftDialog = showStartShiftDialog,
-        onDismissStartShiftDialog = { showStartShiftDialog = false },
-        onStartShiftConfirmed = {
-            isSporadicAction = false
-            when (pendingPromptAction) {
-                "carrera" -> showTripSheet = true
-                "tanqueo" -> showFuelingSheet = true
-                "gasto" -> showExpenseSheet = true
-                "mantenimiento" -> showMaintenanceSheet = true
-            }
-            pendingPromptAction = null
-        },
-        showCloseShiftDialog = showCloseShiftDialog,
-        onDismissCloseShiftDialog = { showCloseShiftDialog = false },
-        showShiftPromptDialog = showShiftPromptDialog,
-        promptActionName = pendingPromptAction,
-        onDismissShiftPrompt = {
-            showShiftPromptDialog = false
-            pendingPromptAction = null
-        },
-        onStartShiftFromPrompt = {
-            showShiftPromptDialog = false
-            showStartShiftDialog = true
-        },
-        onSporadicFromPrompt = {
-            showShiftPromptDialog = false
-            isSporadicAction = true
-            when (pendingPromptAction) {
-                "carrera" -> showTripSheet = true
-                "tanqueo" -> showFuelingSheet = true
-                "gasto" -> showExpenseSheet = true
-                "mantenimiento" -> showMaintenanceSheet = true
-            }
-            pendingPromptAction = null
-        },
+        showStartShiftDialog = false,
+        onDismissStartShiftDialog = {},
+        showCloseShiftDialog = false,
+        onDismissCloseShiftDialog = {},
         lastKnownOdometer = lastKnownOdometer
     )
 

@@ -17,10 +17,11 @@ enum class AppDestination(
     val title: String,
     val subtitle: String
 ) {
-    COCKPIT("Cabina en Vivo", "En Turno"),
-    HISTORY("Historial & Analíticas", "Auditoría Contable"),
-    MAINTENANCE("Mantenimientos", "Alertas Predictivas & Odómetro"),
-    EXPENSES("Gastos en Ruta", "Lavadas, Despinchadas & Comida"),
+    COCKPIT("Ruta de Hoy", "Cabina en Vivo"),
+    HISTORY("Historial", "Bitácora Continua"),
+    REPORTS("Informes", "Dashboard Analítico"),
+    MAINTENANCE("Alertas & Recordatorios", "Mantenimiento Preventivo"),
+    EXPENSES("Gastos en Ruta", "Lavadas, Peajes & Operación"),
     PROFILE("Mi Perfil & Vehículo", "Configuración Técnica"),
     PLACES("Mis Bombas & Talleres", "Ruta directa a Waze & Maps"),
     BACKUP("Respaldo Nube", "Cloud Sync & Firestore")

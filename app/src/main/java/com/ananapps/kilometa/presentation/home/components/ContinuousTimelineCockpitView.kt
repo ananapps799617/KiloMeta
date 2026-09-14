@@ -35,12 +35,11 @@ fun ContinuousTimelineCockpitView(
     weeklyProgress: WeeklyQuotaProgress?,
     auditSummary: AccountingAuditSummary?,
     cashSettlement: CashSettlementSummary?,
-    onStartShiftClick: () -> Unit,
-    onCloseShiftClick: () -> Unit,
     onDeleteTrip: (String) -> Unit = {},
     onDeleteExpense: (String) -> Unit = {},
     onDeleteFueling: (String) -> Unit = {},
     onDeleteTransfer: (String) -> Unit = {},
+    onDeleteMaintenance: (String) -> Unit = {},
     onEditTrip: (Trip) -> Unit = {},
     onEditExpense: (Expense) -> Unit = {},
     onEditFueling: (Fueling) -> Unit = {},
@@ -106,12 +105,8 @@ fun ContinuousTimelineCockpitView(
             }
         }
 
-        // Hero Card Financiero del Día
-        DayHeroCard(
-            summary = timelineSummary,
-            onStartShiftClick = onStartShiftClick,
-            onCloseShiftClick = onCloseShiftClick
-        )
+        // Hero Card Financiero del Día (Jornada Automática 24/7)
+        DayHeroCard(summary = timelineSummary)
 
         // Feed de Actividades del Día en Ruta
         DayActivityFeedCard(
@@ -120,6 +115,7 @@ fun ContinuousTimelineCockpitView(
             onDeleteExpense = onDeleteExpense,
             onDeleteFueling = onDeleteFueling,
             onDeleteTransfer = onDeleteTransfer,
+            onDeleteMaintenance = onDeleteMaintenance,
             onEditTrip = onEditTrip,
             onEditExpense = onEditExpense,
             onEditFueling = onEditFueling

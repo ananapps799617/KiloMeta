@@ -34,6 +34,7 @@ import com.ananapps.kilometa.presentation.more.MoreScreen
 import com.ananapps.kilometa.presentation.navigation.*
 import com.ananapps.kilometa.presentation.places.PlacesScreen
 import com.ananapps.kilometa.presentation.profile.DriverProfileScreen
+import com.ananapps.kilometa.presentation.reports.ReportsScreen
 import com.ananapps.kilometa.presentation.sync.CloudSyncStatusSheet
 import com.ananapps.kilometa.presentation.sync.HydrationRecoveryScreen
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
@@ -102,6 +103,12 @@ private fun MainAppHost(
     val connectionDiagnostic by viewModel.connectionDiagnostic.collectAsState()
     val isPingingCloud by viewModel.isPingingCloud.collectAsState()
     val restoreProgress by viewModel.restoreProgress.collectAsState()
+    val homeUiState by viewModel.uiState.collectAsState()
+    val hasPendingAlerts = when (val state = homeUiState) {
+        is com.ananapps.kilometa.presentation.home.HomeUiState.ActiveShift -> state.weeklyProgress.isDeficit
+        is com.ananapps.kilometa.presentation.home.HomeUiState.NoActiveShift -> state.weeklyProgress.isDeficit
+        else -> false
+    }
 
     val quickActionSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val syncSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -124,8 +131,8 @@ private fun MainAppHost(
                 currentDestination = when {
                     activeSubDestination != null -> activeSubDestination!!
                     currentNavTab == KiloMetaNavTab.ROUTE -> AppDestination.COCKPIT
-                    currentNavTab == KiloMetaNavTab.REPORTS -> AppDestination.HISTORY
-                    currentNavTab == KiloMetaNavTab.REMINDERS -> AppDestination.MAINTENANCE
+                    currentNavTab == KiloMetaNavTab.HISTORY -> AppDestination.HISTORY
+                    currentNavTab == KiloMetaNavTab.REPORTS -> AppDestination.REPORTS
                     currentNavTab == KiloMetaNavTab.MORE -> AppDestination.PROFILE
                     else -> AppDestination.COCKPIT
                 },
@@ -139,7 +146,8 @@ private fun MainAppHost(
                     activeSubDestination = null
                     currentNavTab = tab
                 },
-                onQuickActionClick = { showQuickActionSheet = true }
+                onQuickActionClick = { showQuickActionSheet = true },
+                hasPendingAlerts = hasPendingAlerts
             )
         },
         containerColor = DeepObsidianBackground
@@ -167,6 +175,11 @@ private fun MainAppHost(
                         onNavigateBack = { activeSubDestination = null }
                     )
                 }
+                activeSubDestination == AppDestination.MAINTENANCE -> {
+                    MaintenanceScreen(
+                        onNavigateBack = { activeSubDestination = null }
+                    )
+                }
                 currentNavTab == KiloMetaNavTab.ROUTE -> {
                     HomeScreen(
                         viewModel = viewModel,
@@ -181,19 +194,17 @@ private fun MainAppHost(
                         onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
                     )
                 }
-                currentNavTab == KiloMetaNavTab.REPORTS -> {
+                currentNavTab == KiloMetaNavTab.HISTORY -> {
                     HistoryScreen()
                 }
-                currentNavTab == KiloMetaNavTab.REMINDERS -> {
-                    MaintenanceScreen(
-                        onNavigateBack = { currentNavTab = KiloMetaNavTab.ROUTE }
-                    )
+                currentNavTab == KiloMetaNavTab.REPORTS -> {
+                    ReportsScreen()
                 }
                 currentNavTab == KiloMetaNavTab.MORE -> {
                     MoreScreen(
                         onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE },
                         onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
-                        onNavigateToMaintenance = { currentNavTab = KiloMetaNavTab.REMINDERS },
+                        onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
                         onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
                         onNavigateToSync = { showSyncSheet = true },
                         onSignOut = { viewModel.signOut() }
