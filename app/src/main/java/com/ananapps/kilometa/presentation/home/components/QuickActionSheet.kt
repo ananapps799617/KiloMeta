@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -36,6 +37,7 @@ fun QuickActionSheet(
     onSelectTrip: () -> Unit,
     onSelectFueling: () -> Unit,
     onSelectExpense: () -> Unit,
+    onSelectMaintenance: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     ModalBottomSheet(
@@ -92,6 +94,18 @@ fun QuickActionSheet(
                 onClick = {
                     onDismiss()
                     onSelectExpense()
+                }
+            )
+
+            QuickActionOption(
+                icon = Icons.Default.Build,
+                iconBg = Color(0xFF8D6E63), // Marrón Drivvo Benchmark
+                iconTint = Color.White,
+                title = "Registrar Servicio / Mantenimiento",
+                subtitle = "Aceite, frenos, llantas, correa o taller",
+                onClick = {
+                    onDismiss()
+                    onSelectMaintenance()
                 }
             )
         }

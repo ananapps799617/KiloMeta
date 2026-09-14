@@ -49,7 +49,10 @@ data class MaintenanceRecord(
     val notes: String? = null,
     val nextDueOdometer: Int? = null,
     val nextDueDateMillis: Long? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val serviceTitle: String? = null,
+    val location: String? = null,
+    val paymentSource: WalletType = WalletType.CASH_PHYSICAL
 )
 
 // ------------------------------------------------------------------------------

@@ -59,6 +59,7 @@ enum class ExpenseConcept(val displayName: String, val icon: String = "📦") {
     FOOD("Alimentación", "🍽️"),
     TOLL("Peajes", "🛣️"),
     PARKING("Parqueadero", "🅿️"),
+    RENT("Cuota Alquiler", "🔑"),
     OTHER("Otros imprevistos", "📦")
 }
 

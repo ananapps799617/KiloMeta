@@ -58,24 +58,20 @@ import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
     showTopBar: Boolean = false,
-    triggerCloseShift: Boolean = false,
-    onResetCloseShiftTrigger: () -> Unit = {},
-    triggerQuickTrip: Boolean = false,
-    onResetQuickTripTrigger: () -> Unit = {},
-    triggerQuickFueling: Boolean = false,
-    onResetQuickFuelingTrigger: () -> Unit = {},
-    triggerQuickExpense: Boolean = false,
-    onResetQuickExpenseTrigger: () -> Unit = {}
+    triggerCloseShift: Boolean = false, onResetCloseShiftTrigger: () -> Unit = {},
+    triggerQuickTrip: Boolean = false, onResetQuickTripTrigger: () -> Unit = {},
+    triggerQuickFueling: Boolean = false, onResetQuickFuelingTrigger: () -> Unit = {},
+    triggerQuickExpense: Boolean = false, onResetQuickExpenseTrigger: () -> Unit = {},
+    triggerQuickMaintenance: Boolean = false, onResetQuickMaintenanceTrigger: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val vehicle by viewModel.vehicleProfile.collectAsState()
     val lastKnownOdometer by viewModel.lastKnownOdometer.collectAsState()
     val dayContinuousTimeline by viewModel.dayContinuousTimeline.collectAsState()
 
-    // Solicitud elegante de permisos de notificación vehicular en Android 13+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { _ -> /* Degradación elegante: KiloMeta sigue operando localmente */ }
+    ) { _ -> /* Degradación elegante */ }
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -86,6 +82,7 @@ fun HomeScreen(
     var showTripSheet by remember { mutableStateOf(false) }
     var showFuelingSheet by remember { mutableStateOf(false) }
     var showExpenseSheet by remember { mutableStateOf(false) }
+    var showMaintenanceSheet by remember { mutableStateOf(false) }
     var showTransferSheet by remember { mutableStateOf(false) }
     var showStartShiftDialog by remember { mutableStateOf(false) }
     var showCloseShiftDialog by remember { mutableStateOf(false) }
@@ -96,37 +93,16 @@ fun HomeScreen(
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var editingFueling by remember { mutableStateOf<Fueling?>(null) }
 
-    LaunchedEffect(triggerCloseShift) {
-        if (triggerCloseShift) {
-            showCloseShiftDialog = true
-            onResetCloseShiftTrigger()
-        }
-    }
-
-    LaunchedEffect(triggerQuickTrip) {
-        if (triggerQuickTrip) {
-            showTripSheet = true
-            onResetQuickTripTrigger()
-        }
-    }
-
-    LaunchedEffect(triggerQuickFueling) {
-        if (triggerQuickFueling) {
-            showFuelingSheet = true
-            onResetQuickFuelingTrigger()
-        }
-    }
-
-    LaunchedEffect(triggerQuickExpense) {
-        if (triggerQuickExpense) {
-            showExpenseSheet = true
-            onResetQuickExpenseTrigger()
-        }
-    }
+    LaunchedEffect(triggerCloseShift) { if (triggerCloseShift) { showCloseShiftDialog = true; onResetCloseShiftTrigger() } }
+    LaunchedEffect(triggerQuickTrip) { if (triggerQuickTrip) { showTripSheet = true; onResetQuickTripTrigger() } }
+    LaunchedEffect(triggerQuickFueling) { if (triggerQuickFueling) { showFuelingSheet = true; onResetQuickFuelingTrigger() } }
+    LaunchedEffect(triggerQuickExpense) { if (triggerQuickExpense) { showExpenseSheet = true; onResetQuickExpenseTrigger() } }
+    LaunchedEffect(triggerQuickMaintenance) { if (triggerQuickMaintenance) { showMaintenanceSheet = true; onResetQuickMaintenanceTrigger() } }
 
     val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val expenseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val maintenanceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val transferSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
@@ -195,6 +171,9 @@ fun HomeScreen(
         showExpenseSheet = showExpenseSheet,
         onDismissExpenseSheet = { showExpenseSheet = false; isSporadicAction = false },
         expenseSheetState = expenseSheetState,
+        showMaintenanceSheet = showMaintenanceSheet,
+        onDismissMaintenanceSheet = { showMaintenanceSheet = false; isSporadicAction = false },
+        maintenanceSheetState = maintenanceSheetState,
         showTransferSheet = showTransferSheet,
         onDismissTransferSheet = { showTransferSheet = false },
         transferSheetState = transferSheetState,
@@ -207,6 +186,7 @@ fun HomeScreen(
                 "carrera" -> showTripSheet = true
                 "tanqueo" -> showFuelingSheet = true
                 "gasto" -> showExpenseSheet = true
+                "mantenimiento" -> showMaintenanceSheet = true
             }
             pendingPromptAction = null
         },
@@ -229,6 +209,7 @@ fun HomeScreen(
                 "carrera" -> showTripSheet = true
                 "tanqueo" -> showFuelingSheet = true
                 "gasto" -> showExpenseSheet = true
+                "mantenimiento" -> showMaintenanceSheet = true
             }
             pendingPromptAction = null
         },

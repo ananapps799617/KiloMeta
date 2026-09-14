@@ -23,33 +23,21 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val shiftRepository: ShiftRepository,
-    private val getShiftFinancialStatusUseCase: GetShiftFinancialStatusUseCase,
-    private val calculateBiFuelCostPerKmUseCase: CalculateBiFuelCostPerKmUseCase,
-    private val registerTripUseCase: RegisterTripUseCase,
-    private val deleteTripUseCase: DeleteTripUseCase,
-    private val deleteExpenseUseCase: DeleteExpenseUseCase,
-    private val deleteFuelingUseCase: DeleteFuelingUseCase,
-    private val updateTripUseCase: UpdateTripUseCase,
-    private val updateExpenseUseCase: UpdateExpenseUseCase,
-    private val updateFuelingUseCase: UpdateFuelingUseCase,
-    private val registerFuelingUseCase: RegisterFuelingUseCase,
-    private val registerExpenseUseCase: RegisterExpenseUseCase,
-    private val manageShiftUseCase: ManageShiftUseCase,
-    private val syncRepository: SyncRepository,
-    private val authRepository: AuthRepository,
-    private val syncDataUseCase: SyncDataUseCase,
-    private val restoreDataUseCase: RestoreDataUseCase,
-    private val authenticateUserUseCase: AuthenticateUserUseCase,
-    private val signOutUseCase: SignOutUseCase,
-    private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase,
-    private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase,
+    private val shiftRepository: ShiftRepository, private val getShiftFinancialStatusUseCase: GetShiftFinancialStatusUseCase,
+    private val calculateBiFuelCostPerKmUseCase: CalculateBiFuelCostPerKmUseCase, private val registerTripUseCase: RegisterTripUseCase,
+    private val deleteTripUseCase: DeleteTripUseCase, private val deleteExpenseUseCase: DeleteExpenseUseCase,
+    private val deleteFuelingUseCase: DeleteFuelingUseCase, private val updateTripUseCase: UpdateTripUseCase,
+    private val updateExpenseUseCase: UpdateExpenseUseCase, private val updateFuelingUseCase: UpdateFuelingUseCase,
+    private val registerFuelingUseCase: RegisterFuelingUseCase, private val registerExpenseUseCase: RegisterExpenseUseCase,
+    private val registerMaintenanceUseCase: RegisterMaintenanceUseCase, private val manageShiftUseCase: ManageShiftUseCase,
+    private val syncRepository: SyncRepository, private val authRepository: AuthRepository,
+    private val syncDataUseCase: SyncDataUseCase, private val restoreDataUseCase: RestoreDataUseCase,
+    private val authenticateUserUseCase: AuthenticateUserUseCase, private val signOutUseCase: SignOutUseCase,
+    private val checkCloudConnectionUseCase: CheckCloudConnectionUseCase, private val schedulePeriodicSyncUseCase: SchedulePeriodicSyncUseCase,
     private val getAccountingAuditDashboardUseCase: GetAccountingAuditDashboardUseCase,
     private val scheduleWeeklyCutoffNotificationsUseCase: ScheduleWeeklyCutoffNotificationsUseCase,
-    private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase,
-    private val driverProfileRepository: DriverProfileRepository,
-    private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase,
-    private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
+    private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase, private val driverProfileRepository: DriverProfileRepository,
+    private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase, private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
     private val executeWalletTransferUseCase: ExecuteWalletTransferUseCase,
     private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository
 ) : ViewModel() {
@@ -57,17 +45,10 @@ class HomeViewModel @Inject constructor(
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
     val syncPreferences: StateFlow<SyncPreferences> = _syncPreferences.asStateFlow()
 
-    val driverProfile: StateFlow<DriverProfile> = driverProfileRepository.getProfile()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DriverProfile())
-
-    val vehicleProfile: StateFlow<VehicleProfile> = driverProfileRepository.getVehicleProfile()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), VehicleProfile())
-
-    val lastKnownOdometer: StateFlow<Int> = getLastKnownOdometerUseCase()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), 0)
-
-    val dayContinuousTimeline: StateFlow<DayContinuousSummary> = getDayContinuousTimelineUseCase()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DayContinuousSummary())
+    val driverProfile: StateFlow<DriverProfile> = driverProfileRepository.getProfile().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DriverProfile())
+    val vehicleProfile: StateFlow<VehicleProfile> = driverProfileRepository.getVehicleProfile().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), VehicleProfile())
+    val lastKnownOdometer: StateFlow<Int> = getLastKnownOdometerUseCase().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), 0)
+    val dayContinuousTimeline: StateFlow<DayContinuousSummary> = getDayContinuousTimelineUseCase().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DayContinuousSummary())
 
     init {
         schedulePeriodicSyncUseCase(_syncPreferences.value)
@@ -198,8 +179,35 @@ class HomeViewModel @Inject constructor(
         walletTransferRepository.deleteTransfer(id)
     }
 
-    fun startShift(startOdometer: Int, dailyQuota: Double? = null) {
-        viewModelScope.launch { manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0) }
+    fun registerMaintenance(
+        type: MaintenanceType,
+        odometer: Int,
+        costCop: Double,
+        notes: String? = null,
+        paymentSource: WalletType = WalletType.CASH_PHYSICAL,
+        serviceTitle: String? = null,
+        location: String? = null,
+        timestamp: Long = System.currentTimeMillis()
+    ) = viewModelScope.launch {
+        val vehicle = vehicleProfile.value
+        registerMaintenanceUseCase(
+            vehicleId = vehicle.vehiclePlate.ifBlank { "BYD_S6" },
+            type = type,
+            odometer = odometer,
+            costCop = costCop,
+            notes = notes,
+            timestamp = timestamp,
+            serviceTitle = serviceTitle,
+            location = location,
+            paymentSource = paymentSource
+        )
+        if (costCop > 0.0) {
+            registerExpense(concept = ExpenseConcept.OTHER, amount = costCop, isSporadic = true, paymentSource = paymentSource)
+        }
+    }
+
+    fun startShift(startOdometer: Int, dailyQuota: Double? = null) = viewModelScope.launch {
+        manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0)
     }
 
     fun closeShift(endOdometer: Int, notes: String? = null) {
@@ -211,25 +219,17 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun syncNow() { viewModelScope.launch { syncDataUseCase() } }
+    fun syncNow() = viewModelScope.launch { syncDataUseCase() }
 
-    fun onTestLiveConnection() {
-        viewModelScope.launch {
-            _isPingingCloud.value = true
-            _connectionDiagnostic.value = checkCloudConnectionUseCase()
-            _isPingingCloud.value = false
-        }
+    fun onTestLiveConnection() = viewModelScope.launch {
+        _isPingingCloud.value = true; _connectionDiagnostic.value = checkCloudConnectionUseCase(); _isPingingCloud.value = false
     }
 
-    fun startDisasterRecovery() {
-        viewModelScope.launch { restoreDataUseCase().collect { _restoreProgress.value = it } }
-    }
-
+    fun startDisasterRecovery() = viewModelScope.launch { restoreDataUseCase().collect { _restoreProgress.value = it } }
     fun resetRecoveryProgress() { _restoreProgress.value = RestoreProgress.Idle }
 
     private val _authError = MutableStateFlow<String?>(null)
     val authError: StateFlow<String?> = _authError.asStateFlow()
-
     private val _isAuthLoading = MutableStateFlow(false)
     val isAuthLoading: StateFlow<Boolean> = _isAuthLoading.asStateFlow()
 

@@ -77,6 +77,9 @@ fun RegisterTripSheet(
     val endOdo = endOdometerText.toIntOrNull()
     val net = (gross - commission).coerceAtLeast(0.0)
 
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    val hasDirtyData = grossAmountText.isNotBlank() || commissionAmountText.isNotBlank() || endOdometerText.isNotBlank()
+
     val isOdometerValid = if (startOdo != null && endOdo != null) endOdo >= startOdo else true
     val isFormValid = gross > 0.0 && commission <= gross && isOdometerValid
 
@@ -85,9 +88,10 @@ fun RegisterTripSheet(
     }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (hasDirtyData) showDiscardDialog = true else onDismiss() },
         sheetState = sheetState,
         containerColor = DeepObsidianSurface,
+        dragHandle = null,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -98,7 +102,7 @@ fun RegisterTripSheet(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Cabecera Oficial KiloMeta (Barra Verde Sólida con Flecha e "Ingreso")
+            // Cabecera Oficial KiloMeta (Barra Verde Sólida con Flecha y "Carrera")
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color(0xFF1B5E20), // Verde Esmeralda KiloMeta
@@ -110,7 +114,7 @@ fun RegisterTripSheet(
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = { if (hasDirtyData) showDiscardDialog = true else onDismiss() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
@@ -118,7 +122,7 @@ fun RegisterTripSheet(
                         )
                     }
                     Text(
-                        text = "Ingreso",
+                        text = "Carrera",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = Color.White,
                         modifier = Modifier.padding(start = 4.dp)
@@ -205,5 +209,17 @@ fun RegisterTripSheet(
                 )
             }
         }
+    }
+
+    if (showDiscardDialog) {
+        DiscardChangesDialog(
+            title = "¿Descartar Carrera?",
+            message = "Tienes datos digitados sin guardar. ¿Deseas salir y perder los cambios de esta carrera?",
+            onConfirmDiscard = {
+                showDiscardDialog = false
+                onDismiss()
+            },
+            onDismissRequest = { showDiscardDialog = false }
+        )
     }
 }

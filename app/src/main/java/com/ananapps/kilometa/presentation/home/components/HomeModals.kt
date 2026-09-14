@@ -36,6 +36,9 @@ fun HomeCockpitModals(
     showTransferSheet: Boolean = false,
     onDismissTransferSheet: () -> Unit = {},
     transferSheetState: SheetState? = null,
+    showMaintenanceSheet: Boolean = false,
+    onDismissMaintenanceSheet: () -> Unit = {},
+    maintenanceSheetState: SheetState? = null,
     isSporadic: Boolean = false,
     showStartShiftDialog: Boolean,
     onDismissStartShiftDialog: () -> Unit,
@@ -115,6 +118,28 @@ fun HomeCockpitModals(
             onDismiss = onDismissTransferSheet,
             onConfirmTransfer = { source, destination, amount, type, notes ->
                 viewModel.registerWalletTransfer(source, destination, amount, type, notes)
+            }
+        )
+    }
+
+    if (showMaintenanceSheet && maintenanceSheetState != null) {
+        val vehicleProfile by viewModel.vehicleProfile.collectAsState()
+        RegisterMaintenanceSheet(
+            vehicleProfile = vehicleProfile,
+            lastKnownOdometer = resolvedOdo,
+            sheetState = maintenanceSheetState,
+            onDismiss = onDismissMaintenanceSheet,
+            onConfirmMaintenance = { type, odo, cost, notes, paymentSource, title, location, timestamp ->
+                viewModel.registerMaintenance(
+                    type = type,
+                    odometer = odo,
+                    costCop = cost,
+                    notes = notes,
+                    paymentSource = paymentSource,
+                    serviceTitle = title,
+                    location = location,
+                    timestamp = timestamp
+                )
             }
         )
     }

@@ -27,7 +27,10 @@ class RegisterMaintenanceUseCase @Inject constructor(
         notes: String? = null,
         customNextDueOdo: Int? = null,
         nextDueDateMillis: Long? = null,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
+        serviceTitle: String? = null,
+        location: String? = null,
+        paymentSource: com.ananapps.kilometa.domain.model.WalletType = com.ananapps.kilometa.domain.model.WalletType.CASH_PHYSICAL
     ): MaintenanceRecord {
         require(vehicleId.isNotBlank()) { "El identificador del vehículo no puede estar vacío" }
         require(odometer >= 0) { "El odómetro no puede ser negativo" }
@@ -44,7 +47,10 @@ class RegisterMaintenanceUseCase @Inject constructor(
             notes = notes,
             nextDueOdometer = computedNextDue,
             nextDueDateMillis = nextDueDateMillis,
-            timestamp = timestamp
+            timestamp = timestamp,
+            serviceTitle = serviceTitle,
+            location = location,
+            paymentSource = paymentSource
         )
 
         maintenanceRepository.addMaintenance(record)

@@ -92,6 +92,7 @@ private fun MainAppHost(
     var triggerQuickTrip by rememberSaveable { mutableStateOf(false) }
     var triggerQuickFueling by rememberSaveable { mutableStateOf(false) }
     var triggerQuickExpense by rememberSaveable { mutableStateOf(false) }
+    var triggerQuickMaintenance by rememberSaveable { mutableStateOf(false) }
 
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }
     var showRecoveryScreen by rememberSaveable { mutableStateOf(false) }
@@ -175,7 +176,9 @@ private fun MainAppHost(
                         triggerQuickFueling = triggerQuickFueling,
                         onResetQuickFuelingTrigger = { triggerQuickFueling = false },
                         triggerQuickExpense = triggerQuickExpense,
-                        onResetQuickExpenseTrigger = { triggerQuickExpense = false }
+                        onResetQuickExpenseTrigger = { triggerQuickExpense = false },
+                        triggerQuickMaintenance = triggerQuickMaintenance,
+                        onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
                     )
                 }
                 currentNavTab == KiloMetaNavTab.REPORTS -> {
@@ -218,6 +221,11 @@ private fun MainAppHost(
                 currentNavTab = KiloMetaNavTab.ROUTE
                 activeSubDestination = null
                 triggerQuickExpense = true
+            },
+            onSelectMaintenance = {
+                currentNavTab = KiloMetaNavTab.ROUTE
+                activeSubDestination = null
+                triggerQuickMaintenance = true
             }
         )
     }
