@@ -49,8 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.domain.model.CsvReport
 import com.ananapps.kilometa.domain.model.HistoryFilterPeriod
+import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.presentation.history.components.ContinuousHistoryRoadList
 import com.ananapps.kilometa.presentation.history.components.ExportReportSheet
+import com.ananapps.kilometa.presentation.history.components.ShiftDetailsSheet
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
@@ -72,6 +74,7 @@ fun HistoryScreen(
     val context = LocalContext.current
 
     var showExportSheet by remember { mutableStateOf(false) }
+    var inspectingShift by remember { mutableStateOf<ShiftFinancialSummary?>(null) }
     var pendingReport by remember { mutableStateOf<CsvReport?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -183,7 +186,7 @@ fun HistoryScreen(
                 is HistoryUiState.Success -> ContinuousHistoryRoadList(
                     shifts = state.shifts,
                     onDeleteShift = { viewModel.onDeleteShift(it) },
-                    onEditShift = { id, start, end, notes -> viewModel.onUpdateShift(id, start, end, notes) },
+                    onInspectShift = { inspectingShift = it },
                     onConsolidateShifts = { viewModel.onConsolidateShiftsForDay(it) }
                 )
             }
@@ -199,6 +202,23 @@ fun HistoryScreen(
             onShareSummary = { period -> viewModel.onShareSummaryClicked(period) }
         )
     }
+
+    inspectingShift?.let { shift ->
+        ShiftDetailsSheet(
+            shift = shift,
+            tripsFlow = viewModel.getShiftTrips(shift.shiftId),
+            fuelingsFlow = viewModel.getShiftFuelings(shift.shiftId),
+            expensesFlow = viewModel.getShiftExpenses(shift.shiftId),
+            onDismiss = { inspectingShift = null },
+            onDeleteTrip = { viewModel.onDeleteTrip(it) },
+            onDeleteFueling = { viewModel.onDeleteFueling(it) },
+            onDeleteExpense = { viewModel.onDeleteExpense(it) },
+            onUpdateShift = { startOdo, endOdo, notes ->
+                viewModel.onUpdateShift(shift.shiftId, startOdo, endOdo, notes)
+                inspectingShift = null
+            }
+        )
+    }
 }
 
 // ------------------------------------------------------------------------------
@@ -210,19 +230,13 @@ private fun FilterPeriodSelector(
     onSelectFilter: (HistoryFilterPeriod) -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DeepObsidianSurface, RoundedCornerShape(12.dp))
-            .padding(4.dp),
+        modifier = Modifier.fillMaxWidth().background(DeepObsidianSurface, RoundedCornerShape(12.dp)).padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         HistoryFilterPeriod.entries.forEach { period ->
             val isSelected = period == selectedFilter
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(8.dp))
                     .background(if (isSelected) ElectricBluePrimary else DeepObsidianSurface)
                     .clickable { onSelectFilter(period) },
                 contentAlignment = Alignment.Center
@@ -244,21 +258,9 @@ private fun FilterPeriodSelector(
 @Composable
 private fun EmptyHistoryView(selectedFilter: HistoryFilterPeriod) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Sin jornadas registradas",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "No se encontraron turnos cerrados en el filtro '${selectedFilter.displayName}'.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Sin jornadas registradas", style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
+            Text("No se encontraron turnos cerrados en '${selectedFilter.displayName}'.", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
     }
 }

@@ -35,7 +35,7 @@ import java.util.Locale
 fun ContinuousHistoryRoadList(
     shifts: List<ShiftFinancialSummary>,
     onDeleteShift: (String) -> Unit,
-    onEditShift: (String, Int, Int?, String?) -> Unit,
+    onInspectShift: (ShiftFinancialSummary) -> Unit,
     onConsolidateShifts: (List<ShiftFinancialSummary>) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -108,7 +108,7 @@ fun ContinuousHistoryRoadList(
                             HistoryRoadNode(
                                 shift = shift,
                                 onDelete = { onDeleteShift(shift.shiftId) },
-                                onEdit = { onEditShift(shift.shiftId, shift.startOdometer, shift.endOdometer, null) }
+                                onEdit = { onInspectShift(shift) }
                             )
                         }
                     }

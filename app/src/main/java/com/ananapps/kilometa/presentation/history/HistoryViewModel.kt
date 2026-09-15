@@ -16,9 +16,20 @@ import com.ananapps.kilometa.domain.model.HistoryFilterPeriod
 import com.ananapps.kilometa.domain.model.PlatformAnalytics
 import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.model.Expense
+import com.ananapps.kilometa.domain.model.Fueling
+import com.ananapps.kilometa.domain.model.VehicleProfile
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
+import com.ananapps.kilometa.domain.repository.ExpenseRepository
+import com.ananapps.kilometa.domain.repository.FuelingRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
+import com.ananapps.kilometa.domain.repository.TripRepository
+import com.ananapps.kilometa.domain.usecase.CalculateWeeklyCycleBoundsUseCase
 import com.ananapps.kilometa.domain.usecase.ConsolidateDayShiftsUseCase
+import com.ananapps.kilometa.domain.usecase.DeleteExpenseUseCase
+import com.ananapps.kilometa.domain.usecase.DeleteFuelingUseCase
 import com.ananapps.kilometa.domain.usecase.DeleteShiftUseCase
+import com.ananapps.kilometa.domain.usecase.DeleteTripUseCase
 import com.ananapps.kilometa.domain.usecase.GenerateCsvReportUseCase
 import com.ananapps.kilometa.domain.usecase.GenerateShareableSummaryUseCase
 import com.ananapps.kilometa.domain.usecase.GetBiFuelSavingsUseCase
@@ -54,7 +65,15 @@ class HistoryViewModel @Inject constructor(
     private val deleteShiftUseCase: DeleteShiftUseCase,
     private val consolidateDayShiftsUseCase: ConsolidateDayShiftsUseCase,
     private val updateShiftUseCase: UpdateShiftUseCase,
-    private val shiftRepository: ShiftRepository
+    private val shiftRepository: ShiftRepository,
+    private val driverProfileRepository: DriverProfileRepository,
+    private val calculateWeeklyCycleBoundsUseCase: CalculateWeeklyCycleBoundsUseCase,
+    private val tripRepository: TripRepository,
+    private val fuelingRepository: FuelingRepository,
+    private val expenseRepository: ExpenseRepository,
+    private val deleteTripUseCase: DeleteTripUseCase,
+    private val deleteFuelingUseCase: DeleteFuelingUseCase,
+    private val deleteExpenseUseCase: DeleteExpenseUseCase
 ) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow(HistoryFilterPeriod.ALL)
@@ -65,184 +84,133 @@ class HistoryViewModel @Inject constructor(
     val uiState: StateFlow<HistoryUiState> = combine(
         _selectedFilter,
         getShiftHistoryUseCase(),
-        shiftRepository.getAllTrips()
-    ) { filter, completedShifts, allTrips ->
-        processHistoricalData(filter, completedShifts, allTrips)
+        shiftRepository.getAllTrips(),
+        driverProfileRepository.getVehicleProfile()
+    ) { filter, completedShifts, allTrips, vehicle ->
+        processHistoricalData(filter, completedShifts, allTrips, vehicle)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000L),
         initialValue = HistoryUiState.Loading
     )
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 2: ACCIONES DE INTERACCIÓN DE USUARIO Y FILTROS
-    // --------------------------------------------------------------------------
-    /**
-     * Alterna la ventana de corte temporal para recalcular las analíticas.
-     */
-    fun onFilterSelected(filter: HistoryFilterPeriod) {
-        _selectedFilter.value = filter
-    }
+    fun onFilterSelected(filter: HistoryFilterPeriod) { _selectedFilter.value = filter }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 3: EXPORTACIÓN CONTABLE Y MENSAJERÍA ASÍNCRONA
-    // --------------------------------------------------------------------------
-    /**
-     * Compila y prepara el archivo CSV con BOM UTF-8 para el período seleccionado.
-     */
     fun onExportCsvClicked(period: HistoryFilterPeriod) {
         viewModelScope.launch {
             _exportState.value = ExportUiState.Exporting
             try {
                 val allShifts = getShiftHistoryUseCase().first()
-                val filteredShifts = filterShifts(period, allShifts)
-                val report = generateCsvReportUseCase(period, filteredShifts)
-                _exportState.value = ExportUiState.CsvReady(report)
+                val vehicle = driverProfileRepository.getVehicleProfile().first()
+                val filteredShifts = filterShifts(period, allShifts, vehicle)
+                _exportState.value = ExportUiState.CsvReady(generateCsvReportUseCase(period, filteredShifts))
             } catch (e: Exception) {
-                _exportState.value = ExportUiState.Error(
-                    e.localizedMessage ?: "Error al compilar el reporte CSV contable"
-                )
+                _exportState.value = ExportUiState.Error(e.localizedMessage ?: "Error al compilar CSV")
             }
         }
     }
 
-    /**
-     * Genera la tarjeta de texto consolidada para difusión en WhatsApp o Telegram.
-     */
     fun onShareSummaryClicked(period: HistoryFilterPeriod) {
         viewModelScope.launch {
             _exportState.value = ExportUiState.Exporting
             try {
                 val allShifts = getShiftHistoryUseCase().first()
-                val filteredShifts = filterShifts(period, allShifts)
-                val summary = generateShareableSummaryUseCase(period, filteredShifts)
-                _exportState.value = ExportUiState.ShareReady(summary)
+                val vehicle = driverProfileRepository.getVehicleProfile().first()
+                val filteredShifts = filterShifts(period, allShifts, vehicle)
+                _exportState.value = ExportUiState.ShareReady(generateShareableSummaryUseCase(period, filteredShifts))
             } catch (e: Exception) {
-                _exportState.value = ExportUiState.Error(
-                    e.localizedMessage ?: "Error al generar el balance compartible"
-                )
+                _exportState.value = ExportUiState.Error(e.localizedMessage ?: "Error al generar balance")
             }
         }
     }
 
-    /**
-     * Genera el balance individual de una jornada específica para WhatsApp.
-     */
     fun onShareShiftSummaryClicked(shift: ShiftFinancialSummary) {
         viewModelScope.launch {
             try {
-                val summary = generateShareableSummaryUseCase(shift)
-                _exportState.value = ExportUiState.ShareReady(summary)
+                _exportState.value = ExportUiState.ShareReady(generateShareableSummaryUseCase(shift))
             } catch (e: Exception) {
-                _exportState.value = ExportUiState.Error(
-                    e.localizedMessage ?: "Error al generar liquidación de jornada"
-                )
+                _exportState.value = ExportUiState.Error(e.localizedMessage ?: "Error al generar liquidación")
             }
         }
     }
 
-    /**
-     * Restablece el estado de exportación a Idle tras completar el flujo con SAF o Intent.
-     */
-    fun resetExportState() {
-        _exportState.value = ExportUiState.Idle
-    }
+    fun resetExportState() { _exportState.value = ExportUiState.Idle }
 
-    /**
-     * Elimina un turno en cascada con registro de lápidas y purga Cloud.
-     */
-    fun onDeleteShift(shiftId: String) {
-        viewModelScope.launch {
-            deleteShiftUseCase(shiftId)
-        }
-    }
+    fun onDeleteShift(shiftId: String) { viewModelScope.launch { deleteShiftUseCase(shiftId) } }
 
-    /**
-     * Fusiona múltiples turnos fragmentados de un mismo día en un Turno Maestro.
-     */
     fun onConsolidateShiftsForDay(shifts: List<ShiftFinancialSummary>) {
         viewModelScope.launch {
             val allShifts = shiftRepository.getAllShifts().first()
             val targetIds = shifts.map { it.shiftId }.toSet()
             val toConsolidate = allShifts.filter { it.id in targetIds }
-            if (toConsolidate.size >= 2) {
-                consolidateDayShiftsUseCase(toConsolidate)
-            }
+            if (toConsolidate.size >= 2) consolidateDayShiftsUseCase(toConsolidate)
         }
     }
 
-    /**
-     * Actualiza kilometrajes u observaciones de un turno existente.
-     */
     fun onUpdateShift(shiftId: String, startOdo: Int, endOdo: Int?, notes: String?) {
         viewModelScope.launch {
             val allShifts = shiftRepository.getAllShifts().first()
             val existing = allShifts.find { it.id == shiftId } ?: return@launch
-            val updated = existing.copy(
-                startOdometer = startOdo,
-                endOdometer = endOdo,
-                notes = notes
-            )
-            updateShiftUseCase(updated)
+            updateShiftUseCase(existing.copy(startOdometer = startOdo, endOdometer = endOdo, notes = notes))
         }
     }
 
-    // --------------------------------------------------------------------------
-    // BLOQUE 4: LÓGICA DE AGREGACIÓN Y FILTRADO MATEMÁTICO
-    // --------------------------------------------------------------------------
-    private fun filterShifts(
-        period: HistoryFilterPeriod,
-        shifts: List<ShiftFinancialSummary>
-    ): List<ShiftFinancialSummary> {
-        val cutoffMillis = calculatePeriodCutoff(period)
-        return if (cutoffMillis > 0L) {
-            shifts.filter { it.startTime >= cutoffMillis }
-        } else {
-            shifts
-        }
+    // Métodos para inspección y edición de entidades hijas del turno
+    fun getShiftTrips(shiftId: String) = tripRepository.getTripsByShift(shiftId)
+    fun getShiftFuelings(shiftId: String) = fuelingRepository.getFuelingsByShift(shiftId)
+    fun getShiftExpenses(shiftId: String) = expenseRepository.getExpensesByShift(shiftId)
+    fun onDeleteTrip(tripId: String) = viewModelScope.launch { deleteTripUseCase(tripId) }
+    fun onDeleteFueling(fuelingId: String) = viewModelScope.launch { deleteFuelingUseCase(fuelingId) }
+    fun onDeleteExpense(expenseId: String) = viewModelScope.launch { deleteExpenseUseCase(expenseId) }
+
+    private fun filterShifts(period: HistoryFilterPeriod, shifts: List<ShiftFinancialSummary>, vehicle: VehicleProfile): List<ShiftFinancialSummary> {
+        val cutoffMillis = calculatePeriodCutoff(period, vehicle)
+        return if (cutoffMillis > 0L) shifts.filter { it.startTime >= cutoffMillis } else shifts
     }
 
     private fun processHistoricalData(
         filter: HistoryFilterPeriod,
         shifts: List<ShiftFinancialSummary>,
-        trips: List<Trip>
+        trips: List<Trip>,
+        vehicle: VehicleProfile
     ): HistoryUiState {
         if (shifts.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
 
-        val cutoffMillis = calculatePeriodCutoff(filter)
+        val cutoffMillis = calculatePeriodCutoff(filter, vehicle)
         val filteredShifts = if (cutoffMillis > 0L) shifts.filter { it.startTime >= cutoffMillis } else shifts
         if (filteredShifts.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
 
         val filteredTrips = if (cutoffMillis > 0L) trips.filter { it.timestamp >= cutoffMillis } else trips
-
         val totalNetProfit = filteredShifts.sumOf { it.netProfit }
         val totalKilometers = filteredShifts.sumOf { it.totalKilometers }
         val totalTrips = if (filteredTrips.isNotEmpty()) filteredTrips.size else filteredShifts.sumOf { it.tripsCount }
 
-        val savingsMetrics: BiFuelSavingsMetrics = getBiFuelSavingsUseCase(
+        val savingsMetrics = getBiFuelSavingsUseCase(
             totalKmDriven = totalKilometers,
             totalGasExpense = filteredShifts.sumOf { it.totalGasExpense },
             totalGasolineExpense = filteredShifts.sumOf { it.totalGasolineExpense }
         )
-
-        val platformBreakdowns: List<PlatformAnalytics> = getPlatformAnalyticsUseCase(filteredTrips)
 
         return HistoryUiState.Success(
             totalNetProfit = totalNetProfit,
             totalKilometers = totalKilometers,
             totalTrips = totalTrips,
             biFuelSavings = savingsMetrics,
-            platformBreakdowns = platformBreakdowns,
+            platformBreakdowns = getPlatformAnalyticsUseCase(filteredTrips),
             shifts = filteredShifts,
             selectedFilter = filter
         )
     }
 
-    private fun calculatePeriodCutoff(period: HistoryFilterPeriod, nowMillis: Long = System.currentTimeMillis()): Long {
+    private fun calculatePeriodCutoff(period: HistoryFilterPeriod, vehicle: VehicleProfile, nowMillis: Long = System.currentTimeMillis()): Long {
         val zone = ZoneId.of("America/Bogota")
         val now = Instant.ofEpochMilli(nowMillis).atZone(zone)
         return when (period) {
-            HistoryFilterPeriod.WEEK -> now.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
+            HistoryFilterPeriod.WEEK -> {
+                val cutoffDay = DayOfWeek.of(vehicle.quotaCutoffDay.coerceIn(1, 7))
+                val (start, _) = calculateWeeklyCycleBoundsUseCase(nowMillis, cutoffDay, vehicle.quotaCutoffHour, zone)
+                start
+            }
             HistoryFilterPeriod.MONTH -> now.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()
             HistoryFilterPeriod.ALL -> 0L
         }

@@ -28,6 +28,9 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import javax.inject.Inject
 
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
+import com.ananapps.kilometa.domain.usecase.CalculateWeeklyCycleBoundsUseCase
+
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
     private val shiftRepository: ShiftRepository,
@@ -36,7 +39,9 @@ class ReportsViewModel @Inject constructor(
     private val getBiFuelSavingsUseCase: GetBiFuelSavingsUseCase,
     private val generateCsvReportUseCase: GenerateCsvReportUseCase,
     private val generateShareableSummaryUseCase: GenerateShareableSummaryUseCase,
-    private val getShiftHistoryUseCase: GetShiftHistoryUseCase
+    private val getShiftHistoryUseCase: GetShiftHistoryUseCase,
+    private val driverProfileRepository: DriverProfileRepository,
+    private val calculateWeeklyCycleBoundsUseCase: CalculateWeeklyCycleBoundsUseCase
 ) : ViewModel() {
 
     private val _selectedPeriod = MutableStateFlow(ReportPeriod.THIS_WEEK)
@@ -46,13 +51,13 @@ class ReportsViewModel @Inject constructor(
     val exportState: StateFlow<ExportUiState> = _exportState.asStateFlow()
 
     val uiState: StateFlow<ReportsUiState> = combine(
-        _selectedPeriod,
+        combine(_selectedPeriod, driverProfileRepository.getVehicleProfile()) { p, v -> Pair(p, v) },
         shiftRepository.getAllTrips(),
         shiftRepository.getAllFuelings(),
         expenseRepository.getAllExpenses(),
         maintenanceRepository.getAllMaintenances()
-    ) { period, trips, fuelings, expenses, maintenances ->
-        val cutoffMillis = computeCutoff(period)
+    ) { (period, vehicle), trips, fuelings, expenses, maintenances ->
+        val cutoffMillis = computeCutoff(period, vehicle)
 
         val fTrips = trips.filter { it.timestamp >= cutoffMillis }
         val fFuelings = fuelings.filter { it.timestamp >= cutoffMillis }
@@ -173,18 +178,15 @@ class ReportsViewModel @Inject constructor(
         _exportState.value = ExportUiState.Idle
     }
 
-    private fun computeCutoff(period: ReportPeriod): Long {
-        val cal = Calendar.getInstance()
+    private fun computeCutoff(period: ReportPeriod, vehicle: VehicleProfile): Long {
         return when (period) {
             ReportPeriod.THIS_WEEK -> {
-                cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
-                cal.set(Calendar.HOUR_OF_DAY, 0)
-                cal.set(Calendar.MINUTE, 0)
-                cal.set(Calendar.SECOND, 0)
-                cal.set(Calendar.MILLISECOND, 0)
-                cal.timeInMillis
+                val cutoffDay = java.time.DayOfWeek.of(vehicle.quotaCutoffDay.coerceIn(1, 7))
+                val (start, _) = calculateWeeklyCycleBoundsUseCase(cutoffDay = cutoffDay, cutoffHour = vehicle.quotaCutoffHour)
+                start
             }
             ReportPeriod.THIS_MONTH -> {
+                val cal = Calendar.getInstance()
                 cal.set(Calendar.DAY_OF_MONTH, 1)
                 cal.set(Calendar.HOUR_OF_DAY, 0)
                 cal.set(Calendar.MINUTE, 0)
