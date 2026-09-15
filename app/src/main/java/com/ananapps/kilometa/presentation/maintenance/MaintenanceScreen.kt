@@ -171,11 +171,14 @@ fun MaintenanceScreen(
         }
     }
 
+    val savedPlaces by viewModel.savedPlaces.collectAsState()
+
     if (showSheet) {
         RegisterMaintenanceSheet(
             currentOdometer = state.currentOdometer,
             sheetState = sheetState,
             onDismiss = { showSheet = false },
+            savedPlaces = savedPlaces,
             onConfirm = { type, odo, cost, notes, nextOdo, timestamp ->
                 viewModel.registerMaintenance(type, odo, cost, notes, nextOdo, timestamp)
             }

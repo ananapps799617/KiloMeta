@@ -99,6 +99,42 @@ fun PlaceItemCard(
                 )
             }
 
+            if (place.gnvPricePerM3 != null || place.gasolinePricePerGal != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (place.gnvPricePerM3 != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(FuelGas.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "⛽ GNV: $ %,.0f/m³".format(place.gnvPricePerM3),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = FuelGas
+                            )
+                        }
+                    }
+                    if (place.gasolinePricePerGal != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(FuelGasoline.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "⛽ Gas: $ %,.0f/Gal".format(place.gasolinePricePerGal),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = FuelGasoline
+                            )
+                        }
+                    }
+                }
+            }
+
             if (place.latitude != null && place.longitude != null) {
                 Text(
                     text = "🛰️ GPS Fijado (${String.format(java.util.Locale.US, "%.4f, %.4f", place.latitude, place.longitude)})",

@@ -78,12 +78,16 @@ fun HomeCockpitModals(
         )
     }
 
+    val savedPlaces by viewModel.savedPlaces.collectAsState()
+
     if (showFuelingDialog) {
         val profile = viewModel.driverProfile.value
         RegisterFuelingDialog(
             currentOdometer = resolvedOdo,
             onDismiss = onDismissFuelingDialog,
             propulsionType = profile.propulsionType,
+            savedPlaces = savedPlaces,
+            onUpdateStationPrice = { id, type, price -> viewModel.updateStationPrice(id, type, price) },
             onConfirmFueling = { fuelType, amount, volume, odo, paymentSource, timestamp ->
                 viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic, paymentSource = paymentSource, timestamp = timestamp)
             }
@@ -93,6 +97,7 @@ fun HomeCockpitModals(
     if (showExpenseDialog) {
         RegisterExpenseDialog(
             onDismiss = onDismissExpenseDialog,
+            savedPlaces = savedPlaces,
             onConfirmExpense = { concept, amount, paymentSource, timestamp ->
                 viewModel.registerExpense(concept, amount, isSporadic = isSporadic, paymentSource = paymentSource, timestamp = timestamp)
             }
@@ -114,6 +119,7 @@ fun HomeCockpitModals(
             vehicleProfile = vehicleProfile,
             lastKnownOdometer = resolvedOdo,
             onDismiss = onDismissMaintenanceDialog,
+            savedPlaces = savedPlaces,
             onConfirmMaintenance = { type, odo, cost, notes, paymentSource, title, location, timestamp ->
                 viewModel.registerMaintenance(
                     type = type,

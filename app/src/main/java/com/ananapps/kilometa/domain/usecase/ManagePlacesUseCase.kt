@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/usecase/ManagePlacesUseCase.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -25,7 +25,9 @@ class ManagePlacesUseCase @Inject constructor(
         address: String,
         notes: String? = null,
         latitude: Double? = null,
-        longitude: Double? = null
+        longitude: Double? = null,
+        gnvPricePerM3: Double? = null,
+        gasolinePricePerGal: Double? = null
     ): Result<Place> {
         if (name.isBlank()) {
             return Result.failure(IllegalArgumentException("El nombre del lugar no puede estar vacío"))
@@ -42,11 +44,19 @@ class ManagePlacesUseCase @Inject constructor(
             latitude = latitude,
             longitude = longitude,
             notes = notes?.trim(),
+            gnvPricePerM3 = gnvPricePerM3,
+            gasolinePricePerGal = gasolinePricePerGal,
             createdAt = System.currentTimeMillis()
         )
 
         placeRepository.savePlace(place)
         return Result.success(place)
+    }
+
+    suspend fun updateStationPrice(placeId: String, fuelType: com.ananapps.kilometa.domain.model.FuelType, newPrice: Double) {
+        require(placeId.isNotBlank()) { "El ID del lugar no puede estar vacío" }
+        require(newPrice > 0.0) { "El precio debe ser mayor a cero" }
+        placeRepository.updateStationPrice(placeId, fuelType, newPrice)
     }
 
     suspend fun deletePlace(placeId: String) {

@@ -249,8 +249,8 @@ fun PlacesScreen(
     if (showAddDialog) {
         AddPlaceDialog(
             onDismiss = { showAddDialog = false },
-            onSave = { name, category, address, notes, lat, lng ->
-                viewModel.savePlace(name, category, address, notes, lat, lng)
+            onSave = { name, category, address, notes, lat, lng, gnv, gas ->
+                viewModel.savePlace(name, category, address, notes, lat, lng, gnv, gas)
                 showAddDialog = false
             }
         )

@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/local/entity/PlaceEntity.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -41,6 +41,12 @@ data class PlaceEntity(
 
     @ColumnInfo(name = "notes")
     val notes: String? = null,
+
+    @ColumnInfo(name = "gnv_price_per_m3")
+    val gnvPricePerM3: Double? = null,
+
+    @ColumnInfo(name = "gasoline_price_per_gal")
+    val gasolinePricePerGal: Double? = null,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis()

@@ -29,8 +29,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ananapps.kilometa.domain.model.FuelType
+import com.ananapps.kilometa.domain.model.Place
+import com.ananapps.kilometa.domain.model.PlaceCategory
 import com.ananapps.kilometa.domain.model.PropulsionType
 import com.ananapps.kilometa.domain.model.WalletType
+import com.ananapps.kilometa.presentation.common.PlaceSelectorField
 import com.ananapps.kilometa.presentation.theme.*
 
 private val FuelOrangeHeader = Color(0xFFE65100)
@@ -40,6 +43,8 @@ fun RegisterFuelingDialog(
     currentOdometer: Int,
     onDismiss: () -> Unit,
     propulsionType: PropulsionType = PropulsionType.BI_FUEL,
+    savedPlaces: List<Place> = emptyList(),
+    onUpdateStationPrice: ((placeId: String, fuelType: FuelType, newPrice: Double) -> Unit)? = null,
     onConfirmFueling: (fuelType: FuelType, amountPaid: Double, volume: Double, odometer: Int, paymentSource: WalletType, timestamp: Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,12 +69,17 @@ fun RegisterFuelingDialog(
     }
     var isFullTank by remember { mutableStateOf(true) }
     var gasStationText by remember { mutableStateOf("") }
+    var selectedPlace by remember { mutableStateOf<Place?>(null) }
+    var shouldUpdateStationPrice by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
 
     val hasDirtyData = amountText.isNotBlank() || volumeText.isNotBlank() || gasStationText.isNotBlank()
     val finalAmount = amountText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
     val finalVolume = volumeText.replace(',', '.').toDoubleOrNull() ?: 0.0
     val finalOdometer = odometerText.filter { it.isDigit() }.toIntOrNull() ?: currentOdometer
+    val currentUnitPrice = priceUnitText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
+    val knownPrice = if (selectedFuelType == FuelType.GAS) selectedPlace?.gnvPricePerM3 else selectedPlace?.gasolinePricePerGal
+    val hasPriceVariance = selectedPlace != null && knownPrice != null && currentUnitPrice > 0.0 && kotlin.math.abs(currentUnitPrice - knownPrice) >= 1.0
     val isFormValid = finalAmount > 0.0 && finalVolume > 0.0 && finalOdometer > 0
 
     Dialog(
@@ -103,17 +113,9 @@ fun RegisterFuelingDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
-                                tint = Color.White
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "⛽ Registrar Combustible",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
+                            Text(text = "⛽ Registrar Combustible", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                         }
                         IconButton(onClick = { if (hasDirtyData) showDiscardDialog = true else onDismiss() }) {
                             Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
@@ -167,27 +169,11 @@ fun RegisterFuelingDialog(
                         accentColor = FuelOrangeHeader
                     )
 
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = DeepObsidianSurfaceVariant,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(text = "Tanque Lleno", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
-                                Text(text = if (isFullTank) "Tanque abastecido al 100%" else "Carga parcial de combustible", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            }
-                            Switch(
-                                checked = isFullTank,
-                                onCheckedChange = { isFullTank = it },
-                                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = FuelOrangeHeader)
-                            )
-                        }
-                    }
+                    FuelingFullTankSwitch(
+                        isFullTank = isFullTank,
+                        onFullTankChange = { isFullTank = it },
+                        accentColor = FuelOrangeHeader
+                    )
 
                     Text(text = "Origen de Fondos", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -207,14 +193,40 @@ fun RegisterFuelingDialog(
                         )
                     }
 
-                    OutlinedTextField(
-                        value = gasStationText,
-                        onValueChange = { gasStationText = it },
-                        label = { Text("Estación de Servicio / Gasolinera (Opcional)") },
-                        placeholder = { Text("Ej: Texaco Calle 80, Terpel Autonorte") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                    PlaceSelectorField(
+                        label = "Estación de Servicio / Gasolinera (Opcional)",
+                        currentValue = gasStationText,
+                        places = savedPlaces,
+                        categoryFilter = listOf(PlaceCategory.GAS_STATION_GNV, PlaceCategory.GAS_STATION_GASOLINE),
+                        onPlaceSelected = { place ->
+                            selectedPlace = place
+                            gasStationText = place.name
+                            val tariff = if (selectedFuelType == FuelType.GAS) place.gnvPricePerM3 else place.gasolinePricePerGal
+                            if (tariff != null && tariff > 0) {
+                                priceUnitText = tariff.toInt().toString()
+                            }
+                        },
+                        onValueChanged = {
+                            gasStationText = it
+                            if (selectedPlace != null && it != selectedPlace?.name) {
+                                selectedPlace = null
+                            }
+                        },
+                        placeholder = "Ej: Texaco Calle 80, Terpel Autonorte",
+                        fuelTypeForTariff = selectedFuelType
                     )
+
+                    if (hasPriceVariance && selectedPlace != null) {
+                        FuelingStationPriceVarianceCard(
+                            station = selectedPlace!!,
+                            fuelType = selectedFuelType,
+                            knownPrice = knownPrice,
+                            currentPrice = currentUnitPrice,
+                            isChecked = shouldUpdateStationPrice,
+                            onCheckedChange = { shouldUpdateStationPrice = it },
+                            accentColor = FuelOrangeHeader
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -223,6 +235,9 @@ fun RegisterFuelingDialog(
                 Button(
                     onClick = {
                         if (isFormValid) {
+                            if (shouldUpdateStationPrice && selectedPlace != null && currentUnitPrice > 0.0) {
+                                onUpdateStationPrice?.invoke(selectedPlace!!.id, selectedFuelType, currentUnitPrice)
+                            }
                             onConfirmFueling(selectedFuelType, finalAmount, finalVolume, finalOdometer, paymentSource, selectedTimestamp)
                             onDismiss()
                         }

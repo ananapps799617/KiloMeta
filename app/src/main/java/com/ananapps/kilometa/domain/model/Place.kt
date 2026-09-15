@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/model/Place.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -26,5 +26,7 @@ data class Place(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val notes: String? = null,
+    val gnvPricePerM3: Double? = null,
+    val gasolinePricePerGal: Double? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

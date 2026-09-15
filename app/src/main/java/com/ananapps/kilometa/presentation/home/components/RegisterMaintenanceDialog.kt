@@ -31,8 +31,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ananapps.kilometa.domain.model.MaintenanceType
+import com.ananapps.kilometa.domain.model.Place
+import com.ananapps.kilometa.domain.model.PlaceCategory
 import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.WalletType
+import com.ananapps.kilometa.presentation.common.PlaceSelectorField
 import com.ananapps.kilometa.presentation.theme.*
 
 private val DrivvoBrown = Color(0xFF8D6E63)
@@ -42,6 +45,7 @@ fun RegisterMaintenanceDialog(
     vehicleProfile: VehicleProfile,
     lastKnownOdometer: Int,
     onDismiss: () -> Unit,
+    savedPlaces: List<Place> = emptyList(),
     onConfirmMaintenance: (
         type: MaintenanceType,
         odometer: Int,
@@ -102,17 +106,9 @@ fun RegisterMaintenanceDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
-                                tint = Color.White
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "🔧 Registrar Servicio",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
+                            Text(text = "🔧 Registrar Servicio", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                         }
                         IconButton(onClick = { if (hasDirtyData) showDiscardDialog = true else onDismiss() }) {
                             Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
@@ -209,13 +205,14 @@ fun RegisterMaintenanceDialog(
                         )
                     }
 
-                    OutlinedTextField(
-                        value = locationText,
-                        onValueChange = { locationText = it },
-                        label = { Text("Taller / Locación (Opcional)") },
-                        placeholder = { Text("Ej: Serviteca Texaco Calle 80") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                    PlaceSelectorField(
+                        label = "Taller / Serviteca (Opcional)",
+                        currentValue = locationText,
+                        places = savedPlaces,
+                        categoryFilter = listOf(PlaceCategory.WORKSHOP_MECHANIC),
+                        onPlaceSelected = { place -> locationText = place.name },
+                        onValueChanged = { locationText = it },
+                        placeholder = "Ej: Serviteca Texaco Calle 80"
                     )
 
                     OutlinedTextField(

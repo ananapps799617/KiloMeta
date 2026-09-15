@@ -80,6 +80,39 @@ class ManagePlacesUseCaseTest {
     }
 
     @Test
+    fun `savePlace con tarifas de combustible guarda correctamente`() = runTest {
+        val result = useCase.savePlace(
+            name = "Bomba Gazel Calle 80",
+            category = PlaceCategory.GAS_STATION_GNV,
+            address = "Calle 80 # 70-10",
+            notes = "Buena presión",
+            gnvPricePerM3 = 3899.0,
+            gasolinePricePerGal = 15600.0
+        )
+
+        assertTrue(result.isSuccess)
+        val place = result.getOrThrow()
+        assertEquals(3899.0, place.gnvPricePerM3)
+        assertEquals(15600.0, place.gasolinePricePerGal)
+    }
+
+    @Test
+    fun `updateStationPrice actualiza la tarifa de la estacion en repositorio`() = runTest {
+        val saveResult = useCase.savePlace(
+            name = "Bomba Terpel Autonorte",
+            category = PlaceCategory.GAS_STATION_GNV,
+            address = "Autonorte # 127",
+            gnvPricePerM3 = 3800.0
+        )
+        val placeId = saveResult.getOrThrow().id
+
+        useCase.updateStationPrice(placeId, com.ananapps.kilometa.domain.model.FuelType.GAS, 3950.0)
+
+        val updated = fakeRepository.getAllPlaces().first().first { it.id == placeId }
+        assertEquals(3950.0, updated.gnvPricePerM3)
+    }
+
+    @Test
     fun `deletePlace elimina el lugar del repositorio`() = runTest {
         val saveResult = useCase.savePlace(
             name = "Lavadero El Chorro",
@@ -106,6 +139,19 @@ class ManagePlacesUseCaseTest {
         override suspend fun savePlace(place: Place) {
             places.removeAll { it.id == place.id }
             places.add(0, place)
+        }
+
+        override suspend fun updateStationPrice(placeId: String, fuelType: com.ananapps.kilometa.domain.model.FuelType, newPrice: Double) {
+            val idx = places.indexOfFirst { it.id == placeId }
+            if (idx >= 0) {
+                val current = places[idx]
+                val updated = if (fuelType == com.ananapps.kilometa.domain.model.FuelType.GAS) {
+                    current.copy(gnvPricePerM3 = newPrice)
+                } else {
+                    current.copy(gasolinePricePerGal = newPrice)
+                }
+                places[idx] = updated
+            }
         }
 
         override suspend fun deletePlace(placeId: String) {

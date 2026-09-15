@@ -36,10 +36,13 @@ class MaintenanceViewModel @Inject constructor(
     private val maintenanceRepository: MaintenanceRepository,
     private val driverProfileRepository: DriverProfileRepository,
     private val shiftRepository: ShiftRepository,
-    private val calculateDailyQuotaUseCase: com.ananapps.kilometa.domain.usecase.CalculateDailyQuotaUseCase
+    private val calculateDailyQuotaUseCase: com.ananapps.kilometa.domain.usecase.CalculateDailyQuotaUseCase,
+    private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository
 ) : ViewModel() {
 
     private val _currentOdo = MutableStateFlow(100_000)
+    val savedPlaces: StateFlow<List<com.ananapps.kilometa.domain.model.Place>> = placeRepository.getAllPlaces()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     val uiState: StateFlow<MaintenanceUiState> = combine(
         getMaintenanceSummaryUseCase(),

@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/local/dao/PlaceDao.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -26,4 +26,10 @@ interface PlaceDao {
 
     @Query("DELETE FROM places WHERE id = :placeId")
     suspend fun deletePlace(placeId: String)
+
+    @Query("UPDATE places SET gnv_price_per_m3 = :price WHERE id = :placeId")
+    suspend fun updateGnvPrice(placeId: String, price: Double)
+
+    @Query("UPDATE places SET gasoline_price_per_gal = :price WHERE id = :placeId")
+    suspend fun updateGasolinePrice(placeId: String, price: Double)
 }

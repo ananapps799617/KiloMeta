@@ -40,6 +40,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.MaintenanceType
+import com.ananapps.kilometa.domain.model.Place
+import com.ananapps.kilometa.domain.model.PlaceCategory
+import com.ananapps.kilometa.presentation.common.PlaceSelectorField
 import com.ananapps.kilometa.presentation.home.components.DateTimePickerRow
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
@@ -53,12 +56,14 @@ fun RegisterMaintenanceSheet(
     currentOdometer: Int,
     sheetState: SheetState,
     onDismiss: () -> Unit,
+    savedPlaces: List<Place> = emptyList(),
     onConfirm: (type: MaintenanceType, odo: Int, cost: Double, notes: String?, nextOdo: Int?, timestamp: Long) -> Unit
 ) {
     var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     var selectedType by remember { mutableStateOf(MaintenanceType.OIL_CHANGE) }
     var odoText by remember { mutableStateOf(currentOdometer.toString()) }
     var costText by remember { mutableStateOf("120000") }
+    var workshopText by remember { mutableStateOf("") }
     var notesText by remember { mutableStateOf("") }
 
     val odoNumeric = odoText.toIntOrNull() ?: currentOdometer
@@ -137,11 +142,21 @@ fun RegisterMaintenanceSheet(
                 color = StatusGreen
             )
 
+            PlaceSelectorField(
+                label = "Taller / Serviteca (Opcional)",
+                currentValue = workshopText,
+                places = savedPlaces,
+                categoryFilter = listOf(PlaceCategory.WORKSHOP_MECHANIC),
+                onPlaceSelected = { place -> workshopText = place.name },
+                onValueChanged = { workshopText = it },
+                placeholder = "Ej: Serviteca Texaco Calle 80"
+            )
+
             // Notas opcionales
             OutlinedTextField(
                 value = notesText,
                 onValueChange = { notesText = it },
-                label = { Text("Taller / Repuestos / Observaciones (Opcional)") },
+                label = { Text("Repuestos / Observaciones técnicas (Opcional)") },
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 2
             )
@@ -152,7 +167,11 @@ fun RegisterMaintenanceSheet(
             Button(
                 onClick = {
                     if (costNumeric >= 0.0 && odoNumeric >= 0) {
-                        onConfirm(selectedType, odoNumeric, costNumeric, notesText.ifBlank { null }, calculatedNextOdo, selectedTimestamp)
+                        val finalNotes = listOfNotNull(
+                            if (workshopText.isNotBlank()) "Taller: $workshopText" else null,
+                            notesText.ifBlank { null }
+                        ).joinToString(" — ").ifBlank { null }
+                        onConfirm(selectedType, odoNumeric, costNumeric, finalNotes, calculatedNextOdo, selectedTimestamp)
                         onDismiss()
                     }
                 },

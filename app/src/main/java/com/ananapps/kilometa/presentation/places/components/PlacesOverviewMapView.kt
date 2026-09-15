@@ -2,9 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/places/components/PlacesOverviewMapView.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Visor general de mapa nativo OSMDroid con todos los puntos y bombas agregados.
-// Muestra pines clasificados por categoría, tarjeta flotante de detalle y
-// botones directos para despachar navegación satelital hacia Waze y Google Maps.
+// Visor general de mapa nativo OSMDroid con soporte para CartoDB Dark Matter,
+// purga de caché de teselas y visualización de tarifas de combustible (Orden #040).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.places.components
@@ -13,11 +12,13 @@ import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,10 +34,23 @@ import com.ananapps.kilometa.domain.model.Place
 import com.ananapps.kilometa.presentation.theme.*
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+
+private val CartoDbDarkTileSource = object : XYTileSource(
+    "CartoDB_DarkMatter",
+    0, 20, 256, ".png",
+    arrayOf(
+        "https://a.basemaps.cartocdn.com/dark_all/",
+        "https://b.basemaps.cartocdn.com/dark_all/",
+        "https://c.basemaps.cartocdn.com/dark_all/",
+        "https://d.basemaps.cartocdn.com/dark_all/"
+    ),
+    "© OpenStreetMap contributors © CARTO"
+) {}
 
 @Composable
 fun PlacesOverviewMapView(
@@ -48,6 +62,7 @@ fun PlacesOverviewMapView(
     val context = LocalContext.current
     var selectedPlace by remember { mutableStateOf<Place?>(null) }
     var mapViewInstance by remember { mutableStateOf<MapView?>(null) }
+    var isDarkModeMap by remember { mutableStateOf(true) }
 
     val geoPlaces = remember(places) {
         places.filter { it.latitude != null && it.longitude != null }
@@ -69,7 +84,7 @@ fun PlacesOverviewMapView(
             factory = { ctx ->
                 MapView(ctx).apply {
                     mapViewInstance = this
-                    setTileSource(TileSourceFactory.MAPNIK)
+                    setTileSource(if (isDarkModeMap) CartoDbDarkTileSource else TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
                     isTilesScaledToDpi = true
                     controller.setZoom(15.0)
@@ -102,43 +117,70 @@ fun PlacesOverviewMapView(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Botón para centrar en todos los puntos
-        if (geoPlaces.isNotEmpty()) {
-            SmallFloatingActionButton(
-                onClick = {
-                    mapViewInstance?.let { map ->
-                        if (geoPlaces.size == 1) {
-                            val p = geoPlaces.first()
-                            map.controller.animateTo(GeoPoint(p.latitude!!, p.longitude!!))
-                            map.controller.setZoom(16.5)
-                        } else {
-                            val lats = geoPlaces.map { it.latitude!! }
-                            val lngs = geoPlaces.map { it.longitude!! }
-                            val box = BoundingBox(lats.max(), lngs.max(), lats.min(), lngs.min())
-                            map.zoomToBoundingBox(box, true, 100)
-                        }
-                    }
-                },
-                containerColor = DeepObsidianSurface,
-                contentColor = ElectricBluePrimary,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+        // Panel de Control Superior (Limpiar Caché, Alternar Oscuro/Claro, Encuadre)
+        Surface(
+            color = DeepObsidianSurface.copy(alpha = 0.92f),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Encuadrar puntos")
+                IconButton(
+                    onClick = {
+                        mapViewInstance?.tileProvider?.clearTileCache()
+                        mapViewInstance?.invalidate()
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Limpiar caché cartográfico", tint = ElectricBluePrimary, modifier = Modifier.size(20.dp))
+                }
+
+                IconButton(
+                    onClick = {
+                        val newMode = !isDarkModeMap
+                        isDarkModeMap = newMode
+                        mapViewInstance?.setTileSource(if (newMode) CartoDbDarkTileSource else TileSourceFactory.MAPNIK)
+                        mapViewInstance?.invalidate()
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Text(text = if (isDarkModeMap) "🌙" else "☀️", fontSize = 16.sp)
+                }
+
+                if (geoPlaces.isNotEmpty()) {
+                    IconButton(
+                        onClick = {
+                            mapViewInstance?.let { map ->
+                                if (geoPlaces.size == 1) {
+                                    val p = geoPlaces.first()
+                                    map.controller.animateTo(GeoPoint(p.latitude!!, p.longitude!!))
+                                    map.controller.setZoom(16.5)
+                                } else {
+                                    val lats = geoPlaces.map { it.latitude!! }
+                                    val lngs = geoPlaces.map { it.longitude!! }
+                                    map.zoomToBoundingBox(BoundingBox(lats.max(), lngs.max(), lats.min(), lngs.min()), true, 100)
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Encuadrar puntos", tint = StatusGreen, modifier = Modifier.size(20.dp))
+                    }
+                }
             }
         }
 
-        // Tarjeta flotante inferior del lugar seleccionado
+        // Tarjeta flotante inferior del lugar seleccionado con tarifas
         AnimatedVisibility(
             visible = selectedPlace != null,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it }),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp)
         ) {
             selectedPlace?.let { place ->
                 Card(
@@ -154,24 +196,15 @@ fun PlacesOverviewMapView(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = place.category.icon,
-                                    fontSize = 24.sp
-                                )
+                                Text(text = place.category.icon, fontSize = 24.sp)
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
                                         text = place.name,
                                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = TextPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        color = TextPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis
                                     )
-                                    Text(
-                                        text = place.category.displayName,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = ElectricBluePrimary
-                                    )
+                                    Text(text = place.category.displayName, style = MaterialTheme.typography.labelSmall, color = ElectricBluePrimary)
                                 }
                             }
                             IconButton(onClick = { selectedPlace = null }, modifier = Modifier.size(32.dp)) {
@@ -179,30 +212,34 @@ fun PlacesOverviewMapView(
                             }
                         }
 
+                        if (place.gnvPricePerM3 != null || place.gasolinePricePerGal != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (place.gnvPricePerM3 != null) {
+                                    Text("⛽ GNV: $ %,.0f/m³".format(place.gnvPricePerM3), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = FuelGas)
+                                }
+                                if (place.gasolinePricePerGal != null) {
+                                    Text("⛽ Gasolina: $ %,.0f/Gal".format(place.gasolinePricePerGal), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = FuelGasoline)
+                                }
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "📍 ${place.address}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Text(text = "📍 ${place.address}", style = MaterialTheme.typography.bodySmall, color = TextSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
 
                         Spacer(modifier = Modifier.height(14.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Button(
                                 onClick = { onNavigateWaze(place) },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF33CCFF), contentColor = Color.Black),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.weight(1f).height(44.dp)
+                                shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f).height(44.dp)
                             ) {
                                 Text("🚙 Waze", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }
                             Button(
                                 onClick = { onNavigateMaps(place) },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34A853), contentColor = Color.White),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.weight(1f).height(44.dp)
+                                shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f).height(44.dp)
                             ) {
                                 Text("🗺️ Maps", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             }

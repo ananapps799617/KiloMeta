@@ -54,7 +54,9 @@ class PlacesViewModel @Inject constructor(
         address: String,
         notes: String?,
         latitude: Double? = null,
-        longitude: Double? = null
+        longitude: Double? = null,
+        gnvPricePerM3: Double? = null,
+        gasolinePricePerGal: Double? = null
     ) {
         viewModelScope.launch {
             managePlacesUseCase.savePlace(
@@ -63,7 +65,9 @@ class PlacesViewModel @Inject constructor(
                 address = address,
                 notes = notes,
                 latitude = latitude,
-                longitude = longitude
+                longitude = longitude,
+                gnvPricePerM3 = gnvPricePerM3,
+                gasolinePricePerGal = gasolinePricePerGal
             )
         }
     }

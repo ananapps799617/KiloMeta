@@ -45,6 +45,20 @@ class PlaceRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateStationPrice(
+        placeId: String,
+        fuelType: com.ananapps.kilometa.domain.model.FuelType,
+        newPrice: Double
+    ) {
+        withContext(ioDispatcher) {
+            if (fuelType == com.ananapps.kilometa.domain.model.FuelType.GAS) {
+                placeDao.updateGnvPrice(placeId, newPrice)
+            } else {
+                placeDao.updateGasolinePrice(placeId, newPrice)
+            }
+        }
+    }
+
     private fun PlaceEntity.toDomain(): Place {
         val cat = runCatching { PlaceCategory.valueOf(category) }.getOrDefault(PlaceCategory.OTHER)
         return Place(
@@ -55,6 +69,8 @@ class PlaceRepositoryImpl @Inject constructor(
             latitude = latitude,
             longitude = longitude,
             notes = notes,
+            gnvPricePerM3 = gnvPricePerM3,
+            gasolinePricePerGal = gasolinePricePerGal,
             createdAt = createdAt
         )
     }
@@ -68,6 +84,8 @@ class PlaceRepositoryImpl @Inject constructor(
             latitude = latitude,
             longitude = longitude,
             notes = notes,
+            gnvPricePerM3 = gnvPricePerM3,
+            gasolinePricePerGal = gasolinePricePerGal,
             createdAt = createdAt
         )
     }

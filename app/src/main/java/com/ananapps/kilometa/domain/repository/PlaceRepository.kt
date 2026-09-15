@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/repository/PlaceRepository.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -14,4 +14,5 @@ interface PlaceRepository {
     fun getAllPlaces(): Flow<List<Place>>
     suspend fun savePlace(place: Place)
     suspend fun deletePlace(placeId: String)
+    suspend fun updateStationPrice(placeId: String, fuelType: com.ananapps.kilometa.domain.model.FuelType, newPrice: Double)
 }

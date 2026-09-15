@@ -30,7 +30,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.ananapps.kilometa.domain.model.ExpenseConcept
+import com.ananapps.kilometa.domain.model.Place
+import com.ananapps.kilometa.domain.model.PlaceCategory
 import com.ananapps.kilometa.domain.model.WalletType
+import com.ananapps.kilometa.presentation.common.PlaceSelectorField
 import com.ananapps.kilometa.presentation.theme.*
 
 private val ExpenseRedHeader = Color(0xFFC62828)
@@ -38,6 +41,7 @@ private val ExpenseRedHeader = Color(0xFFC62828)
 @Composable
 fun RegisterExpenseDialog(
     onDismiss: () -> Unit,
+    savedPlaces: List<Place> = emptyList(),
     onConfirmExpense: (concept: ExpenseConcept, amount: Double, paymentSource: WalletType, timestamp: Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -49,10 +53,11 @@ fun RegisterExpenseDialog(
     var newCatName by remember { mutableStateOf("") }
     var paymentSource by remember { mutableStateOf(WalletType.CASH_PHYSICAL) }
     var amountText by remember { mutableStateOf("") }
+    var placeLocationText by remember { mutableStateOf("") }
     var notesText by remember { mutableStateOf("") }
     var showDiscardDialog by remember { mutableStateOf(false) }
 
-    val hasDirtyData = amountText.isNotBlank() || notesText.isNotBlank()
+    val hasDirtyData = amountText.isNotBlank() || notesText.isNotBlank() || placeLocationText.isNotBlank()
     val amountNumeric = amountText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
     val isFormValid = amountNumeric > 0.0
 
@@ -87,17 +92,9 @@ fun RegisterExpenseDialog(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
-                                tint = Color.White
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "💸 Registrar Gasto",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
+                            Text(text = "💸 Registrar Gasto", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = Color.White)
                         }
                         IconButton(onClick = { if (hasDirtyData) showDiscardDialog = true else onDismiss() }) {
                             Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
@@ -165,6 +162,19 @@ fun RegisterExpenseDialog(
                         )
                     }
 
+                    PlaceSelectorField(
+                        label = "Lugar / Establecimiento (Opcional)",
+                        currentValue = placeLocationText,
+                        places = savedPlaces,
+                        categoryFilter = listOf(PlaceCategory.CAR_WASH, PlaceCategory.HOME, PlaceCategory.RESTAURANT, PlaceCategory.OTHER),
+                        onPlaceSelected = { place ->
+                            placeLocationText = place.name
+                            if (notesText.isBlank()) notesText = place.name
+                        },
+                        onValueChanged = { placeLocationText = it },
+                        placeholder = "Ej: Lavadero Express, Parqueadero Calle 72"
+                    )
+
                     OutlinedTextField(
                         value = notesText,
                         onValueChange = { notesText = it },
@@ -180,7 +190,8 @@ fun RegisterExpenseDialog(
                 Button(
                     onClick = {
                         if (isFormValid) {
-                            onConfirmExpense(selectedConcept, amountNumeric, paymentSource, selectedTimestamp)
+                            val resolvedConcept = selectedConcept
+                            onConfirmExpense(resolvedConcept, amountNumeric, paymentSource, selectedTimestamp)
                             onDismiss()
                         }
                     },
