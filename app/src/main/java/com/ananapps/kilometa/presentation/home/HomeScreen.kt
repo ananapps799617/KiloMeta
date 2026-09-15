@@ -92,11 +92,11 @@ fun HomeScreen(
     LaunchedEffect(triggerQuickExpense) { if (triggerQuickExpense) { showExpenseSheet = true; onResetQuickExpenseTrigger() } }
     LaunchedEffect(triggerQuickMaintenance) { if (triggerQuickMaintenance) { showMaintenanceSheet = true; onResetQuickMaintenanceTrigger() } }
 
-    val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val expenseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val maintenanceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val transferSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
+    val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
+    val expenseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
+    val maintenanceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
+    val transferSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
 
     Scaffold(
         containerColor = DeepObsidianBackground

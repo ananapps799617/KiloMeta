@@ -35,7 +35,8 @@ class MaintenanceViewModel @Inject constructor(
     private val registerMaintenanceUseCase: RegisterMaintenanceUseCase,
     private val maintenanceRepository: MaintenanceRepository,
     private val driverProfileRepository: DriverProfileRepository,
-    private val shiftRepository: ShiftRepository
+    private val shiftRepository: ShiftRepository,
+    private val calculateDailyQuotaUseCase: com.ananapps.kilometa.domain.usecase.CalculateDailyQuotaUseCase
 ) : ViewModel() {
 
     private val _currentOdo = MutableStateFlow(100_000)
@@ -48,6 +49,7 @@ class MaintenanceViewModel @Inject constructor(
     ) { dashboard: com.ananapps.kilometa.domain.usecase.MaintenanceDashboardData, profile: com.ananapps.kilometa.domain.model.DriverProfile, activeShift: com.ananapps.kilometa.domain.model.Shift?, manualOdo: Int ->
         val effectiveOdo = activeShift?.startOdometer ?: manualOdo
         val alerts = getVehicleMaintenanceAlertsUseCase(effectiveOdo)
+        val quotaProgress = calculateDailyQuotaUseCase()
 
         MaintenanceUiState(
             isLoading = false,
@@ -55,7 +57,8 @@ class MaintenanceViewModel @Inject constructor(
             alerts = alerts,
             totalInvestmentCop = dashboard.totalInvestmentCop,
             currentOdometer = effectiveOdo,
-            vehiclePlate = profile.vehiclePlate
+            vehiclePlate = profile.vehiclePlate,
+            weeklyQuotaProgress = quotaProgress
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), MaintenanceUiState())
 

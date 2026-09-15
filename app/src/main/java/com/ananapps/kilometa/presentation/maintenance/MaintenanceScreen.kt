@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ananapps.kilometa.presentation.home.components.WeeklyQuotaCard
 import com.ananapps.kilometa.presentation.maintenance.components.MaintenanceAlertsCard
 import com.ananapps.kilometa.presentation.maintenance.components.MaintenanceItemCard
 import com.ananapps.kilometa.presentation.maintenance.components.RegisterMaintenanceSheet
@@ -70,6 +71,11 @@ fun MaintenanceScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Semáforo de Cuota Semanal
+        state.weeklyQuotaProgress?.let { progress ->
+            WeeklyQuotaCard(progress = progress)
+        }
+
         // Tarjeta Resumen de Inversión
         Card(
             modifier = Modifier.fillMaxWidth(),
