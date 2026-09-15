@@ -17,6 +17,7 @@ val DeepObsidianBackground: Color = Color(0xFF0D1117)
 val DeepObsidianSurface: Color = Color(0xFF161B22)
 val DeepObsidianSurfaceVariant: Color = Color(0xFF21262D)
 val ObsidianBorder: Color = Color(0xFF30363D)
+val DeepObsidianBorder: Color = ObsidianBorder
 
 // ------------------------------------------------------------------------------
 // BLOQUE 2: TOKENS DE SEMÁFORO FINANCIERO (ALTO CONTRASTE)

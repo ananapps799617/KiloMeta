@@ -25,7 +25,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -78,25 +77,19 @@ fun HomeScreen(
         }
     }
 
-    var showTripSheet by remember { mutableStateOf(false) }
-    var showFuelingSheet by remember { mutableStateOf(false) }
-    var showExpenseSheet by remember { mutableStateOf(false) }
-    var showMaintenanceSheet by remember { mutableStateOf(false) }
-    var showTransferSheet by remember { mutableStateOf(false) }
+    var showTripDialog by remember { mutableStateOf(false) }
+    var showFuelingDialog by remember { mutableStateOf(false) }
+    var showExpenseDialog by remember { mutableStateOf(false) }
+    var showMaintenanceDialog by remember { mutableStateOf(false) }
+    var showTransferDialog by remember { mutableStateOf(false) }
     var editingTrip by remember { mutableStateOf<Trip?>(null) }
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var editingFueling by remember { mutableStateOf<Fueling?>(null) }
 
-    LaunchedEffect(triggerQuickTrip) { if (triggerQuickTrip) { showTripSheet = true; onResetQuickTripTrigger() } }
-    LaunchedEffect(triggerQuickFueling) { if (triggerQuickFueling) { showFuelingSheet = true; onResetQuickFuelingTrigger() } }
-    LaunchedEffect(triggerQuickExpense) { if (triggerQuickExpense) { showExpenseSheet = true; onResetQuickExpenseTrigger() } }
-    LaunchedEffect(triggerQuickMaintenance) { if (triggerQuickMaintenance) { showMaintenanceSheet = true; onResetQuickMaintenanceTrigger() } }
-
-    val tripSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
-    val fuelSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
-    val expenseSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
-    val maintenanceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
-    val transferSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true, confirmValueChange = { false })
+    LaunchedEffect(triggerQuickTrip) { if (triggerQuickTrip) { showTripDialog = true; onResetQuickTripTrigger() } }
+    LaunchedEffect(triggerQuickFueling) { if (triggerQuickFueling) { showFuelingDialog = true; onResetQuickFuelingTrigger() } }
+    LaunchedEffect(triggerQuickExpense) { if (triggerQuickExpense) { showExpenseDialog = true; onResetQuickExpenseTrigger() } }
+    LaunchedEffect(triggerQuickMaintenance) { if (triggerQuickMaintenance) { showMaintenanceDialog = true; onResetQuickMaintenanceTrigger() } }
 
     Scaffold(
         containerColor = DeepObsidianBackground
@@ -140,7 +133,7 @@ fun HomeScreen(
                         onEditTrip = { editingTrip = it },
                         onEditExpense = { editingExpense = it },
                         onEditFueling = { editingFueling = it },
-                        onTransferClick = { showTransferSheet = true }
+                        onTransferClick = { showTransferDialog = true }
                     )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
@@ -153,25 +146,16 @@ fun HomeScreen(
     HomeCockpitModals(
         viewModel = viewModel,
         uiState = uiState,
-        showTripSheet = showTripSheet,
-        onDismissTripSheet = { showTripSheet = false },
-        tripSheetState = tripSheetState,
-        showFuelingSheet = showFuelingSheet,
-        onDismissFuelingSheet = { showFuelingSheet = false },
-        fuelSheetState = fuelSheetState,
-        showExpenseSheet = showExpenseSheet,
-        onDismissExpenseSheet = { showExpenseSheet = false },
-        expenseSheetState = expenseSheetState,
-        showMaintenanceSheet = showMaintenanceSheet,
-        onDismissMaintenanceSheet = { showMaintenanceSheet = false },
-        maintenanceSheetState = maintenanceSheetState,
-        showTransferSheet = showTransferSheet,
-        onDismissTransferSheet = { showTransferSheet = false },
-        transferSheetState = transferSheetState,
-        showStartShiftDialog = false,
-        onDismissStartShiftDialog = {},
-        showCloseShiftDialog = false,
-        onDismissCloseShiftDialog = {},
+        showTripDialog = showTripDialog,
+        onDismissTripDialog = { showTripDialog = false },
+        showFuelingDialog = showFuelingDialog,
+        onDismissFuelingDialog = { showFuelingDialog = false },
+        showExpenseDialog = showExpenseDialog,
+        onDismissExpenseDialog = { showExpenseDialog = false },
+        showMaintenanceDialog = showMaintenanceDialog,
+        onDismissMaintenanceDialog = { showMaintenanceDialog = false },
+        showTransferDialog = showTransferDialog,
+        onDismissTransferDialog = { showTransferDialog = false },
         lastKnownOdometer = lastKnownOdometer
     )
 

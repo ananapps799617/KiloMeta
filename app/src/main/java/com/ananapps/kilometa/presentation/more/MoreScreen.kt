@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.BuildConfig
-import com.ananapps.kilometa.presentation.common.AppUpdateBottomSheet
+import com.ananapps.kilometa.presentation.common.AppUpdateDialog
 import com.ananapps.kilometa.presentation.theme.*
 
 // ------------------------------------------------------------------------------
@@ -152,7 +152,7 @@ fun MoreScreen(
     }
 
     if (updateState is UpdateCheckUiState.Available) {
-        AppUpdateBottomSheet(
+        AppUpdateDialog(
             updateInfo = (updateState as UpdateCheckUiState.Available).info,
             onDismiss = { viewModel.dismissUpdate() }
         )
