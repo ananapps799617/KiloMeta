@@ -2,9 +2,11 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/ContinuousTimelineCockpitView.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Vista principal continua de cabina inspirada en KiloMeta.
-// Erradica el estado bloqueante de "Cabina en Espera" y mantiene la pantalla
-// 100% viva mostrando el odómetro real del vehículo, el hero del día y las actividades.
+// Vista principal continua de cabina inspirada en KiloMeta (Orden #038).
+// Descongestiona radicalmente la pantalla Ruta manteniendo únicamente:
+// 1. Encabezado de vehículo y odómetro real.
+// 2. Tarjeta maestra unificada DayHeroCard (neto, meta diaria, rendimiento, 4 bolsillos).
+// 3. Feed de actividades sobre la pista de asfalto continua Drivvo.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -32,9 +34,9 @@ fun ContinuousTimelineCockpitView(
     vehicle: VehicleProfile,
     lastKnownOdometer: Int,
     timelineSummary: DayContinuousSummary,
-    weeklyProgress: WeeklyQuotaProgress?,
-    auditSummary: AccountingAuditSummary?,
-    cashSettlement: CashSettlementSummary?,
+    cashSettlement: CashSettlementSummary? = null,
+    weeklyProgress: WeeklyQuotaProgress? = null,
+    auditSummary: AccountingAuditSummary? = null,
     onDeleteTrip: (String) -> Unit = {},
     onDeleteExpense: (String) -> Unit = {},
     onDeleteFueling: (String) -> Unit = {},
@@ -46,6 +48,8 @@ fun ContinuousTimelineCockpitView(
     onTransferClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val effectiveSettlement = cashSettlement ?: timelineSummary.cashSettlement
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -53,7 +57,7 @@ fun ContinuousTimelineCockpitView(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Encabezado Compacto de Vehículo Activo & Odómetro Real (Benchmark KiloMeta)
+        // 1. Encabezado Compacto de Vehículo Activo & Odómetro Real (Benchmark KiloMeta)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -105,10 +109,15 @@ fun ContinuousTimelineCockpitView(
             }
         }
 
-        // Hero Card Financiero del Día (Jornada Automática 24/7)
-        DayHeroCard(summary = timelineSummary)
+        // 2. Tarjeta Hero Maestra Unificada (Meta Diaria, Rendimiento y 4 Bolsillos)
+        DayHeroCard(
+            summary = timelineSummary,
+            vehicle = vehicle,
+            cashSettlement = effectiveSettlement,
+            onTransferClick = onTransferClick
+        )
 
-        // Feed de Actividades del Día en Ruta
+        // 3. Feed de Actividades de Hoy sobre la Pista de Asfalto Continua
         DayActivityFeedCard(
             events = timelineSummary.events,
             onDeleteTrip = onDeleteTrip,
@@ -120,18 +129,6 @@ fun ContinuousTimelineCockpitView(
             onEditExpense = onEditExpense,
             onEditFueling = onEditFueling
         )
-
-        // Liquidación de Efectivo en Mano vs Plataformas (Continua 24/7)
-        val effectiveSettlement = cashSettlement ?: timelineSummary.cashSettlement
-        effectiveSettlement?.let { CockpitCashSettlementCard(settlement = it, onTransferClick = onTransferClick) }
-
-
-        // Auditoría Semanal o Progreso de Cuota
-        if (auditSummary != null) {
-            AdvancedAccountingCard(auditSummary = auditSummary)
-        } else if (weeklyProgress != null) {
-            WeeklyQuotaCard(progress = weeklyProgress)
-        }
 
         Spacer(modifier = Modifier.height(72.dp))
     }

@@ -2,9 +2,13 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayHeroCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Tarjeta de cabecera financiera para el Timeline Continuo estilo KiloMeta.
-// Muestra el neto en mano de hoy, producido bruto, combustible y gastos,
-// junto con el indicador dinámico de la jornada (horas y km recorridos).
+// Tarjeta maestra unificada de cabecera financiera para el Timeline Continuo (Orden #038).
+// Consolida en una sola tarjeta:
+// 1. Ganancia neta libre en bolsillo hoy (34sp).
+// 2. Termómetro de meta diaria prorrateada con indicador de "Turno Libre".
+// 3. Métricas de rendimiento reactivo ($/km y $/hora).
+// 4. Subtotales de operación (Producido, Combustible, Gastos Ruta).
+// 5. Matriz compacta 2x2 de los 4 Bolsillos Soberanos con botón [ ⇄ Transferir ].
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -17,18 +21,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.domain.model.DayContinuousSummary
+import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.presentation.theme.*
 import java.util.Locale
 
 @Composable
 fun DayHeroCard(
     summary: DayContinuousSummary,
+    vehicle: VehicleProfile,
+    cashSettlement: CashSettlementSummary?,
+    onTransferClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -39,8 +47,8 @@ fun DayHeroCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Fila de Encabezado con Indicador de Estado de Cabina
             Row(
@@ -71,7 +79,7 @@ fun DayHeroCard(
                 }
             }
 
-            // Métrica Principal: Neto Libre en Bolsillo
+            // Métrica Principal: Neto Libre en Bolsillo (34sp)
             Text(
                 text = "$ ${String.format(Locale.US, "%,.0f", summary.pocketNet)}",
                 fontSize = 34.sp,
@@ -80,38 +88,24 @@ fun DayHeroCard(
                 color = if (summary.pocketNet >= 0) StatusGreen else StatusRed
             )
 
-            // Fila de Jornada Dinámica
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(DeepObsidianSurfaceVariant)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "⏱️ Actividad de Hoy",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = ElectricBluePrimary
-                    )
-                    Text(
-                        text = "${summary.elapsedHoursFormatted} · ${summary.distanceTraversedKm} km",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        color = TextPrimary
-                    )
-                }
-            }
+            // Bloque 1: Termómetro de Meta Diaria Prorrateada (Orden #038)
+            HeroDailyQuotaThermometer(
+                pocketNet = summary.pocketNet,
+                vehicle = vehicle
+            )
+
+            // Bloque 2: Telemetría de Rendimiento en Vivo ($/km y $/h)
+            HeroPerformanceMetricsRow(
+                pocketNet = summary.pocketNet,
+                distanceKm = summary.distanceTraversedKm,
+                elapsedHoursFormatted = summary.elapsedHoursFormatted,
+                firstTimestamp = summary.firstEventTimestamp,
+                lastTimestamp = summary.lastEventTimestamp
+            )
 
             HorizontalDivider(color = DeepObsidianSurfaceVariant, thickness = 1.dp)
 
-            // Sub-métricas: Producido, Combustible, Gastos
+            // Bloque 3: Sub-métricas de Operación (Producido, Combustible, Gastos Ruta)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -141,6 +135,14 @@ fun DayHeroCard(
                     )
                 }
             }
+
+            HorizontalDivider(color = DeepObsidianSurfaceVariant, thickness = 1.dp)
+
+            // Bloque 4: Matriz Compacta de los 4 Bolsillos Soberanos con botón [ ⇄ Transferir ]
+            HeroFourPocketsGrid(
+                cashSettlement = cashSettlement ?: summary.cashSettlement,
+                onTransferClick = onTransferClick
+            )
         }
     }
 }
