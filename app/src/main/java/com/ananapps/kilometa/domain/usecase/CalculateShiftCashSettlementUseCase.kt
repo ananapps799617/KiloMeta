@@ -74,6 +74,7 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
 
         val expenseCash = expenses.filter { it.paymentSource == WalletType.CASH_PHYSICAL }.sumOf { it.amount }
         val expenseDigital = expenses.filter { it.paymentSource == WalletType.DIGITAL_WALLET }.sumOf { it.amount }
+        val expenseCarQuota = expenses.filter { it.paymentSource == WalletType.CAR_QUOTA }.sumOf { it.amount }
 
         // Transferencias inter-bolsillos (entradas y salidas por cada cartera)
         fun netTransfersFor(wallet: WalletType): Double {
@@ -91,7 +92,9 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         val didiBase = (platformMap[PlatformType.DIDI]?.let { it.digitalGross - it.digitalCommission - it.cashCommissionOwed } ?: 0.0)
         val didiWalletBalance = didiBase + netTransfersFor(WalletType.DIDI)
 
-        val totalNetAssets = cashPhysicalBalance + digitalWalletBalance + uberWalletBalance + didiWalletBalance
+        val carQuotaWalletBalance = netTransfersFor(WalletType.CAR_QUOTA) - expenseCarQuota
+
+        val totalNetAssets = cashPhysicalBalance + digitalWalletBalance + uberWalletBalance + didiWalletBalance + carQuotaWalletBalance
 
         val totalGross = cashPhysicalGross + digitalWalletGross + digitalGross
         val totalNet = totalGross - totalCommission
@@ -111,6 +114,7 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
             digitalWalletBalance = digitalWalletBalance,
             uberWalletBalance = uberWalletBalance,
             didiWalletBalance = didiWalletBalance,
+            carQuotaWalletBalance = carQuotaWalletBalance,
             totalNetAssets = totalNetAssets,
             cashInHandGross = cashPhysicalGross,
             digitalBalanceGross = digitalGross + digitalWalletGross,

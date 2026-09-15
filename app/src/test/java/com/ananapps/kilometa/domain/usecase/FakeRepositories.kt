@@ -132,3 +132,24 @@ class FakeWalletTransferRepository : WalletTransferRepository {
     override suspend fun insertTransfer(transfer: WalletTransfer) { savedTransfers.add(transfer) }
     override suspend fun deleteTransfer(id: String) { savedTransfers.removeAll { it.id == id } }
 }
+
+// ------------------------------------------------------------------------------
+// BLOQUE 6: FAKE DE REPOSITORIO DE PERFIL DE CONDUCTOR Y VEHÍCULO
+// ------------------------------------------------------------------------------
+class FakeDriverProfileRepository : com.ananapps.kilometa.domain.repository.DriverProfileRepository {
+    var currentDriver = com.ananapps.kilometa.domain.model.DriverProfile()
+    var currentVehicle = com.ananapps.kilometa.domain.model.VehicleProfile()
+
+    override fun getProfile(): Flow<com.ananapps.kilometa.domain.model.DriverProfile> = flowOf(currentDriver)
+    override suspend fun saveProfile(profile: com.ananapps.kilometa.domain.model.DriverProfile) { currentDriver = profile }
+    override fun getVehicleProfile(): Flow<com.ananapps.kilometa.domain.model.VehicleProfile> = flowOf(currentVehicle)
+    override suspend fun saveVehicleProfile(vehicle: com.ananapps.kilometa.domain.model.VehicleProfile) { currentVehicle = vehicle }
+    override suspend fun saveFullProfile(driver: com.ananapps.kilometa.domain.model.DriverProfile, vehicle: com.ananapps.kilometa.domain.model.VehicleProfile) {
+        currentDriver = driver
+        currentVehicle = vehicle
+    }
+    override suspend fun resetProfileForTesting() {}
+    override suspend fun clearProfile() {}
+    override suspend fun fetchAndHydrateRemoteProfile(userId: String): Result<Boolean> = Result.success(true)
+}
+

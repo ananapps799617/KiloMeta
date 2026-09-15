@@ -50,7 +50,7 @@ fun CockpitWalletsCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "💼 TUS 4 BOLSILLOS SOBERANOS",
+                    text = "💼 TUS 5 BOLSILLOS SOBERANOS",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = ElectricBluePrimary
                 )
@@ -65,7 +65,57 @@ fun CockpitWalletsCard(
                 )
             }
 
-            // Cuadrícula 2x2 Espaciosa
+            // Bolsillo 5: Cuota Carro (Apartado Semanal Sagrado)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(DeepObsidianSurfaceVariant)
+                    .border(1.dp, ElectricBluePrimary.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(text = "🚘", fontSize = 18.sp)
+                        Column {
+                            Text(
+                                text = "Cuota Carro (Apartado)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = "$ ${String.format(Locale.US, "%,.0f", effective.carQuotaWalletBalance)}",
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = if (effective.carQuotaWalletBalance >= 0) ElectricBluePrimary else StatusRed
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(ElectricBluePrimary.copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "Semanal",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = ElectricBluePrimary
+                        )
+                    }
+                }
+            }
+
+            // Cuadrícula 2x2 para Efectivo, Digital, Uber y DiDi
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)

@@ -20,14 +20,16 @@ enum class WalletType(val displayName: String) {
     CASH_PHYSICAL("Efectivo en Mano"),
     DIGITAL_WALLET("Nequi / Daviplata"),
     UBER("Billetera Uber"),
-    DIDI("Billetera DiDi")
+    DIDI("Billetera DiDi"),
+    CAR_QUOTA("Cuota Carro")
 }
 
 enum class TransferType(val displayName: String) {
     PLATFORM_PAYOUT("Dispersión / Cobro de App"),
     CASH_DEPOSIT("Consignación Efectivo a Digital"),
     CASH_WITHDRAWAL("Retiro de Digital a Efectivo"),
-    COMMISSION_PAYMENT("Pago de Comisión a App")
+    COMMISSION_PAYMENT("Pago de Comisión a App"),
+    QUOTA_PROVISION("Abono Cuota Carro")
 }
 
 // ------------------------------------------------------------------------------
@@ -78,6 +80,7 @@ data class CashSettlementSummary(
     val digitalWalletBalance: Double = 0.0, // Bolsillo 2: Nequi / Daviplata / Banco
     val uberWalletBalance: Double = 0.0,    // Bolsillo 3: Saldo neto Uber
     val didiWalletBalance: Double = 0.0,    // Bolsillo 4: Saldo neto DiDi
+    val carQuotaWalletBalance: Double = 0.0, // Bolsillo 5: Cuota Carro acumulada
     val totalNetAssets: Double = 0.0,       // Patrimonio neto total líquido
     val cashInHandGross: Double = 0.0,
     val digitalBalanceGross: Double = 0.0,

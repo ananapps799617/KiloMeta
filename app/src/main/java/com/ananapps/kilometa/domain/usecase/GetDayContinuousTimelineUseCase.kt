@@ -16,13 +16,16 @@ import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.MaintenanceRecord
 import com.ananapps.kilometa.domain.model.Trip
+import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.WalletTransfer
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.ExpenseRepository
 import com.ananapps.kilometa.domain.repository.MaintenanceRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.repository.WalletTransferRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import java.time.DayOfWeek
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -34,7 +37,9 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
     private val expenseRepository: ExpenseRepository,
     private val walletTransferRepository: WalletTransferRepository,
     private val maintenanceRepository: MaintenanceRepository,
-    private val calculateShiftCashSettlementUseCase: CalculateShiftCashSettlementUseCase
+    private val calculateShiftCashSettlementUseCase: CalculateShiftCashSettlementUseCase,
+    private val driverProfileRepository: DriverProfileRepository,
+    private val calculateWeeklyCycleBoundsUseCase: CalculateWeeklyCycleBoundsUseCase
 ) {
 
     @Suppress("UNCHECKED_CAST")
@@ -45,7 +50,8 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             expenseRepository.getAllExpenses(),
             shiftRepository.getLastKnownOdometer(),
             walletTransferRepository.getAllTransfers(),
-            maintenanceRepository.getAllMaintenances()
+            maintenanceRepository.getAllMaintenances(),
+            driverProfileRepository.getVehicleProfile()
         ) { args: Array<Any?> ->
             val allTrips = args[0] as List<Trip>
             val allFuelings = args[1] as List<Fueling>
@@ -53,6 +59,7 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             val lastOdo = args[3] as? Int
             val allTransfers = args[4] as List<WalletTransfer>
             val allMaintenances = args[5] as List<MaintenanceRecord>
+            val vehicle = args[6] as VehicleProfile
 
             val calendar = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -122,7 +129,34 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             }
             val distanceKm = maxOf(odoDistanceKm, sumTripKm)
 
-            val cashSettlement = calculateShiftCashSettlementUseCase(todayTrips, todayFuelings, todayExpenses, todayTransfers)
+            val cutoffDay = when (vehicle.quotaCutoffDay) {
+                1 -> DayOfWeek.MONDAY
+                2 -> DayOfWeek.TUESDAY
+                3 -> DayOfWeek.WEDNESDAY
+                4 -> DayOfWeek.THURSDAY
+                5 -> DayOfWeek.FRIDAY
+                6 -> DayOfWeek.SATURDAY
+                7 -> DayOfWeek.SUNDAY
+                else -> DayOfWeek.TUESDAY
+            }
+
+            val (cycleStartMillis, cycleEndMillis) = calculateWeeklyCycleBoundsUseCase(
+                cutoffDay = cutoffDay,
+                cutoffHour = vehicle.quotaCutoffHour
+            )
+
+            // Bolsillos Semanales Soberanos: acumulan todas las transacciones del ciclo en curso
+            val cycleTrips = allTrips.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
+            val cycleFuelings = allFuelings.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
+            val cycleExpenses = allExpenses.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
+            val cycleTransfers = allTransfers.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
+
+            val cashSettlement = calculateShiftCashSettlementUseCase(
+                cycleTrips,
+                cycleFuelings,
+                cycleExpenses,
+                cycleTransfers
+            )
 
             DayContinuousSummary(
                 totalNetIncome = totalNetIncome,

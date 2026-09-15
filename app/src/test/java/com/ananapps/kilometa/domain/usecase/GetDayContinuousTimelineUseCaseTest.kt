@@ -22,6 +22,7 @@ class GetDayContinuousTimelineUseCaseTest {
     private lateinit var fakeExpenseRepository: FakeExpenseRepository
     private lateinit var fakeWalletTransferRepository: FakeWalletTransferRepository
     private lateinit var fakeMaintenanceRepository: FakeMaintenanceRepository
+    private lateinit var fakeDriverProfileRepository: FakeDriverProfileRepository
     private lateinit var useCase: GetDayContinuousTimelineUseCase
 
     @Before
@@ -30,12 +31,15 @@ class GetDayContinuousTimelineUseCaseTest {
         fakeExpenseRepository = FakeExpenseRepository()
         fakeWalletTransferRepository = FakeWalletTransferRepository()
         fakeMaintenanceRepository = FakeMaintenanceRepository()
+        fakeDriverProfileRepository = FakeDriverProfileRepository()
         useCase = GetDayContinuousTimelineUseCase(
             fakeShiftRepository,
             fakeExpenseRepository,
             fakeWalletTransferRepository,
             fakeMaintenanceRepository,
-            CalculateShiftCashSettlementUseCase()
+            CalculateShiftCashSettlementUseCase(),
+            fakeDriverProfileRepository,
+            CalculateWeeklyCycleBoundsUseCase()
         )
     }
 
