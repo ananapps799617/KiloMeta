@@ -13,7 +13,7 @@ package com.ananapps.kilometa.domain.model
 // ------------------------------------------------------------------------------
 data class VehicleProfile(
     val id: String = "primary_vehicle",
-    val vehicleType: VehicleType = VehicleType.CAR,
+    val vehicleType: VehicleType = VehicleType.PARTICULAR,
     val vehiclePlate: String = "WMB-789",
     val brand: String = "Chevrolet",
     val model: String = "Joy",

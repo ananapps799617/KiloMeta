@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,12 +100,16 @@ fun VehicleQuotaSection(
             }
         }
 
-        // Monto de cuota
+        // Monto de cuota con formato de miles
+        val formattedQuota = remember(quotaAmount) {
+            if (quotaAmount > 0) "%,d".format(quotaAmount.toLong()).replace(',', '.') else ""
+        }
         OutlinedTextField(
-            value = quotaAmount.toInt().toString(),
+            value = formattedQuota,
             onValueChange = { onQuotaAmountChange(it.filter { ch -> ch.isDigit() }.toDoubleOrNull() ?: 0.0) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             leadingIcon = { Text("$", color = ElectricBluePrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+            trailingIcon = { Text("COP", color = TextSecondary, modifier = Modifier.padding(end = 12.dp)) },
             label = { Text("Monto de Cuota (${quotaPeriodicity.displayName})") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -137,9 +142,9 @@ fun VehicleQuotaSection(
             }
         }
 
-        // Bloque Condicional de Corte (Obligatorio en Alquilado)
+        // Bloque Permanente de Corte Semanal (Calibrable para cualquier meta semanal)
         AnimatedVisibility(
-            visible = isRented,
+            visible = quotaPeriodicity == QuotaPeriodicity.WEEKLY,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
@@ -152,9 +157,9 @@ fun VehicleQuotaSection(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "📅 Día de Entrega / Pago de Cuota",
+                    text = "📅 Día de Entrega / Corte Semanal",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = StatusAmber
+                    color = ElectricBluePrimary
                 )
 
                 // Selector de Día de Pago: 1 (Lunes) a 7 (Domingo)
@@ -169,8 +174,8 @@ fun VehicleQuotaSection(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (isSelected) StatusAmber else DeepObsidianBackground)
-                                .border(1.dp, if (isSelected) StatusAmber else ObsidianBorder, RoundedCornerShape(10.dp))
+                                .background(if (isSelected) ElectricBluePrimary else DeepObsidianBackground)
+                                .border(1.dp, if (isSelected) ElectricBluePrimary else ObsidianBorder, RoundedCornerShape(10.dp))
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onQuotaCutoffDayChange(dayNum)
@@ -186,14 +191,13 @@ fun VehicleQuotaSection(
                     }
                 }
 
-                // Selector de Hora Límite de Pago (Gremial)
+                // Selector de Hora Límite de Pago
                 Text(
-                    text = "⏰ Hora Límite de Pago: ${formatHourString(quotaCutoffHour)}",
+                    text = "⏰ Hora Límite de Corte: ${formatHourString(quotaCutoffHour)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary
                 )
 
-                // Selector de Hora Límite en Grilla Ergonómica 3x2 (Touch Target 48dp, cero saltos de línea)
                 val hourRows = listOf(
                     listOf(6 to "06:00", 14 to "14:00", 18 to "18:00"),
                     listOf(20 to "20:00", 22 to "22:00", 23 to "23:59")
@@ -215,12 +219,8 @@ fun VehicleQuotaSection(
                                         .weight(1f)
                                         .height(48.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isSelected) StatusGreen else DeepObsidianBackground)
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) StatusGreen else ObsidianBorder,
-                                            RoundedCornerShape(10.dp)
-                                        )
+                                        .background(if (isSelected) ElectricBluePrimary else DeepObsidianBackground)
+                                        .border(1.dp, if (isSelected) ElectricBluePrimary else ObsidianBorder, RoundedCornerShape(10.dp))
                                         .clickable {
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             onQuotaCutoffHourChange(h)
@@ -240,7 +240,6 @@ fun VehicleQuotaSection(
                     }
                 }
 
-                // Banner pedagógico resumen
                 val dayName = when (quotaCutoffDay) {
                     1 -> "LUNES"; 2 -> "MARTES"; 3 -> "MIÉRCOLES"; 4 -> "JUEVES"
                     5 -> "VIERNES"; 6 -> "SÁBADO"; else -> "DOMINGO"
@@ -248,7 +247,7 @@ fun VehicleQuotaSection(
                 Text(
                     text = "🔔 Tu cuota vencerá todos los $dayName a las ${formatHourString(quotaCutoffHour)}",
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = StatusAmber
+                    color = ElectricBluePrimary
                 )
             }
         }

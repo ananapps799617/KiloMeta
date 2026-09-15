@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/RegisterFuelingDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -40,9 +40,10 @@ fun RegisterFuelingDialog(
     currentOdometer: Int,
     onDismiss: () -> Unit,
     propulsionType: PropulsionType = PropulsionType.BI_FUEL,
-    onConfirmFueling: (fuelType: FuelType, amountPaid: Double, volume: Double, odometer: Int, paymentSource: WalletType) -> Unit,
+    onConfirmFueling: (fuelType: FuelType, amountPaid: Double, volume: Double, odometer: Int, paymentSource: WalletType, timestamp: Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     val availableFuels = remember(propulsionType) {
         when (propulsionType) {
             PropulsionType.ELECTRIC_100 -> listOf(FuelType.ELECTRICITY)
@@ -129,6 +130,12 @@ fun RegisterFuelingDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    DateTimePickerRow(
+                        selectedDateTimeMillis = selectedTimestamp,
+                        onDateTimeSelected = { selectedTimestamp = it },
+                        accentColor = FuelOrangeHeader
+                    )
+
                     if (availableFuels.size > 1) {
                         Text(text = "Tipo de Combustible", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -216,7 +223,7 @@ fun RegisterFuelingDialog(
                 Button(
                     onClick = {
                         if (isFormValid) {
-                            onConfirmFueling(selectedFuelType, finalAmount, finalVolume, finalOdometer, paymentSource)
+                            onConfirmFueling(selectedFuelType, finalAmount, finalVolume, finalOdometer, paymentSource, selectedTimestamp)
                             onDismiss()
                         }
                     },

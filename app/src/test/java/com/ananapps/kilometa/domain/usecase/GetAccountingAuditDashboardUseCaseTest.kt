@@ -73,7 +73,7 @@ private class TestSyncRepository : SyncRepository {
     override suspend fun pullRemoteChanges(): Result<Unit> = Result.success(Unit)
     override fun fullDisasterRecovery(): Flow<RestoreProgress> = emptyFlow()
     override suspend fun checkCloudConnection(): ConnectionDiagnostic = ConnectionDiagnostic(isConnected = true, latencyMs = 50L, message = "OK")
-    override suspend fun clearAllLocalData(): Result<Unit> = Result.success(Unit)
+    override suspend fun clearAllLocalData(): Result<Unit> = Result.success(Unit); override suspend fun purgeAllUserData(): Result<Unit> = Result.success(Unit)
 }
 
 private class TestDriverProfileRepository : DriverProfileRepository {

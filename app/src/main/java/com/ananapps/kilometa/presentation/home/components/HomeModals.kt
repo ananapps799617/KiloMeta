@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/HomeModals.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -84,8 +84,8 @@ fun HomeCockpitModals(
             currentOdometer = resolvedOdo,
             onDismiss = onDismissFuelingDialog,
             propulsionType = profile.propulsionType,
-            onConfirmFueling = { fuelType, amount, volume, odo, paymentSource ->
-                viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic, paymentSource = paymentSource)
+            onConfirmFueling = { fuelType, amount, volume, odo, paymentSource, timestamp ->
+                viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic, paymentSource = paymentSource, timestamp = timestamp)
             }
         )
     }
@@ -93,8 +93,8 @@ fun HomeCockpitModals(
     if (showExpenseDialog) {
         RegisterExpenseDialog(
             onDismiss = onDismissExpenseDialog,
-            onConfirmExpense = { concept, amount, paymentSource ->
-                viewModel.registerExpense(concept, amount, isSporadic = isSporadic, paymentSource = paymentSource)
+            onConfirmExpense = { concept, amount, paymentSource, timestamp ->
+                viewModel.registerExpense(concept, amount, isSporadic = isSporadic, paymentSource = paymentSource, timestamp = timestamp)
             }
         )
     }

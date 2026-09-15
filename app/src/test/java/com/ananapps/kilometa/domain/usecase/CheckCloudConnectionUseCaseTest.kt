@@ -55,6 +55,7 @@ class CheckCloudConnectionUseCaseTest {
         override suspend fun pushPendingChanges(): Result<Unit> = Result.success(Unit)
         override suspend fun pullRemoteChanges(): Result<Unit> = Result.success(Unit)
         override fun fullDisasterRecovery(): Flow<RestoreProgress> = MutableStateFlow(RestoreProgress.Completed(0, 0, 0, 0))
+        override suspend fun purgeAllUserData(): Result<Unit> = Result.success(Unit)
 
         override suspend fun checkCloudConnection(): ConnectionDiagnostic {
             checkConnectionCallCount++

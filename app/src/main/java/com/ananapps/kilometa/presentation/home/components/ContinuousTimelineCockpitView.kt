@@ -73,7 +73,7 @@ fun ContinuousTimelineCockpitView(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = if (vehicle.vehicleType == VehicleType.MOTORCYCLE) "🏍️" else "🚗",
+                    text = vehicle.vehicleType.icon,
                     fontSize = 18.sp
                 )
                 Column {

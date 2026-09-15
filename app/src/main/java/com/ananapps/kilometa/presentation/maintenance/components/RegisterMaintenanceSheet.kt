@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.MaintenanceType
+import com.ananapps.kilometa.presentation.home.components.DateTimePickerRow
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
@@ -52,8 +53,9 @@ fun RegisterMaintenanceSheet(
     currentOdometer: Int,
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onConfirm: (type: MaintenanceType, odo: Int, cost: Double, notes: String?, nextOdo: Int?) -> Unit
+    onConfirm: (type: MaintenanceType, odo: Int, cost: Double, notes: String?, nextOdo: Int?, timestamp: Long) -> Unit
 ) {
+    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     var selectedType by remember { mutableStateOf(MaintenanceType.OIL_CHANGE) }
     var odoText by remember { mutableStateOf(currentOdometer.toString()) }
     var costText by remember { mutableStateOf("120000") }
@@ -80,6 +82,12 @@ fun RegisterMaintenanceSheet(
                 text = "REGISTRAR MANTENIMIENTO",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = ElectricBluePrimary
+            )
+
+            DateTimePickerRow(
+                selectedDateTimeMillis = selectedTimestamp,
+                onDateTimeSelected = { selectedTimestamp = it },
+                accentColor = ElectricBluePrimary
             )
 
             // Selector horizontal de tipo de mantenimiento
@@ -144,7 +152,7 @@ fun RegisterMaintenanceSheet(
             Button(
                 onClick = {
                     if (costNumeric >= 0.0 && odoNumeric >= 0) {
-                        onConfirm(selectedType, odoNumeric, costNumeric, notesText.ifBlank { null }, calculatedNextOdo)
+                        onConfirm(selectedType, odoNumeric, costNumeric, notesText.ifBlank { null }, calculatedNextOdo, selectedTimestamp)
                         onDismiss()
                     }
                 },

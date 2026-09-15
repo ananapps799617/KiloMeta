@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/RegisterMaintenanceDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -34,9 +34,6 @@ import com.ananapps.kilometa.domain.model.MaintenanceType
 import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.WalletType
 import com.ananapps.kilometa.presentation.theme.*
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 private val DrivvoBrown = Color(0xFF8D6E63)
 
@@ -72,7 +69,7 @@ fun RegisterMaintenanceDialog(
     val odoNumeric = odoText.filter { it.isDigit() }.toIntOrNull() ?: lastKnownOdometer
     val costNumeric = costText.filter { it.isDigit() }.toDoubleOrNull() ?: 0.0
     val isFormValid = costNumeric > 0.0 && odoNumeric > 0
-    val nowFormatted = remember { SimpleDateFormat("dd/MM/yyyy · hh:mm a", Locale.getDefault()).format(Date()) }
+    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
 
     Dialog(
         onDismissRequest = { if (hasDirtyData) showDiscardDialog = true else onDismiss() },
@@ -143,12 +140,18 @@ fun RegisterMaintenanceDialog(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(text = "${vehicleProfile.model} (${vehicleProfile.vehiclePlate})", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                                    Text(text = nowFormatted, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                    Text(text = "Mantenimiento preventivo", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                                 }
                             }
                             Text(text = "Km %,d".format(lastKnownOdometer), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold), color = StatusGreen)
                         }
                     }
+
+                    DateTimePickerRow(
+                        selectedDateTimeMillis = selectedTimestamp,
+                        onDateTimeSelected = { selectedTimestamp = it },
+                        accentColor = DrivvoBrown
+                    )
 
                     Text(text = "Tipo de Servicio", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                     MaintenanceTypeSelector(
@@ -238,7 +241,7 @@ fun RegisterMaintenanceDialog(
                                 paymentSource,
                                 serviceTitle.ifBlank { selectedType.displayName },
                                 locationText.ifBlank { null },
-                                System.currentTimeMillis()
+                                selectedTimestamp
                             )
                             onDismiss()
                         }
@@ -246,10 +249,7 @@ fun RegisterMaintenanceDialog(
                     enabled = isFormValid,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DrivvoBrown,
-                        disabledContainerColor = DrivvoBrown.copy(alpha = 0.3f)
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = DrivvoBrown, disabledContainerColor = DrivvoBrown.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = if (costNumeric > 0.0) "GUARDAR SERVICIO (- $ %,.0f)".format(costNumeric) else "GUARDAR SERVICIO",
@@ -266,10 +266,7 @@ fun RegisterMaintenanceDialog(
         DiscardChangesDialog(
             title = "¿Descartar Servicio?",
             message = "Tienes datos digitados sin guardar. ¿Deseas salir y perder los cambios?",
-            onConfirmDiscard = {
-                showDiscardDialog = false
-                onDismiss()
-            },
+            onConfirmDiscard = { showDiscardDialog = false; onDismiss() },
             onDismissRequest = { showDiscardDialog = false }
         )
     }

@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/RegisterExpenseDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -38,9 +38,10 @@ private val ExpenseRedHeader = Color(0xFFC62828)
 @Composable
 fun RegisterExpenseDialog(
     onDismiss: () -> Unit,
-    onConfirmExpense: (concept: ExpenseConcept, amount: Double, paymentSource: WalletType) -> Unit,
+    onConfirmExpense: (concept: ExpenseConcept, amount: Double, paymentSource: WalletType, timestamp: Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     var selectedConcept by remember { mutableStateOf(ExpenseConcept.RENT) }
     var selectedCustomName by remember { mutableStateOf<String?>(null) }
     var customCategories by remember { mutableStateOf(listOf<Pair<String, String>>()) }
@@ -113,6 +114,12 @@ fun RegisterExpenseDialog(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    DateTimePickerRow(
+                        selectedDateTimeMillis = selectedTimestamp,
+                        onDateTimeSelected = { selectedTimestamp = it },
+                        accentColor = ExpenseRedHeader
+                    )
+
                     OutlinedTextField(
                         value = amountText,
                         onValueChange = { amountText = it.filter { ch -> ch.isDigit() } },
@@ -173,7 +180,7 @@ fun RegisterExpenseDialog(
                 Button(
                     onClick = {
                         if (isFormValid) {
-                            onConfirmExpense(selectedConcept, amountNumeric, paymentSource)
+                            onConfirmExpense(selectedConcept, amountNumeric, paymentSource, selectedTimestamp)
                             onDismiss()
                         }
                     },

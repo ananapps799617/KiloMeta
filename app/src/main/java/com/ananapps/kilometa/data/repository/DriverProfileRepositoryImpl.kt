@@ -18,6 +18,7 @@ import com.ananapps.kilometa.domain.model.PropulsionType
 import com.ananapps.kilometa.domain.model.QuotaPeriodicity
 import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.model.VehicleTenure
+import com.ananapps.kilometa.domain.model.VehicleType
 import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,8 +42,9 @@ class DriverProfileRepositoryImpl @Inject constructor(
         private const val KEY_DRIVER_ID = "driver_id"; private const val KEY_DRIVER_NAME = "driver_name"
         private const val KEY_EMAIL = "driver_email"; private const val KEY_PHONE = "driver_phone"
         private const val KEY_GENDER = "driver_gender"; private const val KEY_ACTIVE_VEHICLE_ID = "active_vehicle_id"
-        private const val KEY_VEHICLE_PLATE = "vehicle_plate"; private const val KEY_BRAND = "vehicle_brand"
-        private const val KEY_MODEL = "vehicle_model"; private const val KEY_PROPULSION_TYPE = "propulsion_type"
+        private const val KEY_VEHICLE_TYPE = "vehicle_type"; private const val KEY_VEHICLE_PLATE = "vehicle_plate"
+        private const val KEY_BRAND = "vehicle_brand"; private const val KEY_MODEL = "vehicle_model"
+        private const val KEY_PROPULSION_TYPE = "propulsion_type"
         private const val KEY_TENURE_TYPE = "tenure_type"; private const val KEY_QUOTA_PERIODICITY = "quota_periodicity"
         private const val KEY_QUOTA_AMOUNT = "quota_amount"; private const val KEY_WORK_DAYS_WEEK = "work_days_week"
         private const val KEY_CUTOFF_DAY = "quota_cutoff_day"; private const val KEY_CUTOFF_HOUR = "quota_cutoff_hour"
@@ -84,6 +86,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
         val updated = vehicle.copy(updatedAt = System.currentTimeMillis())
         prefs.edit().apply {
             putString(KEY_VEHICLE_PLATE, updated.vehiclePlate)
+            putString(KEY_VEHICLE_TYPE, updated.vehicleType.name)
             putString(KEY_BRAND, updated.brand)
             putString(KEY_MODEL, updated.model)
             putString(KEY_PROPULSION_TYPE, updated.propulsionType.name)
@@ -220,6 +223,8 @@ class DriverProfileRepositoryImpl @Inject constructor(
 
     private fun loadVehicleFromPrefs(): VehicleProfile {
         val def = VehicleProfile()
+        val typeName = prefs.getString(KEY_VEHICLE_TYPE, def.vehicleType.name)
+        val vType = runCatching { VehicleType.valueOf(typeName ?: "") }.getOrDefault(def.vehicleType)
         val propName = prefs.getString(KEY_PROPULSION_TYPE, def.propulsionType.name)
         val prop = runCatching { PropulsionType.valueOf(propName ?: "") }.getOrDefault(def.propulsionType)
         val tenureName = prefs.getString(KEY_TENURE_TYPE, def.tenureType.name)
@@ -230,6 +235,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
         return VehicleProfile(
             id = prefs.getString(KEY_ACTIVE_VEHICLE_ID, def.id) ?: def.id,
             vehiclePlate = prefs.getString(KEY_VEHICLE_PLATE, def.vehiclePlate) ?: def.vehiclePlate,
+            vehicleType = vType,
             brand = prefs.getString(KEY_BRAND, def.brand) ?: def.brand,
             model = prefs.getString(KEY_MODEL, def.model) ?: def.model,
             propulsionType = prop,
@@ -246,21 +252,14 @@ class DriverProfileRepositoryImpl @Inject constructor(
     private suspend fun syncToCloudIfAuthenticated(driver: DriverProfile, vehicle: VehicleProfile) {
         val currentUser = authRepository.getCurrentUser() ?: return
         val map = mapOf<String, Any>(
-            "driverName" to driver.driverName,
-            "email" to driver.email,
-            "phone" to driver.phone,
-            "gender" to driver.gender.name,
-            "vehiclePlate" to vehicle.vehiclePlate,
-            "brand" to vehicle.brand,
-            "model" to vehicle.model,
-            "propulsionType" to vehicle.propulsionType.name,
-            "tenureType" to vehicle.tenureType.name,
-            "quotaPeriodicity" to vehicle.quotaPeriodicity.name,
-            "quotaAmount" to vehicle.quotaAmount,
-            "workDaysWeek" to vehicle.workDaysWeek,
-            "quotaCutoffDay" to vehicle.quotaCutoffDay,
-            "quotaCutoffHour" to vehicle.quotaCutoffHour,
-            "isProfileCompleted" to driver.isProfileCompleted,
+            "driverName" to driver.driverName, "email" to driver.email, "phone" to driver.phone,
+            "gender" to driver.gender.name, "vehiclePlate" to vehicle.vehiclePlate,
+            "vehicleType" to vehicle.vehicleType.name,
+            "brand" to vehicle.brand, "model" to vehicle.model,
+            "propulsionType" to vehicle.propulsionType.name, "tenureType" to vehicle.tenureType.name,
+            "quotaPeriodicity" to vehicle.quotaPeriodicity.name, "quotaAmount" to vehicle.quotaAmount,
+            "workDaysWeek" to vehicle.workDaysWeek, "quotaCutoffDay" to vehicle.quotaCutoffDay,
+            "quotaCutoffHour" to vehicle.quotaCutoffHour, "isProfileCompleted" to driver.isProfileCompleted,
             "updatedAt" to System.currentTimeMillis()
         )
         firestoreDataSource.saveDriverProfile(currentUser.uid, map)

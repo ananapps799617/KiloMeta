@@ -73,6 +73,7 @@ private class FakeLocalSyncRepo : SyncRepository {
         isDatabaseCleared = true
         return Result.success(Unit)
     }
+    override suspend fun purgeAllUserData(): Result<Unit> = Result.success(Unit)
 }
 
 // ------------------------------------------------------------------------------

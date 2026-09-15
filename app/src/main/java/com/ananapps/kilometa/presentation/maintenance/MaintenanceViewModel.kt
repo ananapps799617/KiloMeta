@@ -67,7 +67,8 @@ class MaintenanceViewModel @Inject constructor(
         odometer: Int,
         costCop: Double,
         notes: String? = null,
-        customNextDueOdo: Int? = null
+        customNextDueOdo: Int? = null,
+        timestamp: Long = System.currentTimeMillis()
     ) {
         viewModelScope.launch {
             val profile = driverProfileRepository.getProfile().first()
@@ -78,7 +79,8 @@ class MaintenanceViewModel @Inject constructor(
                 odometer = odometer,
                 costCop = costCop,
                 notes = notes,
-                customNextDueOdo = customNextDueOdo
+                customNextDueOdo = customNextDueOdo,
+                timestamp = timestamp
             )
             _currentOdo.value = odometer
         }

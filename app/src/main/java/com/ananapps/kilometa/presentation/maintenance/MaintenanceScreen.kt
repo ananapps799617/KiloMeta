@@ -176,8 +176,8 @@ fun MaintenanceScreen(
             currentOdometer = state.currentOdometer,
             sheetState = sheetState,
             onDismiss = { showSheet = false },
-            onConfirm = { type, odo, cost, notes, nextOdo ->
-                viewModel.registerMaintenance(type, odo, cost, notes, nextOdo)
+            onConfirm = { type, odo, cost, notes, nextOdo, timestamp ->
+                viewModel.registerMaintenance(type, odo, cost, notes, nextOdo, timestamp)
             }
         )
     }

@@ -28,7 +28,7 @@ class DriverProfileTest {
     @Test
     fun `vehicleProfile por defecto tiene configuracion colombiana estandar`() {
         val vehicle = VehicleProfile()
-        assertEquals(VehicleType.CAR, vehicle.vehicleType)
+        assertEquals(VehicleType.PARTICULAR, vehicle.vehicleType)
         assertEquals("WMB-789", vehicle.vehiclePlate)
         assertEquals("Chevrolet", vehicle.brand)
         assertEquals("Joy", vehicle.model)

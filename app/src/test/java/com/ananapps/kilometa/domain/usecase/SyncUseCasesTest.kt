@@ -90,6 +90,11 @@ class FakeSyncRepository : SyncRepository {
         executionLog.add("CLEAR_ALL_LOCAL_DATA")
         return Result.success(Unit)
     }
+
+    override suspend fun purgeAllUserData(): Result<Unit> {
+        executionLog.add("PURGE_ALL_USER_DATA")
+        return Result.success(Unit)
+    }
 }
 
 // ------------------------------------------------------------------------------

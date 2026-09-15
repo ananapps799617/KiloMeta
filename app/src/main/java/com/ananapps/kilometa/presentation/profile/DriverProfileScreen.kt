@@ -220,7 +220,7 @@ fun DriverProfileScreen(
                     )
                     viewModel.saveFullProfile(updatedDriver, updatedVehicle)
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp).navigationBarsPadding(),
                 colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
                 shape = RoundedCornerShape(14.dp)
             ) {
@@ -231,7 +231,7 @@ fun DriverProfileScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 

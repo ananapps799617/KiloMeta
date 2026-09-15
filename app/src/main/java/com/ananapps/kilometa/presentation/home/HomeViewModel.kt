@@ -154,22 +154,22 @@ class HomeViewModel @Inject constructor(
     fun updateExpense(expense: Expense) = viewModelScope.launch { updateExpenseUseCase(expense) }
     fun updateFueling(fueling: Fueling) = viewModelScope.launch { updateFuelingUseCase(fueling) }
 
-    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL) = viewModelScope.launch {
+    fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL, timestamp: Long = System.currentTimeMillis()) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(timestamp = System.currentTimeMillis(), startOdometer = odo, endOdometer = odo, notes = "Jornada diaria").id
+            manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, startOdometer = odo, endOdometer = odo, notes = "Jornada diaria").id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
-        registerFuelingUseCase(shiftId, type, amount, volume, odo, paymentSource = paymentSource)
+        registerFuelingUseCase(shiftId, type, amount, volume, odo, timestamp = timestamp, paymentSource = paymentSource)
     }
 
-    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL) = viewModelScope.launch {
+    fun registerExpense(concept: ExpenseConcept, amount: Double, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL, timestamp: Long = System.currentTimeMillis()) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(timestamp = System.currentTimeMillis(), notes = "Jornada diaria").id
+            manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, notes = "Jornada diaria").id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }
-        registerExpenseUseCase(shiftId, concept, amount, paymentSource = paymentSource)
+        registerExpenseUseCase(shiftId, concept, amount, timestamp = timestamp, paymentSource = paymentSource)
     }
 
     fun registerWalletTransfer(source: WalletType, dest: WalletType, amount: Double, type: TransferType, notes: String? = null) = viewModelScope.launch {
