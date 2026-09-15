@@ -5,8 +5,9 @@
 // Vista principal continua de cabina inspirada en KiloMeta (Orden #038).
 // Descongestiona radicalmente la pantalla Ruta manteniendo únicamente:
 // 1. Encabezado de vehículo y odómetro real.
-// 2. Tarjeta maestra unificada DayHeroCard (neto, meta diaria, rendimiento, 4 bolsillos).
-// 3. Feed de actividades sobre la pista de asfalto continua Drivvo.
+// 2. Tarjeta DayHeroCard (neto, meta diaria limpia, telemetría y subtotales).
+// 3. Tarjeta CockpitWalletsCard (4 bolsillos soberanos y transferencias).
+// 4. Feed de actividades sobre la pista de asfalto continua Drivvo.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -109,15 +110,19 @@ fun ContinuousTimelineCockpitView(
             }
         }
 
-        // 2. Tarjeta Hero Maestra Unificada (Meta Diaria, Rendimiento y 4 Bolsillos)
+        // 2. Tarjeta DayHeroCard (Producción, Meta limpia y Cobertura)
         DayHeroCard(
             summary = timelineSummary,
-            vehicle = vehicle,
-            cashSettlement = effectiveSettlement,
+            vehicle = vehicle
+        )
+
+        // 3. Tarjeta CockpitWalletsCard (Saldos de los 4 bolsillos con aire)
+        CockpitWalletsCard(
+            settlement = effectiveSettlement,
             onTransferClick = onTransferClick
         )
 
-        // 3. Feed de Actividades de Hoy sobre la Pista de Asfalto Continua
+        // 4. Feed de Actividades de Hoy sobre la Pista de Asfalto Continua
         DayActivityFeedCard(
             events = timelineSummary.events,
             onDeleteTrip = onDeleteTrip,

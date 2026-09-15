@@ -5,10 +5,9 @@
 // Tarjeta maestra unificada de cabecera financiera para el Timeline Continuo (Orden #038).
 // Consolida en una sola tarjeta:
 // 1. Ganancia neta libre en bolsillo hoy (34sp).
-// 2. Termómetro de meta diaria prorrateada con indicador de "Turno Libre".
-// 3. Métricas de rendimiento reactivo ($/km y $/hora).
+// 2. Meta de hoy con termómetro en vivo (sin colisiones).
+// 3. Métricas de rendimiento reactivo ($/km y $/hora) con aire visual.
 // 4. Subtotales de operación (Producido, Combustible, Gastos Ruta).
-// 5. Matriz compacta 2x2 de los 4 Bolsillos Soberanos con botón [ ⇄ Transferir ].
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -25,7 +24,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.domain.model.DayContinuousSummary
 import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.presentation.theme.*
@@ -35,10 +33,22 @@ import java.util.Locale
 fun DayHeroCard(
     summary: DayContinuousSummary,
     vehicle: VehicleProfile,
-    cashSettlement: CashSettlementSummary?,
-    onTransferClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dailyTarget = if (vehicle.workDaysWeek > 0) vehicle.quotaAmount / vehicle.workDaysWeek else 0.0
+    val isDailyQuotaMet = summary.pocketNet >= dailyTarget && dailyTarget > 0.0
+    val quotaProgress = if (dailyTarget > 0.0) (summary.pocketNet / dailyTarget).toFloat().coerceIn(0f, 1f) else 0f
+    val remainingDaily = if (dailyTarget > summary.pocketNet) dailyTarget - summary.pocketNet else 0.0
+
+    val hoursDecimal = if (summary.firstEventTimestamp != null && summary.lastEventTimestamp != null && summary.lastEventTimestamp >= summary.firstEventTimestamp) {
+        val diffMs = summary.lastEventTimestamp - summary.firstEventTimestamp
+        maxOf(diffMs.toDouble() / 3600000.0, 0.1)
+    } else {
+        0.0
+    }
+    val ratePerKm = if (summary.distanceTraversedKm > 0) summary.pocketNet / summary.distanceTraversedKm else 0.0
+    val ratePerHour = if (hoursDecimal > 0.0) summary.pocketNet / hoursDecimal else 0.0
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -88,24 +98,55 @@ fun DayHeroCard(
                 color = if (summary.pocketNet >= 0) StatusGreen else StatusRed
             )
 
-            // Bloque 1: Termómetro de Meta Diaria Prorrateada (Orden #038)
-            HeroDailyQuotaThermometer(
-                pocketNet = summary.pocketNet,
-                vehicle = vehicle
+            // Fila de Meta de Hoy (Sin Colisiones)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🎯 Meta Hoy: $ ${String.format(Locale.US, "%,.0f", dailyTarget)}",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary
+                )
+                Text(
+                    text = if (isDailyQuotaMet) "¡Cumplida! (Libre)" else "Faltan: $ ${String.format(Locale.US, "%,.0f", remainingDaily)}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = if (isDailyQuotaMet) StatusGreen else StatusAmber
+                )
+            }
+
+            LinearProgressIndicator(
+                progress = { quotaProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = if (isDailyQuotaMet) StatusGreen else StatusAmber,
+                trackColor = DeepObsidianSurfaceVariant
             )
 
-            // Bloque 2: Telemetría de Rendimiento en Vivo ($/km y $/h)
-            HeroPerformanceMetricsRow(
-                pocketNet = summary.pocketNet,
-                distanceKm = summary.distanceTraversedKm,
-                elapsedHoursFormatted = summary.elapsedHoursFormatted,
-                firstTimestamp = summary.firstEventTimestamp,
-                lastTimestamp = summary.lastEventTimestamp
-            )
+            // Fila de Cobertura y Rendimiento Espaciosa
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "⏱️ ${summary.elapsedHoursFormatted} · 🚗 ${summary.distanceTraversedKm} km",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "📈 $ ${String.format(Locale.US, "%,.0f", ratePerKm)}/km  ·  $ ${String.format(Locale.US, "%,.0f", ratePerHour)}/h",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = StatusGreen
+                )
+            }
 
             HorizontalDivider(color = DeepObsidianSurfaceVariant, thickness = 1.dp)
 
-            // Bloque 3: Sub-métricas de Operación (Producido, Combustible, Gastos Ruta)
+            // Subtotales de Hoy: PRODUCIDO, COMBUSTIBLE, GASTOS RUTA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -135,14 +176,6 @@ fun DayHeroCard(
                     )
                 }
             }
-
-            HorizontalDivider(color = DeepObsidianSurfaceVariant, thickness = 1.dp)
-
-            // Bloque 4: Matriz Compacta de los 4 Bolsillos Soberanos con botón [ ⇄ Transferir ]
-            HeroFourPocketsGrid(
-                cashSettlement = cashSettlement ?: summary.cashSettlement,
-                onTransferClick = onTransferClick
-            )
         }
     }
 }
