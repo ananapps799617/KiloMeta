@@ -103,29 +103,32 @@ class FirestoreDataSource @Inject constructor(
     // --------------------------------------------------------------------------
     // BLOQUE 2.1: ELIMINACIÓN REMOTA EN LA NUBE (ANTI-RESURRECCIÓN)
     // --------------------------------------------------------------------------
-    suspend fun deleteTrip(userId: String, tripId: String): Result<Unit> = runCatching {
+    private suspend fun deleteUserEntity(userId: String, collection: String, entityId: String): Result<Unit> = runCatching {
         val db = getFirestoreSafe() ?: return@runCatching
-        db.collection("users").document(userId).collection("trips").document(tripId).delete().await()
+        db.collection("users").document(userId).collection(collection).document(entityId).delete().await()
     }
 
-    suspend fun deleteFueling(userId: String, fuelingId: String): Result<Unit> = runCatching {
-        val db = getFirestoreSafe() ?: return@runCatching
-        db.collection("users").document(userId).collection("fuelings").document(fuelingId).delete().await()
-    }
+    suspend fun deleteTrip(userId: String, tripId: String): Result<Unit> = deleteUserEntity(userId, "trips", tripId)
+    suspend fun deleteFueling(userId: String, fuelingId: String): Result<Unit> = deleteUserEntity(userId, "fuelings", fuelingId)
+    suspend fun deleteExpense(userId: String, expenseId: String): Result<Unit> = deleteUserEntity(userId, "expenses", expenseId)
+    suspend fun deleteShift(userId: String, shiftId: String): Result<Unit> = deleteUserEntity(userId, "shifts", shiftId)
+    suspend fun deleteWalletTransfer(userId: String, transferId: String): Result<Unit> = deleteUserEntity(userId, "transfers", transferId)
 
-    suspend fun deleteExpense(userId: String, expenseId: String): Result<Unit> = runCatching {
+    suspend fun deleteAllUserData(userId: String): Result<Unit> = runCatching {
         val db = getFirestoreSafe() ?: return@runCatching
-        db.collection("users").document(userId).collection("expenses").document(expenseId).delete().await()
-    }
-
-    suspend fun deleteShift(userId: String, shiftId: String): Result<Unit> = runCatching {
-        val db = getFirestoreSafe() ?: return@runCatching
-        db.collection("users").document(userId).collection("shifts").document(shiftId).delete().await()
-    }
-
-    suspend fun deleteWalletTransfer(userId: String, transferId: String): Result<Unit> = runCatching {
-        val db = getFirestoreSafe() ?: return@runCatching
-        db.collection("users").document(userId).collection("transfers").document(transferId).delete().await()
+        val userDoc = db.collection("users").document(userId)
+        val subcollections = listOf("trips", "shifts", "fuelings", "expenses", "transfers", "profile", "diagnostic")
+        for (col in subcollections) {
+            val snapshot = userDoc.collection(col).get().await()
+            if (!snapshot.isEmpty) {
+                val batch = db.batch()
+                for (doc in snapshot.documents) {
+                    batch.delete(doc.reference)
+                }
+                batch.commit().await()
+            }
+        }
+        userDoc.delete().await()
     }
 
     suspend fun saveDriverProfile(userId: String, profileMap: Map<String, Any>): Result<Unit> = runCatching {

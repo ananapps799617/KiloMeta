@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/common/AppUpdateDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -58,14 +58,15 @@ fun AppUpdateDialog(
         Surface(
             modifier = modifier
                 .fillMaxWidth(0.92f)
-                .fillMaxHeight(0.85f)
+                .wrapContentHeight()
                 .border(1.dp, DeepObsidianBorder.copy(alpha = 0.5f), RoundedCornerShape(24.dp)),
             shape = RoundedCornerShape(24.dp),
             color = DeepObsidianSurface
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(20.dp)
             ) {
                 // --------------------------------------------------------------
@@ -83,7 +84,7 @@ fun AppUpdateDialog(
                             color = ElectricBluePrimary
                         )
                         Text(
-                            text = "Versión  disponible",
+                            text = "Versión ${updateInfo.versionName} disponible",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
@@ -106,7 +107,8 @@ fun AppUpdateDialog(
                 // --------------------------------------------------------------
                 Column(
                     modifier = Modifier
-                        .weight(1f, fill = false)
+                        .fillMaxWidth()
+                        .heightIn(max = 260.dp)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -126,9 +128,9 @@ fun AppUpdateDialog(
                         ) {
                             updateInfo.releaseNotes.forEach { note ->
                                 Text(
-                                    text = "• ",
+                                    text = "• $note",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = TextSecondary,
+                                    color = TextPrimary,
                                     lineHeight = 18.sp
                                 )
                             }
@@ -168,7 +170,7 @@ fun AppUpdateDialog(
                                 )
                                 val pct = ((state?.progress ?: 0f) * 100).toInt()
                                 Text(
-                                    text = "%",
+                                    text = "$pct%",
                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                     color = ElectricBluePrimary
                                 )

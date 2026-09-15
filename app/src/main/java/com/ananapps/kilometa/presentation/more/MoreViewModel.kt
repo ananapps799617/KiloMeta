@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/more/MoreViewModel.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -13,6 +13,8 @@ import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.BuildConfig
 import com.ananapps.kilometa.domain.model.AppUpdateInfo
 import com.ananapps.kilometa.domain.usecase.CheckAppUpdateUseCase
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
+import com.ananapps.kilometa.domain.repository.SyncRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,11 +32,16 @@ sealed interface UpdateCheckUiState {
 
 @HiltViewModel
 class MoreViewModel @Inject constructor(
-    private val checkAppUpdateUseCase: CheckAppUpdateUseCase
+    private val checkAppUpdateUseCase: CheckAppUpdateUseCase,
+    private val syncRepository: SyncRepository,
+    private val profileRepository: DriverProfileRepository
 ) : ViewModel() {
 
     private val _updateState = MutableStateFlow<UpdateCheckUiState>(UpdateCheckUiState.Idle)
     val updateState: StateFlow<UpdateCheckUiState> = _updateState.asStateFlow()
+
+    private val _isPurging = MutableStateFlow(false)
+    val isPurging: StateFlow<Boolean> = _isPurging.asStateFlow()
 
     fun checkForUpdates() {
         if (_updateState.value is UpdateCheckUiState.Checking) return
@@ -60,5 +67,22 @@ class MoreViewModel @Inject constructor(
 
     fun dismissUpdate() {
         _updateState.value = UpdateCheckUiState.Idle
+    }
+
+    fun purgeAccountData(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (_isPurging.value) return
+        viewModelScope.launch {
+            _isPurging.value = true
+            syncRepository.purgeAllUserData()
+                .onSuccess {
+                    profileRepository.clearProfile()
+                    _isPurging.value = false
+                    onSuccess()
+                }
+                .onFailure { err ->
+                    _isPurging.value = false
+                    onError(err.localizedMessage ?: "Error al purgar los datos de la cuenta")
+                }
+        }
     }
 }
