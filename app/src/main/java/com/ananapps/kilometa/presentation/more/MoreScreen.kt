@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.BuildConfig
 import com.ananapps.kilometa.presentation.common.AppUpdateDialog
+import com.ananapps.kilometa.presentation.more.components.PurgeAccountDataDialog
 import com.ananapps.kilometa.presentation.theme.*
 
 // ------------------------------------------------------------------------------
@@ -44,7 +45,10 @@ fun MoreScreen(
     viewModel: MoreViewModel = hiltViewModel()
 ) {
     val updateState by viewModel.updateState.collectAsState()
+    val isPurging by viewModel.isPurging.collectAsState()
     var showUpToDateDialog by remember { mutableStateOf(false) }
+    var showPurgeConfirmDialog by remember { mutableStateOf(false) }
+    var purgeError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(updateState) {
         if (updateState is UpdateCheckUiState.UpToDate) {
@@ -139,7 +143,20 @@ fun MoreScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Sección 2: Cierre de Sesión Seguro
+        // Sección 2: Zona de Peligro y Cierre de Sesión
+        item {
+            MoreOptionItem(
+                icon = Icons.Default.Delete,
+                title = "Borrar Datos de mi Cuenta",
+                subtitle = "Limpieza profunda: elimina carreras, gastos y perfil en Firestore y celular",
+                tint = StatusRed,
+                onClick = {
+                    purgeError = null
+                    showPurgeConfirmDialog = true
+                }
+            )
+        }
+
         item {
             MoreOptionItem(
                 icon = Icons.Default.ExitToApp,
@@ -149,6 +166,25 @@ fun MoreScreen(
                 onClick = onSignOut
             )
         }
+    }
+
+    if (showPurgeConfirmDialog) {
+        PurgeAccountDataDialog(
+            isPurging = isPurging,
+            purgeError = purgeError,
+            onConfirmPurge = {
+                viewModel.purgeAccountData(
+                    onSuccess = {
+                        showPurgeConfirmDialog = false
+                        onSignOut()
+                    },
+                    onError = { err ->
+                        purgeError = err
+                    }
+                )
+            },
+            onDismiss = { showPurgeConfirmDialog = false }
+        )
     }
 
     if (updateState is UpdateCheckUiState.Available) {

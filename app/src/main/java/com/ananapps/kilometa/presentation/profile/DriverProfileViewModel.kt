@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.domain.model.DriverProfile
 import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.domain.repository.DriverProfileRepository
+import com.ananapps.kilometa.domain.repository.SyncRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DriverProfileViewModel @Inject constructor(
-    private val profileRepository: DriverProfileRepository
+    private val profileRepository: DriverProfileRepository,
+    private val syncRepository: SyncRepository
 ) : ViewModel() {
 
     val driverProfile: StateFlow<DriverProfile> = profileRepository.getProfile()
@@ -48,7 +50,8 @@ class DriverProfileViewModel @Inject constructor(
 
     fun resetProfileForTesting(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
-            profileRepository.resetProfileForTesting()
+            syncRepository.purgeAllUserData()
+            profileRepository.clearProfile()
             onComplete()
         }
     }

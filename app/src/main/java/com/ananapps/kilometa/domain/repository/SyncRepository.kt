@@ -53,4 +53,10 @@ interface SyncRepository {
      * Protocolo Clean Session Handshake (DataGuard Tier 3).
      */
     suspend fun clearAllLocalData(): Result<Unit>
+
+    /**
+     * Limpieza profunda total: elimina todos los datos del usuario en Firebase Firestore
+     * y purga Room SQLite local junto con SharedPreferences.
+     */
+    suspend fun purgeAllUserData(): Result<Unit>
 }

@@ -247,22 +247,27 @@ class SyncRepositoryImpl @Inject constructor(
 
     // --- BLOQUE 5: DIAGNÓSTICO DE ENLACE EN VIVO ---
     override suspend fun checkCloudConnection(): ConnectionDiagnostic = withContext(dispatchers.io) {
-        val user = authRepository.getCurrentUser()
-        if (user == null) {
-            return@withContext ConnectionDiagnostic(
-                isConnected = false,
-                latencyMs = null,
-                timestampMillis = System.currentTimeMillis(),
-                message = "Sin sesión activa para verificar enlace",
-                isPlaceholderConfig = false
-            )
-        }
+        val user = authRepository.getCurrentUser() ?: return@withContext ConnectionDiagnostic(
+            isConnected = false, latencyMs = null, timestampMillis = System.currentTimeMillis(),
+            message = "Sin sesión activa para verificar enlace", isPlaceholderConfig = false
+        )
         firestoreDataSource.pingDiagnostic(user.uid)
     }
 
-    // --- BLOQUE 6: PURGA LOCAL (CLEAN SESSION HANDSHAKE) ---
+    // --- BLOQUE 6: PURGA LOCAL Y LIMPIEZA PROFUNDA (DATA GUARD TIER 3) ---
     override suspend fun clearAllLocalData(): Result<Unit> = withContext(dispatchers.io) {
         runCatching {
+            database.clearAllTables()
+            _syncStatus.value = SyncStatus(state = SyncState.IDLE)
+        }
+    }
+
+    override suspend fun purgeAllUserData(): Result<Unit> = withContext(dispatchers.io) {
+        runCatching {
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.deleteAllUserData(user.uid).getOrThrow()
+            }
             database.clearAllTables()
             _syncStatus.value = SyncStatus(state = SyncState.IDLE)
         }
