@@ -1,50 +1,39 @@
-// ==============================================================================
+﻿// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/HomeModals.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Contenedor modular de diálogos y BottomSheets de captura express para HomeScreen.
-// Desacopla la lógica modal de la cabina manteniendo los archivos < 280 líneas.
+// Orquestador modular de diálogos flotantes centrados de 3 capas para HomeScreen (Orden #037).
+// Erradica los SheetStates y gestiona los diálogos de captura express y turnos (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.ananapps.kilometa.presentation.home.HomeUiState
 import com.ananapps.kilometa.presentation.home.HomeViewModel
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: ORQUESTADOR DE HOJAS MODALES Y DIÁLOGOS DE CABINA
-// ------------------------------------------------------------------------------
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeCockpitModals(
     viewModel: HomeViewModel,
     uiState: HomeUiState,
-    showTripSheet: Boolean,
-    onDismissTripSheet: () -> Unit,
-    tripSheetState: SheetState,
-    showFuelingSheet: Boolean,
-    onDismissFuelingSheet: () -> Unit,
-    fuelSheetState: SheetState,
-    showExpenseSheet: Boolean = false,
-    onDismissExpenseSheet: () -> Unit = {},
-    expenseSheetState: SheetState? = null,
-    showTransferSheet: Boolean = false,
-    onDismissTransferSheet: () -> Unit = {},
-    transferSheetState: SheetState? = null,
-    showMaintenanceSheet: Boolean = false,
-    onDismissMaintenanceSheet: () -> Unit = {},
-    maintenanceSheetState: SheetState? = null,
+    showTripDialog: Boolean,
+    onDismissTripDialog: () -> Unit,
+    showFuelingDialog: Boolean,
+    onDismissFuelingDialog: () -> Unit,
+    showExpenseDialog: Boolean = false,
+    onDismissExpenseDialog: () -> Unit = {},
+    showTransferDialog: Boolean = false,
+    onDismissTransferDialog: () -> Unit = {},
+    showMaintenanceDialog: Boolean = false,
+    onDismissMaintenanceDialog: () -> Unit = {},
     isSporadic: Boolean = false,
-    showStartShiftDialog: Boolean,
-    onDismissStartShiftDialog: () -> Unit,
+    showStartShiftDialog: Boolean = false,
+    onDismissStartShiftDialog: () -> Unit = {},
     onStartShiftConfirmed: () -> Unit = {},
-    showCloseShiftDialog: Boolean,
-    onDismissCloseShiftDialog: () -> Unit,
+    showCloseShiftDialog: Boolean = false,
+    onDismissCloseShiftDialog: () -> Unit = {},
     showShiftPromptDialog: Boolean = false,
     promptActionName: String? = null,
     onDismissShiftPrompt: () -> Unit = {},
@@ -66,13 +55,13 @@ fun HomeCockpitModals(
             onSporadicSelected = onSporadicFromPrompt
         )
     }
-    if (showTripSheet) {
+
+    if (showTripDialog) {
         val vehicleProfile by viewModel.vehicleProfile.collectAsState()
-        RegisterTripSheet(
-            sheetState = tripSheetState,
+        RegisterTripDialog(
             vehicleProfile = vehicleProfile,
             lastKnownOdometer = resolvedOdo,
-            onDismiss = onDismissTripSheet,
+            onDismiss = onDismissTripDialog,
             onConfirmTrip = { platform, gross, commission, payment, destination, timestamp, startOdo, endOdo ->
                 viewModel.registerTrip(
                     platform = platform,
@@ -89,12 +78,11 @@ fun HomeCockpitModals(
         )
     }
 
-    if (showFuelingSheet) {
+    if (showFuelingDialog) {
         val profile = viewModel.driverProfile.value
-        RegisterFuelingSheet(
+        RegisterFuelingDialog(
             currentOdometer = resolvedOdo,
-            sheetState = fuelSheetState,
-            onDismiss = onDismissFuelingSheet,
+            onDismiss = onDismissFuelingDialog,
             propulsionType = profile.propulsionType,
             onConfirmFueling = { fuelType, amount, volume, odo, paymentSource ->
                 viewModel.registerFueling(fuelType, amount, volume, odo, isSporadic = isSporadic, paymentSource = paymentSource)
@@ -102,33 +90,30 @@ fun HomeCockpitModals(
         )
     }
 
-    if (showExpenseSheet && expenseSheetState != null) {
-        RegisterExpenseSheet(
-            sheetState = expenseSheetState,
-            onDismiss = onDismissExpenseSheet,
+    if (showExpenseDialog) {
+        RegisterExpenseDialog(
+            onDismiss = onDismissExpenseDialog,
             onConfirmExpense = { concept, amount, paymentSource ->
                 viewModel.registerExpense(concept, amount, isSporadic = isSporadic, paymentSource = paymentSource)
             }
         )
     }
 
-    if (showTransferSheet && transferSheetState != null) {
-        TransferBetweenWalletsSheet(
-            sheetState = transferSheetState,
-            onDismiss = onDismissTransferSheet,
+    if (showTransferDialog) {
+        TransferBetweenWalletsDialog(
+            onDismiss = onDismissTransferDialog,
             onConfirmTransfer = { source, destination, amount, type, notes ->
                 viewModel.registerWalletTransfer(source, destination, amount, type, notes)
             }
         )
     }
 
-    if (showMaintenanceSheet && maintenanceSheetState != null) {
+    if (showMaintenanceDialog) {
         val vehicleProfile by viewModel.vehicleProfile.collectAsState()
-        RegisterMaintenanceSheet(
+        RegisterMaintenanceDialog(
             vehicleProfile = vehicleProfile,
             lastKnownOdometer = resolvedOdo,
-            sheetState = maintenanceSheetState,
-            onDismiss = onDismissMaintenanceSheet,
+            onDismiss = onDismissMaintenanceDialog,
             onConfirmMaintenance = { type, odo, cost, notes, paymentSource, title, location, timestamp ->
                 viewModel.registerMaintenance(
                     type = type,
