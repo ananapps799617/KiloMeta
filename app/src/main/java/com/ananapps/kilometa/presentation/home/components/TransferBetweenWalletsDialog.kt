@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TransferBetweenWalletsDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -108,37 +108,72 @@ fun TransferBetweenWalletsDialog(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(text = "Desde (Origen de fondos):", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        WalletType.entries.forEach { wallet ->
-                            FilterChip(
-                                selected = sourceWallet == wallet,
-                                onClick = {
-                                    val nextDest = if (destinationWallet == wallet) {
-                                        WalletType.entries.first { it != wallet }
-                                    } else destinationWallet
-                                    updateWallets(wallet, nextDest)
-                                },
-                                label = { Text(wallet.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
-                                modifier = Modifier.weight(1f),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = ElectricBluePrimary,
-                                    selectedLabelColor = TextPrimary
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(WalletType.CASH_PHYSICAL, WalletType.DIGITAL_WALLET).forEach { wallet ->
+                                FilterChip(
+                                    selected = sourceWallet == wallet,
+                                    onClick = {
+                                        val nextDest = if (destinationWallet == wallet) {
+                                            WalletType.entries.first { it != wallet }
+                                        } else destinationWallet
+                                        updateWallets(wallet, nextDest)
+                                    },
+                                    label = { Text(wallet.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 1) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = ElectricBluePrimary,
+                                        selectedLabelColor = TextPrimary
+                                    )
                                 )
-                            )
+                            }
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(WalletType.UBER, WalletType.DIDI).forEach { wallet ->
+                                FilterChip(
+                                    selected = sourceWallet == wallet,
+                                    onClick = {
+                                        val nextDest = if (destinationWallet == wallet) {
+                                            WalletType.entries.first { it != wallet }
+                                        } else destinationWallet
+                                        updateWallets(wallet, nextDest)
+                                    },
+                                    label = { Text(wallet.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 1) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = ElectricBluePrimary,
+                                        selectedLabelColor = TextPrimary
+                                    )
+                                )
+                            }
                         }
                     }
 
                     Text(text = "Hacia (Destino de fondos):", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        WalletType.entries.forEach { wallet ->
-                            val isSame = sourceWallet == wallet
-                            FilterChip(
-                                selected = destinationWallet == wallet,
-                                onClick = { if (!isSame) updateWallets(sourceWallet, wallet) },
-                                enabled = !isSame,
-                                label = { Text(wallet.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
-                                modifier = Modifier.weight(1f)
-                            )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(WalletType.CASH_PHYSICAL, WalletType.DIGITAL_WALLET).forEach { wallet ->
+                                val isSame = sourceWallet == wallet
+                                FilterChip(
+                                    selected = destinationWallet == wallet,
+                                    onClick = { if (!isSame) updateWallets(sourceWallet, wallet) },
+                                    enabled = !isSame,
+                                    label = { Text(wallet.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 1) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(WalletType.UBER, WalletType.DIDI).forEach { wallet ->
+                                val isSame = sourceWallet == wallet
+                                FilterChip(
+                                    selected = destinationWallet == wallet,
+                                    onClick = { if (!isSame) updateWallets(sourceWallet, wallet) },
+                                    enabled = !isSame,
+                                    label = { Text(wallet.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 1) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
 
@@ -154,24 +189,27 @@ fun TransferBetweenWalletsDialog(
                         singleLine = true
                     )
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(20_000.0, 50_000.0, 100_000.0, 200_000.0).forEach { chipAmount ->
-                            SuggestionChip(
-                                onClick = { amountText = chipAmount.toInt().toString() },
-                                label = { Text("{chipAmount.toInt() / 1000}k", modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-
                     Text(text = "Tipo de Movimiento:", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        TransferType.entries.forEach { type ->
-                            FilterChip(
-                                selected = selectedType == type,
-                                onClick = { selectedType = type },
-                                label = { Text(type.displayName) }
-                            )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(TransferType.PLATFORM_PAYOUT, TransferType.COMMISSION_PAYMENT).forEach { type ->
+                                FilterChip(
+                                    selected = selectedType == type,
+                                    onClick = { selectedType = type },
+                                    label = { Text(type.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 1) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(TransferType.CASH_DEPOSIT, TransferType.CASH_WITHDRAWAL).forEach { type ->
+                                FilterChip(
+                                    selected = selectedType == type,
+                                    onClick = { selectedType = type },
+                                    label = { Text(type.displayName, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 1) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
 
@@ -208,7 +246,7 @@ fun TransferBetweenWalletsDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricBluePrimary)
                 ) {
                     Text(
-                        text = "Transferir ",
+                        text = if (amountDouble > 0.0) "TRANSFERIR ${formatCop(amountDouble)}" else "TRANSFERIR",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
