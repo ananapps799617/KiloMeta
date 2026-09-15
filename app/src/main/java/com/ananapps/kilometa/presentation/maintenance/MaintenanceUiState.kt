@@ -9,6 +9,7 @@ package com.ananapps.kilometa.presentation.maintenance
 
 import com.ananapps.kilometa.domain.model.MaintenanceAlert
 import com.ananapps.kilometa.domain.model.MaintenanceRecord
+import com.ananapps.kilometa.domain.model.WeeklyQuotaProgress
 
 data class MaintenanceUiState(
     val isLoading: Boolean = true,
@@ -16,5 +17,6 @@ data class MaintenanceUiState(
     val alerts: List<MaintenanceAlert> = emptyList(),
     val totalInvestmentCop: Double = 0.0,
     val currentOdometer: Int = 100_000,
-    val vehiclePlate: String = ""
+    val vehiclePlate: String = "",
+    val weeklyQuotaProgress: WeeklyQuotaProgress? = null
 )

@@ -36,6 +36,7 @@ import com.ananapps.kilometa.presentation.history.components.ExportReportSheet
 import com.ananapps.kilometa.presentation.history.components.PlatformBreakdownCard
 import com.ananapps.kilometa.presentation.reports.components.ExpensesDonutChartCard
 import com.ananapps.kilometa.presentation.reports.components.KpiSummaryMatrix
+import com.ananapps.kilometa.presentation.reports.components.RevenueVsCostsBarChart
 import com.ananapps.kilometa.presentation.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,15 +182,21 @@ fun ReportsScreen(
                     // 1. Matriz KPI 2x2
                     KpiSummaryMatrix(data = state.kpiData)
 
-                    // 2. Gráfico de Dona de Costos
+                    // 2. Gráfica de Barras Comparativa (Producido vs. Costos)
+                    RevenueVsCostsBarChart(
+                        grossIncome = state.kpiData.grossIncome,
+                        totalCosts = state.kpiData.totalCosts
+                    )
+
+                    // 3. Gráfico de Dona de Costos
                     ExpensesDonutChartCard(slices = state.expenseSlices)
 
-                    // 3. Rendimiento Multi-Plataforma
+                    // 4. Rendimiento Multi-Plataforma
                     if (state.platformBreakdowns.isNotEmpty()) {
                         PlatformBreakdownCard(breakdowns = state.platformBreakdowns)
                     }
 
-                    // 4. Auditoría Bi-Combustible GNV vs Gasolina
+                    // 5. Auditoría Bi-Combustible GNV vs Gasolina
                     BiFuelSavingsCard(metrics = state.biFuelSavings)
                 }
             }

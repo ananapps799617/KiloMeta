@@ -49,8 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.domain.model.CsvReport
 import com.ananapps.kilometa.domain.model.HistoryFilterPeriod
+import com.ananapps.kilometa.presentation.history.components.ContinuousHistoryRoadList
 import com.ananapps.kilometa.presentation.history.components.ExportReportSheet
-import com.ananapps.kilometa.presentation.history.components.HistoryContentList
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
@@ -180,8 +180,8 @@ fun HistoryScreen(
                         Text(text = "Error: ${state.message}", color = TextSecondary)
                     }
                 }
-                is HistoryUiState.Success -> HistoryContentList(
-                    state = state,
+                is HistoryUiState.Success -> ContinuousHistoryRoadList(
+                    shifts = state.shifts,
                     onDeleteShift = { viewModel.onDeleteShift(it) },
                     onEditShift = { id, start, end, notes -> viewModel.onUpdateShift(id, start, end, notes) },
                     onConsolidateShifts = { viewModel.onConsolidateShiftsForDay(it) }

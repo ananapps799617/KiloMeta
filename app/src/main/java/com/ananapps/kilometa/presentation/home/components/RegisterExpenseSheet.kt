@@ -44,6 +44,10 @@ fun RegisterExpenseSheet(
     onConfirmExpense: (concept: ExpenseConcept, amount: Double, paymentSource: WalletType) -> Unit
 ) {
     var selectedConcept by remember { mutableStateOf(ExpenseConcept.RENT) }
+    var selectedCustomName by remember { mutableStateOf<String?>(null) }
+    var customCategories by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var newCatName by remember { mutableStateOf("") }
     var paymentSource by remember { mutableStateOf(WalletType.CASH_PHYSICAL) }
     var amountText by remember { mutableStateOf("") }
     var notesText by remember { mutableStateOf("") }
@@ -92,18 +96,40 @@ fun RegisterExpenseSheet(
 
             // Cuadrícula Ergonómica 2 Columnas de Conceptos de Gasto
             Text(text = "Concepto de Egreso", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-            val concepts = ExpenseConcept.entries
-            val rows = concepts.chunked(2)
+            data class ConceptItem(val id: String, val name: String, val icon: String, val isAdd: Boolean = false, val concept: ExpenseConcept? = null)
+            val allItems = ExpenseConcept.entries.map { ConceptItem(it.name, it.displayName, it.icon, false, it) } +
+                customCategories.map { ConceptItem(it.first, it.first, it.second, false, ExpenseConcept.OTHER) } +
+                listOf(ConceptItem("ADD_NEW", "Nueva...", "➕", true, null))
+
+            val rows = allItems.chunked(2)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 rows.forEach { pair ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        pair.forEach { concept ->
-                            val isSelected = selectedConcept == concept
+                        pair.forEach { item ->
+                            val isSelected = if (item.isAdd) {
+                                false
+                            } else if (item.concept != ExpenseConcept.OTHER) {
+                                selectedConcept == item.concept
+                            } else {
+                                selectedConcept == ExpenseConcept.OTHER && (selectedCustomName == item.name || (selectedCustomName == null && item.id == "OTHER"))
+                            }
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
-                                    .clickable { selectedConcept = concept },
+                                    .clickable {
+                                        if (item.isAdd) {
+                                            showAddCategoryDialog = true
+                                        } else {
+                                            item.concept?.let { selectedConcept = it }
+                                            if (item.id != "OTHER" && item.concept == ExpenseConcept.OTHER) {
+                                                selectedCustomName = item.name
+                                                notesText = item.name
+                                            } else {
+                                                selectedCustomName = null
+                                            }
+                                        }
+                                    },
                                 shape = RoundedCornerShape(10.dp),
                                 color = if (isSelected) ExpenseRedHeader.copy(alpha = 0.25f) else DeepObsidianSurfaceVariant,
                                 border = if (isSelected) BorderStroke(1.5.dp, ExpenseRedHeader) else null
@@ -113,13 +139,13 @@ fun RegisterExpenseSheet(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Start
                                 ) {
-                                    Text(text = concept.icon, fontSize = 18.sp, modifier = Modifier.padding(end = 6.dp))
+                                    Text(text = item.icon, fontSize = 18.sp, modifier = Modifier.padding(end = 6.dp))
                                     Text(
-                                        text = concept.displayName,
+                                        text = item.name,
                                         style = MaterialTheme.typography.bodySmall.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                         ),
-                                        color = if (isSelected) Color.White else TextSecondary,
+                                        color = if (isSelected) Color.White else if (item.isAdd) ElectricBluePrimary else TextSecondary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -193,6 +219,51 @@ fun RegisterExpenseSheet(
                 onDismiss()
             },
             onDismissRequest = { showDiscardDialog = false }
+        )
+    }
+
+    if (showAddCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddCategoryDialog = false },
+            title = { Text("Nueva Categoría de Gasto", fontWeight = FontWeight.Bold, color = TextPrimary) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Ingresa el nombre del concepto:", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = newCatName,
+                        onValueChange = { input ->
+                            if (input.length <= 25) newCatName = input.filter { ch -> ch.isLetterOrDigit() || ch == ' ' }
+                        },
+                        label = { Text("Nombre (ej. SOAT, Datos)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cleanName = newCatName.trim()
+                        if (cleanName.isNotBlank()) {
+                            customCategories = customCategories + Pair(cleanName, "🏷️")
+                            selectedConcept = ExpenseConcept.OTHER
+                            selectedCustomName = cleanName
+                            notesText = cleanName
+                            newCatName = ""
+                            showAddCategoryDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ExpenseRedHeader)
+                ) {
+                    Text("Agregar", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddCategoryDialog = false }) {
+                    Text("Cancelar", color = TextSecondary)
+                }
+            },
+            containerColor = DeepObsidianSurface
         )
     }
 }

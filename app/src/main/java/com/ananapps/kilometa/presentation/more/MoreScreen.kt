@@ -88,9 +88,9 @@ fun MoreScreen(
 
         item {
             MoreOptionItem(
-                icon = Icons.Default.Build,
-                title = "Mantenimiento Preventivo",
-                subtitle = "Alertas de odómetro, cambio de aceite y frenos",
+                icon = Icons.Default.Notifications,
+                title = "🔔 Alertas & Recordatorios",
+                subtitle = "Semáforo de cuota semanal y alertas de odómetro",
                 onClick = onNavigateToMaintenance
             )
         }
