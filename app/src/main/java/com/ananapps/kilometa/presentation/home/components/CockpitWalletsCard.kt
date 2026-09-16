@@ -30,6 +30,7 @@ import java.util.Locale
 @Composable
 fun CockpitWalletsCard(
     settlement: CashSettlementSummary?,
+    cycleLabel: String? = null,
     onTransferClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -49,11 +50,27 @@ fun CockpitWalletsCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "💼 TUS 5 BOLSILLOS SOBERANOS",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = ElectricBluePrimary
-                )
+                Column(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "💼 TUS 5 BOLSILLOS SOBERANOS",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = ElectricBluePrimary
+                    )
+                    if (!cycleLabel.isNullOrBlank()) {
+                        Text(
+                            text = cycleLabel,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 11.sp
+                            ),
+                            color = TextSecondary
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 AssistChip(
                     onClick = onTransferClick,
                     label = { Text("⇄ Transferir", fontWeight = FontWeight.Bold) },

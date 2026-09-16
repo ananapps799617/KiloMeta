@@ -49,7 +49,7 @@ fun ContinuousTimelineCockpitView(
     onTransferClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val effectiveSettlement = cashSettlement ?: timelineSummary.cashSettlement
+    val effectiveSettlement = timelineSummary.cashSettlement ?: cashSettlement
 
     Column(
         modifier = modifier
@@ -116,9 +116,10 @@ fun ContinuousTimelineCockpitView(
             vehicle = vehicle
         )
 
-        // 3. Tarjeta CockpitWalletsCard (Saldos de los 4 bolsillos con aire)
+        // 3. Tarjeta CockpitWalletsCard (Saldos de los 5 bolsillos con ciclo semanal y aire)
         CockpitWalletsCard(
             settlement = effectiveSettlement,
+            cycleLabel = timelineSummary.cycleLabel,
             onTransferClick = onTransferClick
         )
 

@@ -31,7 +31,9 @@ class GetDayContinuousTimelineUseCaseTest {
         fakeExpenseRepository = FakeExpenseRepository()
         fakeWalletTransferRepository = FakeWalletTransferRepository()
         fakeMaintenanceRepository = FakeMaintenanceRepository()
-        fakeDriverProfileRepository = FakeDriverProfileRepository()
+        fakeDriverProfileRepository = FakeDriverProfileRepository().apply {
+            currentVehicle = VehicleProfile(quotaCutoffDay = 2, quotaCutoffHour = 23)
+        }
         useCase = GetDayContinuousTimelineUseCase(
             fakeShiftRepository,
             fakeExpenseRepository,
@@ -117,6 +119,8 @@ class GetDayContinuousTimelineUseCaseTest {
 
         // Verificación de liquidación continua de caja y billeteras
         assertNotNull(summary.cashSettlement)
+        assertNotNull(summary.cycleLabel)
+        assertTrue(summary.cycleLabel!!.startsWith("Semana del "))
         val settlement = summary.cashSettlement!!
         assertEquals(30000.0, settlement.cashInHandAvailable, 0.001) // 50k cash - 20k fuel
         assertEquals(25000.0, settlement.uberWallet.netBalance, 0.001) // 25k app wallet

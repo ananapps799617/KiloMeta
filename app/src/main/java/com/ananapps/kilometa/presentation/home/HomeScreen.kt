@@ -106,8 +106,7 @@ fun HomeScreen(
                     }
                 }
                 is HomeUiState.NoActiveShift, is HomeUiState.ActiveShift -> {
-                    val cashSettlement = (state as? HomeUiState.ActiveShift)?.cashSettlement
-                        ?: dayContinuousTimeline.cashSettlement
+                    val cashSettlement = dayContinuousTimeline.cashSettlement
                     val weeklyProgress = when (state) {
                         is HomeUiState.NoActiveShift -> state.weeklyProgress
                         is HomeUiState.ActiveShift -> state.weeklyProgress

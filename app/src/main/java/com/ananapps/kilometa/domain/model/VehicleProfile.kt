@@ -25,6 +25,6 @@ data class VehicleProfile(
     val quotaAmount: Double = 500_000.0,
     val workDaysWeek: Int = 6,
     val quotaCutoffDay: Int = 2, // 2 = Martes (estándar gremial en Colombia)
-    val quotaCutoffHour: Int = 18, // 18:00 hrs
+    val quotaCutoffHour: Int = 23, // 23:59 hrs (fin de jornada del día de corte)
     val updatedAt: Long = System.currentTimeMillis()
 )

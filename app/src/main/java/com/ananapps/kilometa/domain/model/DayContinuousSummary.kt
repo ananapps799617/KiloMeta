@@ -93,6 +93,9 @@ data class DayContinuousSummary(
     val hasActiveShift: Boolean = false,
     val activeShiftId: String? = null,
     val cashSettlement: CashSettlementSummary? = null,
+    val cycleLabel: String? = null,
+    val cycleStartMillis: Long? = null,
+    val cycleEndMillis: Long? = null,
     val events: List<DayActivityEvent> = emptyList()
 )
 

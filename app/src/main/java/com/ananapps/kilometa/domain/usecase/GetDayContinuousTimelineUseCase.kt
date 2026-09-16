@@ -26,7 +26,11 @@ import com.ananapps.kilometa.domain.repository.WalletTransferRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.TextStyle
 import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 
 // ------------------------------------------------------------------------------
@@ -144,6 +148,7 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 cutoffDay = cutoffDay,
                 cutoffHour = vehicle.quotaCutoffHour
             )
+            val cycleLabel = formatCycleRange(cycleStartMillis, cycleEndMillis)
 
             // Bolsillos Semanales Soberanos: acumulan todas las transacciones del ciclo en curso
             val cycleTrips = allTrips.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
@@ -174,8 +179,38 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 hasActiveShift = false,
                 activeShiftId = null,
                 cashSettlement = cashSettlement,
+                cycleLabel = cycleLabel,
+                cycleStartMillis = cycleStartMillis,
+                cycleEndMillis = cycleEndMillis,
                 events = events
             )
+        }
+    }
+}
+
+private fun formatCycleRange(cycleStartMillis: Long, cycleEndMillis: Long): String {
+    val zoneId = ZoneId.of("America/Bogota")
+    val start = Instant.ofEpochMilli(cycleStartMillis).atZone(zoneId)
+    val end = Instant.ofEpochMilli(cycleEndMillis).atZone(zoneId)
+
+    val startDay = start.dayOfMonth
+    val endDay = end.dayOfMonth
+    val startMonth = start.month.getDisplayName(TextStyle.FULL, Locale("es", "CO"))
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("es", "CO")) else it.toString() }
+    val endMonth = end.month.getDisplayName(TextStyle.FULL, Locale("es", "CO"))
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("es", "CO")) else it.toString() }
+    val startYear = start.year
+    val endYear = end.year
+
+    return when {
+        startYear != endYear -> {
+            "Semana del $startDay de $startMonth de $startYear al $endDay de $endMonth de $endYear"
+        }
+        start.month != end.month -> {
+            "Semana del $startDay de $startMonth al $endDay de $endMonth de $endYear"
+        }
+        else -> {
+            "Semana del $startDay al $endDay de $endMonth de $endYear"
         }
     }
 }
