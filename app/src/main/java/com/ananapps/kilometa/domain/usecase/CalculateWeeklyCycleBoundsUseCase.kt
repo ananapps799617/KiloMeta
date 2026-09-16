@@ -30,31 +30,15 @@ class CalculateWeeklyCycleBoundsUseCase @Inject constructor() {
         zoneId: ZoneId = ZoneId.of("America/Bogota")
     ): Pair<Long, Long> {
         val now = Instant.ofEpochMilli(nowMillis).atZone(zoneId)
+        val today = now.toLocalDate()
 
-        var cutoffCandidate = if (cutoffHour >= 23) {
-            now.with(TemporalAdjusters.nextOrSame(cutoffDay))
-                .withHour(23)
-                .withMinute(59)
-                .withSecond(59)
-                .withNano(999_000_000)
-        } else {
-            now.with(TemporalAdjusters.nextOrSame(cutoffDay))
-                .withHour(cutoffHour)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0)
-        }
+        // El día de corte es el último día del ciclo semanal (cierra a las 23:59:59.999)
+        val endLocalDate = today.with(TemporalAdjusters.nextOrSame(cutoffDay))
+        val cycleEnd = endLocalDate.atTime(23, 59, 59, 999_000_000).atZone(zoneId)
 
-        if (!now.isBefore(cutoffCandidate)) {
-            cutoffCandidate = cutoffCandidate.plusWeeks(1)
-        }
-
-        val cycleEnd = cutoffCandidate
-        val cycleStart = if (cutoffHour >= 23) {
-            cycleEnd.minusDays(6).toLocalDate().atStartOfDay(zoneId)
-        } else {
-            cycleEnd.minusWeeks(1)
-        }
+        // El ciclo inicia 6 días antes a las 00:00:00 (ej: si corte es Martes, inicia el Miércoles a las 00:00:00)
+        val startLocalDate = endLocalDate.minusDays(6)
+        val cycleStart = startLocalDate.atStartOfDay(zoneId)
 
         return Pair(
             cycleStart.toInstant().toEpochMilli(),

@@ -99,4 +99,29 @@ class CalculateWeeklyCycleBoundsUseCaseTest {
         assertEquals(DayOfWeek.SUNDAY, endZoned.dayOfWeek)
         assertEquals(13, endZoned.dayOfMonth)
     }
+
+    @Test
+    fun `cuando corte es Martes y hoy es Martes en la noche, ciclo sigue siendo de Miercoles 9 a Martes 15`() {
+        // Martes 15 de septiembre de 2026 a las 22:26 (10:26 PM)
+        val tuesdayNight = ZonedDateTime.of(2026, 9, 15, 22, 26, 0, 0, zoneId)
+        val (startMillis, endMillis) = useCase(
+            nowMillis = tuesdayNight.toInstant().toEpochMilli(),
+            cutoffDay = DayOfWeek.TUESDAY,
+            cutoffHour = 23,
+            zoneId = zoneId
+        )
+
+        val startZoned = Instant.ofEpochMilli(startMillis).atZone(zoneId)
+        val endZoned = Instant.ofEpochMilli(endMillis).atZone(zoneId)
+
+        // Inicio: Miércoles 9 de septiembre
+        assertEquals(DayOfWeek.WEDNESDAY, startZoned.dayOfWeek)
+        assertEquals(9, startZoned.dayOfMonth)
+
+        // Fin: Martes 15 de septiembre a las 23:59:59
+        assertEquals(DayOfWeek.TUESDAY, endZoned.dayOfWeek)
+        assertEquals(15, endZoned.dayOfMonth)
+        assertEquals(23, endZoned.hour)
+        assertEquals(59, endZoned.minute)
+    }
 }
