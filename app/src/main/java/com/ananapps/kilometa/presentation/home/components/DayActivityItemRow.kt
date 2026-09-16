@@ -199,7 +199,7 @@ fun DayActivityItemRow(
                 IconButton(onClick = onDeleteRequested, modifier = Modifier.size(44.dp)) {
                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Borrar", tint = StatusRed.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
                 }
-                if (event !is DayActivityEvent.TransferItem && event !is DayActivityEvent.MaintenanceItem) {
+                if (event !is DayActivityEvent.TransferItem) {
                     Spacer(modifier = Modifier.width(6.dp))
                     IconButton(onClick = onEditRequested, modifier = Modifier.size(44.dp)) {
                         Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = ElectricBluePrimary, modifier = Modifier.size(20.dp))

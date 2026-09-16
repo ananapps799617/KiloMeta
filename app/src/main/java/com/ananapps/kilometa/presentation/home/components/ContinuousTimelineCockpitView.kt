@@ -46,6 +46,7 @@ fun ContinuousTimelineCockpitView(
     onEditTrip: (Trip) -> Unit = {},
     onEditExpense: (Expense) -> Unit = {},
     onEditFueling: (Fueling) -> Unit = {},
+    onEditMaintenance: (MaintenanceRecord) -> Unit = {},
     onTransferClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -133,7 +134,8 @@ fun ContinuousTimelineCockpitView(
             onDeleteMaintenance = onDeleteMaintenance,
             onEditTrip = onEditTrip,
             onEditExpense = onEditExpense,
-            onEditFueling = onEditFueling
+            onEditFueling = onEditFueling,
+            onEditMaintenance = onEditMaintenance
         )
 
         Spacer(modifier = Modifier.height(72.dp))

@@ -47,12 +47,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ananapps.kilometa.domain.model.CsvReport
-import com.ananapps.kilometa.domain.model.HistoryFilterPeriod
-import com.ananapps.kilometa.domain.model.ShiftFinancialSummary
+import com.ananapps.kilometa.domain.model.*
 import com.ananapps.kilometa.presentation.history.components.ContinuousHistoryRoadList
+import com.ananapps.kilometa.presentation.history.components.EmptyHistoryView
 import com.ananapps.kilometa.presentation.history.components.ExportReportSheet
-import com.ananapps.kilometa.presentation.history.components.ShiftDetailsSheet
+import com.ananapps.kilometa.presentation.history.components.FilterPeriodSelector
+import com.ananapps.kilometa.presentation.home.components.ExpenseEditDialog
+import com.ananapps.kilometa.presentation.home.components.FuelingEditDialog
+import com.ananapps.kilometa.presentation.home.components.MaintenanceEditDialog
+import com.ananapps.kilometa.presentation.home.components.TripEditDialog
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
@@ -74,7 +77,10 @@ fun HistoryScreen(
     val context = LocalContext.current
 
     var showExportSheet by remember { mutableStateOf(false) }
-    var inspectingShift by remember { mutableStateOf<ShiftFinancialSummary?>(null) }
+    var editingTrip by remember { mutableStateOf<Trip?>(null) }
+    var editingFueling by remember { mutableStateOf<Fueling?>(null) }
+    var editingExpense by remember { mutableStateOf<Expense?>(null) }
+    var editingMaintenance by remember { mutableStateOf<MaintenanceRecord?>(null) }
     var pendingReport by remember { mutableStateOf<CsvReport?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -184,10 +190,15 @@ fun HistoryScreen(
                     }
                 }
                 is HistoryUiState.Success -> ContinuousHistoryRoadList(
-                    shifts = state.shifts,
-                    onDeleteShift = { viewModel.onDeleteShift(it) },
-                    onInspectShift = { inspectingShift = it },
-                    onConsolidateShifts = { viewModel.onConsolidateShiftsForDay(it) }
+                    days = state.days,
+                    onEditTrip = { editingTrip = it },
+                    onEditFueling = { editingFueling = it },
+                    onEditExpense = { editingExpense = it },
+                    onEditMaintenance = { editingMaintenance = it },
+                    onDeleteTrip = { viewModel.onDeleteTrip(it) },
+                    onDeleteFueling = { viewModel.onDeleteFueling(it) },
+                    onDeleteExpense = { viewModel.onDeleteExpense(it) },
+                    onDeleteMaintenance = { viewModel.onDeleteMaintenance(it) }
                 )
             }
         }
@@ -203,64 +214,47 @@ fun HistoryScreen(
         )
     }
 
-    inspectingShift?.let { shift ->
-        ShiftDetailsSheet(
-            shift = shift,
-            tripsFlow = viewModel.getShiftTrips(shift.shiftId),
-            fuelingsFlow = viewModel.getShiftFuelings(shift.shiftId),
-            expensesFlow = viewModel.getShiftExpenses(shift.shiftId),
-            onDismiss = { inspectingShift = null },
-            onDeleteTrip = { viewModel.onDeleteTrip(it) },
-            onDeleteFueling = { viewModel.onDeleteFueling(it) },
-            onDeleteExpense = { viewModel.onDeleteExpense(it) },
-            onUpdateShift = { startOdo, endOdo, notes ->
-                viewModel.onUpdateShift(shift.shiftId, startOdo, endOdo, notes)
-                inspectingShift = null
+    editingTrip?.let { trip ->
+        TripEditDialog(
+            trip = trip,
+            onDismiss = { editingTrip = null },
+            onConfirm = { updated ->
+                viewModel.onUpdateTrip(updated)
+                editingTrip = null
             }
         )
     }
-}
 
-// ------------------------------------------------------------------------------
-// BLOQUE 2: SELECTOR DE PERÍODO TEMPORAL ERGONÓMICO
-// ------------------------------------------------------------------------------
-@Composable
-private fun FilterPeriodSelector(
-    selectedFilter: HistoryFilterPeriod,
-    onSelectFilter: (HistoryFilterPeriod) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().background(DeepObsidianSurface, RoundedCornerShape(12.dp)).padding(4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        HistoryFilterPeriod.entries.forEach { period ->
-            val isSelected = period == selectedFilter
-            Box(
-                modifier = Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(8.dp))
-                    .background(if (isSelected) ElectricBluePrimary else DeepObsidianSurface)
-                    .clickable { onSelectFilter(period) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = period.displayName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) TextPrimary else TextSecondary,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
+    editingFueling?.let { fueling ->
+        FuelingEditDialog(
+            fueling = fueling,
+            onDismiss = { editingFueling = null },
+            onConfirm = { updated ->
+                viewModel.onUpdateFueling(updated)
+                editingFueling = null
             }
-        }
+        )
     }
-}
 
-// ------------------------------------------------------------------------------
-// BLOQUE 3: VISTA DE ESTADO VACÍO
-// ------------------------------------------------------------------------------
-@Composable
-private fun EmptyHistoryView(selectedFilter: HistoryFilterPeriod) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Sin jornadas registradas", style = MaterialTheme.typography.titleMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
-            Text("No se encontraron turnos cerrados en '${selectedFilter.displayName}'.", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-        }
+    editingExpense?.let { expense ->
+        ExpenseEditDialog(
+            expense = expense,
+            onDismiss = { editingExpense = null },
+            onConfirm = { updated ->
+                viewModel.onUpdateExpense(updated)
+                editingExpense = null
+            }
+        )
+    }
+
+    editingMaintenance?.let { maintenance ->
+        MaintenanceEditDialog(
+            maintenance = maintenance,
+            onDismiss = { editingMaintenance = null },
+            onConfirm = { updated ->
+                viewModel.onUpdateMaintenance(updated)
+                editingMaintenance = null
+            }
+        )
     }
 }

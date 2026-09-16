@@ -47,6 +47,7 @@ sealed interface HistoryUiState {
         val biFuelSavings: BiFuelSavingsMetrics,
         val platformBreakdowns: List<PlatformAnalytics>,
         val shifts: List<ShiftFinancialSummary>,
+        val days: List<com.ananapps.kilometa.domain.model.DayHistorySummary> = emptyList(),
         val selectedFilter: HistoryFilterPeriod
     ) : HistoryUiState
 

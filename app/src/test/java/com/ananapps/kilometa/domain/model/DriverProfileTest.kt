@@ -39,7 +39,7 @@ class DriverProfileTest {
         assertEquals(QuotaPeriodicity.WEEKLY, vehicle.quotaPeriodicity)
         assertEquals(6, vehicle.workDaysWeek)
         assertEquals(2, vehicle.quotaCutoffDay) // Martes
-        assertEquals(18, vehicle.quotaCutoffHour)
+        assertEquals(23, vehicle.quotaCutoffHour)
     }
 
     @Test

@@ -36,6 +36,7 @@ import com.ananapps.kilometa.presentation.history.components.ExportReportSheet
 import com.ananapps.kilometa.presentation.history.components.PlatformBreakdownCard
 import com.ananapps.kilometa.presentation.reports.components.ExpensesDonutChartCard
 import com.ananapps.kilometa.presentation.reports.components.KpiSummaryMatrix
+import com.ananapps.kilometa.presentation.reports.components.PeriodCycleStepper
 import com.ananapps.kilometa.presentation.reports.components.RevenueVsCostsBarChart
 import com.ananapps.kilometa.presentation.theme.*
 
@@ -160,6 +161,23 @@ fun ReportsScreen(
                         )
                     }
                 }
+            }
+
+            // Stepper de Ciclos Acotados (Semana / Mes)
+            val (cycleTitle, cycleSubtitle, canGoNext) = when (val s = uiState) {
+                is ReportsUiState.Success -> Triple(s.cycleTitle, s.cycleSubtitle, s.canGoNext)
+                is ReportsUiState.Empty -> Triple(s.cycleTitle, s.cycleSubtitle, s.canGoNext)
+                else -> Triple("", "", false)
+            }
+
+            if (selectedPeriod != ReportPeriod.ALL && cycleTitle.isNotBlank()) {
+                PeriodCycleStepper(
+                    title = cycleTitle,
+                    subtitle = cycleSubtitle,
+                    canGoNext = canGoNext,
+                    onPreviousClick = { viewModel.onPreviousPeriodClicked() },
+                    onNextClick = { viewModel.onNextPeriodClicked() }
+                )
             }
 
             when (val state = uiState) {

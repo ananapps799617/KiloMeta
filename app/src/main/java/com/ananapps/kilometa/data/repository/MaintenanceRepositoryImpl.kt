@@ -60,6 +60,12 @@ class MaintenanceRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateMaintenance(record: MaintenanceRecord) {
+        withContext(dispatchers.io) {
+            maintenanceDao.updateMaintenance(record.toEntity())
+        }
+    }
+
     override suspend fun deleteMaintenance(id: String) {
         withContext(dispatchers.io) {
             maintenanceDao.deleteMaintenance(id)

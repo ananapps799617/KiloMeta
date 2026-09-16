@@ -124,4 +124,26 @@ class CalculateWeeklyCycleBoundsUseCaseTest {
         assertEquals(23, endZoned.hour)
         assertEquals(59, endZoned.minute)
     }
+
+    @Test
+    fun `cuando weekOffset es 1, retrocede exactamente a la semana cerrada anterior`() {
+        // Miércoles 16 de septiembre de 2026 a las 10:00 AM (semana actual es 16-22)
+        val wednesday = ZonedDateTime.of(2026, 9, 16, 10, 0, 0, 0, zoneId)
+        val (startMillis, endMillis) = useCase(
+            nowMillis = wednesday.toInstant().toEpochMilli(),
+            cutoffDay = DayOfWeek.TUESDAY,
+            cutoffHour = 23,
+            zoneId = zoneId,
+            weekOffset = 1
+        )
+
+        val startZoned = Instant.ofEpochMilli(startMillis).atZone(zoneId)
+        val endZoned = Instant.ofEpochMilli(endMillis).atZone(zoneId)
+
+        // Semana cerrada anterior: Miércoles 9 de septiembre a Martes 15 de septiembre
+        assertEquals(DayOfWeek.WEDNESDAY, startZoned.dayOfWeek)
+        assertEquals(9, startZoned.dayOfMonth)
+        assertEquals(DayOfWeek.TUESDAY, endZoned.dayOfWeek)
+        assertEquals(15, endZoned.dayOfMonth)
+    }
 }

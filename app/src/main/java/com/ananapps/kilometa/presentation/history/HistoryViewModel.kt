@@ -71,9 +71,14 @@ class HistoryViewModel @Inject constructor(
     private val tripRepository: TripRepository,
     private val fuelingRepository: FuelingRepository,
     private val expenseRepository: ExpenseRepository,
+    private val maintenanceRepository: com.ananapps.kilometa.domain.repository.MaintenanceRepository,
     private val deleteTripUseCase: DeleteTripUseCase,
     private val deleteFuelingUseCase: DeleteFuelingUseCase,
-    private val deleteExpenseUseCase: DeleteExpenseUseCase
+    private val deleteExpenseUseCase: DeleteExpenseUseCase,
+    private val updateTripUseCase: com.ananapps.kilometa.domain.usecase.UpdateTripUseCase,
+    private val updateFuelingUseCase: com.ananapps.kilometa.domain.usecase.UpdateFuelingUseCase,
+    private val updateExpenseUseCase: com.ananapps.kilometa.domain.usecase.UpdateExpenseUseCase,
+    private val updateMaintenanceUseCase: com.ananapps.kilometa.domain.usecase.UpdateMaintenanceUseCase
 ) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow(HistoryFilterPeriod.ALL)
@@ -83,11 +88,22 @@ class HistoryViewModel @Inject constructor(
 
     val uiState: StateFlow<HistoryUiState> = combine(
         _selectedFilter,
-        getShiftHistoryUseCase(),
         shiftRepository.getAllTrips(),
-        driverProfileRepository.getVehicleProfile()
-    ) { filter, completedShifts, allTrips, vehicle ->
-        processHistoricalData(filter, completedShifts, allTrips, vehicle)
+        shiftRepository.getAllFuelings(),
+        expenseRepository.getAllExpenses(),
+        maintenanceRepository.getAllMaintenances(),
+        driverProfileRepository.getVehicleProfile(),
+        getShiftHistoryUseCase()
+    ) { args: Array<Any?> ->
+        val filter = args[0] as HistoryFilterPeriod
+        val trips = args[1] as List<Trip>
+        val fuelings = args[2] as List<Fueling>
+        val expenses = args[3] as List<Expense>
+        val maintenances = args[4] as List<com.ananapps.kilometa.domain.model.MaintenanceRecord>
+        val vehicle = args[5] as VehicleProfile
+        val completedShifts = args[6] as List<ShiftFinancialSummary>
+
+        processHistoricalData(filter, completedShifts, trips, fuelings, expenses, maintenances, vehicle)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000L),
@@ -155,13 +171,19 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
-    // Métodos para inspección y edición de entidades hijas del turno
+    // Métodos para inspección y edición de entidades de cabina
     fun getShiftTrips(shiftId: String) = tripRepository.getTripsByShift(shiftId)
     fun getShiftFuelings(shiftId: String) = fuelingRepository.getFuelingsByShift(shiftId)
     fun getShiftExpenses(shiftId: String) = expenseRepository.getExpensesByShift(shiftId)
     fun onDeleteTrip(tripId: String) = viewModelScope.launch { deleteTripUseCase(tripId) }
     fun onDeleteFueling(fuelingId: String) = viewModelScope.launch { deleteFuelingUseCase(fuelingId) }
     fun onDeleteExpense(expenseId: String) = viewModelScope.launch { deleteExpenseUseCase(expenseId) }
+    fun onDeleteMaintenance(id: String) = viewModelScope.launch { maintenanceRepository.deleteMaintenance(id) }
+
+    fun onUpdateTrip(trip: Trip) = viewModelScope.launch { updateTripUseCase(trip) }
+    fun onUpdateFueling(fueling: Fueling) = viewModelScope.launch { updateFuelingUseCase(fueling) }
+    fun onUpdateExpense(expense: Expense) = viewModelScope.launch { updateExpenseUseCase(expense) }
+    fun onUpdateMaintenance(maint: com.ananapps.kilometa.domain.model.MaintenanceRecord) = viewModelScope.launch { updateMaintenanceUseCase(maint) }
 
     private fun filterShifts(period: HistoryFilterPeriod, shifts: List<ShiftFinancialSummary>, vehicle: VehicleProfile): List<ShiftFinancialSummary> {
         val cutoffMillis = calculatePeriodCutoff(period, vehicle)
@@ -172,17 +194,21 @@ class HistoryViewModel @Inject constructor(
         filter: HistoryFilterPeriod,
         shifts: List<ShiftFinancialSummary>,
         trips: List<Trip>,
+        fuelings: List<Fueling>,
+        expenses: List<Expense>,
+        maintenances: List<com.ananapps.kilometa.domain.model.MaintenanceRecord>,
         vehicle: VehicleProfile
     ): HistoryUiState {
-        if (shifts.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
-
         val cutoffMillis = calculatePeriodCutoff(filter, vehicle)
         val filteredShifts = if (cutoffMillis > 0L) shifts.filter { it.startTime >= cutoffMillis } else shifts
-        if (filteredShifts.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
+        val days = DayHistoryMapper.mapToDays(trips, fuelings, expenses, maintenances, cutoffMillis)
+
+        if (shifts.isEmpty() && days.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
+        if (filteredShifts.isEmpty() && days.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
 
         val filteredTrips = if (cutoffMillis > 0L) trips.filter { it.timestamp >= cutoffMillis } else trips
-        val totalNetProfit = filteredShifts.sumOf { it.netProfit }
-        val totalKilometers = filteredShifts.sumOf { it.totalKilometers }
+        val totalNetProfit = if (days.isNotEmpty()) days.sumOf { it.netProfit } else filteredShifts.sumOf { it.netProfit }
+        val totalKilometers = if (days.isNotEmpty()) days.sumOf { it.distanceKm } else filteredShifts.sumOf { it.totalKilometers }
         val totalTrips = if (filteredTrips.isNotEmpty()) filteredTrips.size else filteredShifts.sumOf { it.tripsCount }
 
         val savingsMetrics = getBiFuelSavingsUseCase(
@@ -198,6 +224,7 @@ class HistoryViewModel @Inject constructor(
             biFuelSavings = savingsMetrics,
             platformBreakdowns = getPlatformAnalyticsUseCase(filteredTrips),
             shifts = filteredShifts,
+            days = days,
             selectedFilter = filter
         )
     }

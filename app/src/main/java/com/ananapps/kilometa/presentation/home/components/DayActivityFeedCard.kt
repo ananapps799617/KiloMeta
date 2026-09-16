@@ -37,6 +37,7 @@ fun DayActivityFeedCard(
     onEditTrip: (Trip) -> Unit = {},
     onEditExpense: (Expense) -> Unit = {},
     onEditFueling: (Fueling) -> Unit = {},
+    onEditMaintenance: (com.ananapps.kilometa.domain.model.MaintenanceRecord) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
@@ -112,6 +113,7 @@ fun DayActivityFeedCard(
                                         is DayActivityEvent.TripItem -> onEditTrip(event.trip)
                                         is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
                                         is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
+                                        is DayActivityEvent.MaintenanceItem -> onEditMaintenance(event.maintenance)
                                         else -> Unit
                                     }
                                 },

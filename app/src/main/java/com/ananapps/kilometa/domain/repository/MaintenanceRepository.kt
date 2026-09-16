@@ -26,5 +26,7 @@ interface MaintenanceRepository {
 
     suspend fun addMaintenance(record: MaintenanceRecord)
 
+    suspend fun updateMaintenance(record: MaintenanceRecord)
+
     suspend fun deleteMaintenance(id: String)
 }

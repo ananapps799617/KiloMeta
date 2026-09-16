@@ -39,6 +39,13 @@ class FakeMaintenanceRepository : MaintenanceRepository {
         records.add(record)
     }
 
+    override suspend fun updateMaintenance(record: MaintenanceRecord) {
+        val index = records.indexOfFirst { it.id == record.id }
+        if (index != -1) {
+            records[index] = record
+        }
+    }
+
     override suspend fun deleteMaintenance(id: String) {
         records.removeAll { it.id == id }
     }

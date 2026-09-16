@@ -23,8 +23,8 @@ android {
         applicationId = "com.ananapps.kilometa"
         minSdk = 26
         targetSdk = 34
-        versionCode = 214
-        versionName = "2.8.2-alpha.1"
+        versionCode = 215
+        versionName = "2.9.0-alpha.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
