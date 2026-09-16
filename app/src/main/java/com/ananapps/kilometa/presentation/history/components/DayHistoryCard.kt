@@ -45,6 +45,11 @@ fun DayHistoryCard(
     onDeleteFueling: (String) -> Unit,
     onDeleteExpense: (String) -> Unit,
     onDeleteMaintenance: (String) -> Unit,
+    onAddTrip: (Long) -> Unit = {},
+    onAddFueling: (Long) -> Unit = {},
+    onAddExpense: (Long) -> Unit = {},
+    onAddMaintenance: (Long) -> Unit = {},
+    onEditDayMetrics: (DayHistorySummary) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
@@ -118,11 +123,23 @@ fun DayHistoryCard(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "📊 BALANCE COMPLETO DEL DÍA",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = ElectricBluePrimary
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "📊 BALANCE DEL DÍA",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = ElectricBluePrimary
+                            )
+                            Text(
+                                text = "✏️ Ajustar Horas y Km",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = ElectricBluePrimary,
+                                modifier = Modifier.clickable { onEditDayMetrics(day) }
+                            )
+                        }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Odómetros:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
@@ -193,6 +210,15 @@ fun DayHistoryCard(
                         )
                     }
                 }
+
+                HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 4.dp))
+
+                DayQuickActionRow(
+                    onAddTrip = { onAddTrip(day.dateMillis) },
+                    onAddFueling = { onAddFueling(day.dateMillis) },
+                    onAddExpense = { onAddExpense(day.dateMillis) },
+                    onAddMaintenance = { onAddMaintenance(day.dateMillis) }
+                )
             }
         }
     }

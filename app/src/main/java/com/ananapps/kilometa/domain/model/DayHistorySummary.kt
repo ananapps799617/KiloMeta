@@ -27,5 +27,8 @@ data class DayHistorySummary(
     val endTimeFormatted: String,
     val elapsedHoursFormatted: String,
     val ratePerKm: Double,
-    val events: List<DayActivityEvent>
+    val events: List<DayActivityEvent>,
+    val startTimeMillis: Long = 0L,
+    val endTimeMillis: Long = 0L,
+    val shiftId: String? = null
 )

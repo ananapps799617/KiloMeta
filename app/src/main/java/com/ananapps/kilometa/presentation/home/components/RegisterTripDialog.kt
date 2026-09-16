@@ -34,14 +34,15 @@ fun RegisterTripDialog(
         endOdometer: Int?
     ) -> Unit = { _, _, _, _, _, _, _, _ -> },
     onConfirmUpdate: (Trip) -> Unit = {},
+    initialTimestamp: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val isEditing = existingTrip != null
     var selectedPlatform by remember(existingTrip) {
         mutableStateOf(existingTrip?.platformType ?: PlatformType.UBER)
     }
-    var selectedDateTimeMillis by remember(existingTrip) {
-        mutableStateOf(existingTrip?.timestamp ?: System.currentTimeMillis())
+    var selectedDateTimeMillis by remember(existingTrip, initialTimestamp) {
+        mutableStateOf(existingTrip?.timestamp ?: initialTimestamp ?: System.currentTimeMillis())
     }
     var startOdometerText by remember(existingTrip, lastKnownOdometer) {
         val odo = existingTrip?.startOdometer ?: if (lastKnownOdometer > 0) lastKnownOdometer else null

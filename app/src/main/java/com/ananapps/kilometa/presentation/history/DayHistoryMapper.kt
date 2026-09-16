@@ -73,6 +73,10 @@ object DayHistoryMapper {
 
             val ratePerKm = if (distanceKm > 0) netProfit / distanceKm else 0.0
 
+            val resolvedShiftId = dayTrips.firstOrNull()?.shiftId
+                ?: dayFuelings.firstOrNull()?.shiftId
+                ?: dayExpenses.firstOrNull()?.shiftId
+
             DayHistorySummary(
                 dateMillis = firstEventTime,
                 dateFormatted = dayTitleFormatter.format(Date(firstEventTime)).replaceFirstChar { it.uppercase() },
@@ -88,7 +92,10 @@ object DayHistoryMapper {
                 endTimeFormatted = timeFormatter.format(Date(lastEventTime)),
                 elapsedHoursFormatted = elapsedFormatted,
                 ratePerKm = ratePerKm,
-                events = sortedEvents
+                events = sortedEvents,
+                startTimeMillis = firstEventTime,
+                endTimeMillis = lastEventTime,
+                shiftId = resolvedShiftId
             )
         }.sortedByDescending { it.dateMillis }
     }

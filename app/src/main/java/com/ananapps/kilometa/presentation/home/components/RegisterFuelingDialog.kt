@@ -38,11 +38,12 @@ fun RegisterFuelingDialog(
     onUpdateStationPrice: ((placeId: String, fuelType: FuelType, newPrice: Double) -> Unit)? = null,
     onConfirmFueling: (fuelType: FuelType, amountPaid: Double, volume: Double, odometer: Int, paymentSource: WalletType, timestamp: Long) -> Unit = { _, _, _, _, _, _ -> },
     onConfirmUpdate: (Fueling) -> Unit = {},
+    initialTimestamp: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val isEditing = existingFueling != null
-    var selectedTimestamp by remember(existingFueling) {
-        mutableStateOf(existingFueling?.timestamp ?: System.currentTimeMillis())
+    var selectedTimestamp by remember(existingFueling, initialTimestamp) {
+        mutableStateOf(existingFueling?.timestamp ?: initialTimestamp ?: System.currentTimeMillis())
     }
     val availableFuels = remember(propulsionType) {
         when (propulsionType) {

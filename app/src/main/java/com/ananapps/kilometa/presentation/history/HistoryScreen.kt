@@ -9,63 +9,26 @@
 
 package com.ananapps.kilometa.presentation.history
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.domain.model.*
-import com.ananapps.kilometa.presentation.history.components.ContinuousHistoryRoadList
-import com.ananapps.kilometa.presentation.history.components.EmptyHistoryView
-import com.ananapps.kilometa.presentation.history.components.ExportReportSheet
-import com.ananapps.kilometa.presentation.history.components.FilterPeriodSelector
-import com.ananapps.kilometa.presentation.home.components.ExpenseEditDialog
-import com.ananapps.kilometa.presentation.home.components.FuelingEditDialog
-import com.ananapps.kilometa.presentation.home.components.MaintenanceEditDialog
-import com.ananapps.kilometa.presentation.home.components.TripEditDialog
-import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
-import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
-import com.ananapps.kilometa.presentation.theme.DeepObsidianSurfaceVariant
-import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
-import com.ananapps.kilometa.presentation.theme.TextPrimary
-import com.ananapps.kilometa.presentation.theme.TextSecondary
+import com.ananapps.kilometa.presentation.history.components.*
+import com.ananapps.kilometa.presentation.theme.*
+import java.util.Calendar
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: PANTALLA PRINCIPAL DE HISTORIAL Y EXPORTACIÓN CONTABLE
-// ------------------------------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
@@ -74,6 +37,8 @@ fun HistoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val exportState by viewModel.exportState.collectAsState()
+    val lastKnownOdometer by viewModel.lastKnownOdometer.collectAsState()
+    val vehicleProfile by viewModel.vehicleProfile.collectAsState()
     val context = LocalContext.current
 
     var showExportSheet by remember { mutableStateOf(false) }
@@ -81,10 +46,17 @@ fun HistoryScreen(
     var editingFueling by remember { mutableStateOf<Fueling?>(null) }
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var editingMaintenance by remember { mutableStateOf<MaintenanceRecord?>(null) }
+    var editingDayMetrics by remember { mutableStateOf<DayHistorySummary?>(null) }
+
+    var registeringTripTimestamp by remember { mutableStateOf<Long?>(null) }
+    var registeringFuelingTimestamp by remember { mutableStateOf<Long?>(null) }
+    var registeringExpenseTimestamp by remember { mutableStateOf<Long?>(null) }
+    var registeringMaintenanceTimestamp by remember { mutableStateOf<Long?>(null) }
+    var showActionChoiceForDate by remember { mutableStateOf<Long?>(null) }
+
     var pendingReport by remember { mutableStateOf<CsvReport?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Storage Access Framework (SAF) para persistencia local de CSV
     val createDocLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri ->
@@ -109,7 +81,6 @@ fun HistoryScreen(
         }
     }
 
-    // Efecto reactivo para disparar SAF o Intent de mensajería
     LaunchedEffect(exportState) {
         when (val state = exportState) {
             is ExportUiState.CsvReady -> {
@@ -142,6 +113,20 @@ fun HistoryScreen(
         else -> HistoryFilterPeriod.ALL
     }
 
+    val onOpenPastDatePicker = {
+        val cal = Calendar.getInstance()
+        DatePickerDialog(
+            context,
+            { _, y, m, d ->
+                val chosen = Calendar.getInstance().apply { set(y, m, d, 12, 0, 0) }
+                showActionChoiceForDate = chosen.timeInMillis
+            },
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH),
+            cal.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
     Surface(modifier = modifier.fillMaxSize(), color = DeepObsidianBackground) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -156,17 +141,21 @@ fun HistoryScreen(
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
-                Button(
-                    onClick = { showExportSheet = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = DeepObsidianSurfaceVariant),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "Exportar 📤",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = ElectricBluePrimary,
-                        fontWeight = FontWeight.Bold
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onOpenPastDatePicker,
+                        colors = ButtonDefaults.buttonColors(containerColor = DeepObsidianSurfaceVariant),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = "📅 + Fecha", style = MaterialTheme.typography.labelMedium, color = ElectricBluePrimary, fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { showExportSheet = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = DeepObsidianSurfaceVariant),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = "Exportar 📤", style = MaterialTheme.typography.labelMedium, color = ElectricBluePrimary, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -198,7 +187,12 @@ fun HistoryScreen(
                     onDeleteTrip = { viewModel.onDeleteTrip(it) },
                     onDeleteFueling = { viewModel.onDeleteFueling(it) },
                     onDeleteExpense = { viewModel.onDeleteExpense(it) },
-                    onDeleteMaintenance = { viewModel.onDeleteMaintenance(it) }
+                    onDeleteMaintenance = { viewModel.onDeleteMaintenance(it) },
+                    onAddTrip = { registeringTripTimestamp = it },
+                    onAddFueling = { registeringFuelingTimestamp = it },
+                    onAddExpense = { registeringExpenseTimestamp = it },
+                    onAddMaintenance = { registeringMaintenanceTimestamp = it },
+                    onEditDayMetrics = { editingDayMetrics = it }
                 )
             }
         }
@@ -214,47 +208,68 @@ fun HistoryScreen(
         )
     }
 
-    editingTrip?.let { trip ->
-        TripEditDialog(
-            trip = trip,
-            onDismiss = { editingTrip = null },
-            onConfirm = { updated ->
-                viewModel.onUpdateTrip(updated)
-                editingTrip = null
-            }
+    showActionChoiceForDate?.let { dateMillis ->
+        PastDateActionPickerDialog(
+            dateMillis = dateMillis,
+            onSelectAction = { type ->
+                showActionChoiceForDate = null
+                when (type) {
+                    HistoryActivityType.TRIP -> registeringTripTimestamp = dateMillis
+                    HistoryActivityType.FUELING -> registeringFuelingTimestamp = dateMillis
+                    HistoryActivityType.EXPENSE -> registeringExpenseTimestamp = dateMillis
+                    HistoryActivityType.MAINTENANCE -> registeringMaintenanceTimestamp = dateMillis
+                }
+            },
+            onDismiss = { showActionChoiceForDate = null }
         )
     }
 
-    editingFueling?.let { fueling ->
-        FuelingEditDialog(
-            fueling = fueling,
-            onDismiss = { editingFueling = null },
-            onConfirm = { updated ->
-                viewModel.onUpdateFueling(updated)
-                editingFueling = null
+    HistoryDialogsHost(
+        editingTrip = editingTrip,
+        editingFueling = editingFueling,
+        editingExpense = editingExpense,
+        editingMaintenance = editingMaintenance,
+        editingDayMetrics = editingDayMetrics,
+        registeringTripTimestamp = registeringTripTimestamp,
+        registeringFuelingTimestamp = registeringFuelingTimestamp,
+        registeringExpenseTimestamp = registeringExpenseTimestamp,
+        registeringMaintenanceTimestamp = registeringMaintenanceTimestamp,
+        lastKnownOdometer = lastKnownOdometer,
+        vehicleProfile = vehicleProfile,
+        onDismissTripEdit = { editingTrip = null },
+        onDismissFuelingEdit = { editingFueling = null },
+        onDismissExpenseEdit = { editingExpense = null },
+        onDismissMaintenanceEdit = { editingMaintenance = null },
+        onDismissDayMetricsEdit = { editingDayMetrics = null },
+        onDismissRegisterTrip = { registeringTripTimestamp = null },
+        onDismissRegisterFueling = { registeringFuelingTimestamp = null },
+        onDismissRegisterExpense = { registeringExpenseTimestamp = null },
+        onDismissRegisterMaintenance = { registeringMaintenanceTimestamp = null },
+        onUpdateTrip = { viewModel.onUpdateTrip(it); editingTrip = null },
+        onUpdateFueling = { viewModel.onUpdateFueling(it); editingFueling = null },
+        onUpdateExpense = { viewModel.onUpdateExpense(it); editingExpense = null },
+        onUpdateMaintenance = { viewModel.onUpdateMaintenance(it); editingMaintenance = null },
+        onUpdateDayMetrics = { sOdo, eOdo, sTime, eTime ->
+            editingDayMetrics?.let { day ->
+                viewModel.onUpdateDayMetrics(day.dateMillis, sOdo, eOdo, sTime, eTime)
             }
-        )
-    }
-
-    editingExpense?.let { expense ->
-        ExpenseEditDialog(
-            expense = expense,
-            onDismiss = { editingExpense = null },
-            onConfirm = { updated ->
-                viewModel.onUpdateExpense(updated)
-                editingExpense = null
-            }
-        )
-    }
-
-    editingMaintenance?.let { maintenance ->
-        MaintenanceEditDialog(
-            maintenance = maintenance,
-            onDismiss = { editingMaintenance = null },
-            onConfirm = { updated ->
-                viewModel.onUpdateMaintenance(updated)
-                editingMaintenance = null
-            }
-        )
-    }
+            editingDayMetrics = null
+        },
+        onConfirmAddTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo ->
+            viewModel.onAddTrip(plat, gross, comm, pay, dest, time, sOdo, eOdo)
+            registeringTripTimestamp = null
+        },
+        onConfirmAddFueling = { type, amount, vol, odo, src, time ->
+            viewModel.onAddFueling(type, amount, vol, odo, src, time)
+            registeringFuelingTimestamp = null
+        },
+        onConfirmAddExpense = { concept, amount, src, time ->
+            viewModel.onAddExpense(concept, amount, src, time)
+            registeringExpenseTimestamp = null
+        },
+        onConfirmAddMaintenance = { type, odo, cost, notes, src, title, loc, time ->
+            viewModel.onAddMaintenance(type, odo, cost, notes, src, title, loc, time)
+            registeringMaintenanceTimestamp = null
+        }
+    )
 }

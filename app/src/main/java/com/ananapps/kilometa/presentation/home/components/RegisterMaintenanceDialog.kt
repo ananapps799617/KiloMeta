@@ -52,6 +52,7 @@ fun RegisterMaintenanceDialog(
         timestamp: Long
     ) -> Unit = { _, _, _, _, _, _, _, _ -> },
     onConfirmUpdate: (MaintenanceRecord) -> Unit = {},
+    initialTimestamp: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val isEditing = existingMaintenance != null
@@ -77,8 +78,8 @@ fun RegisterMaintenanceDialog(
     var paymentSource by remember(existingMaintenance) {
         mutableStateOf(existingMaintenance?.paymentSource ?: WalletType.CASH_PHYSICAL)
     }
-    var selectedTimestamp by remember(existingMaintenance) {
-        mutableStateOf(existingMaintenance?.timestamp ?: System.currentTimeMillis())
+    var selectedTimestamp by remember(existingMaintenance, initialTimestamp) {
+        mutableStateOf(existingMaintenance?.timestamp ?: initialTimestamp ?: System.currentTimeMillis())
     }
 
     val odoNumeric = odoText.filter { it.isDigit() }.toIntOrNull() ?: lastKnownOdometer

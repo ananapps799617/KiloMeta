@@ -37,10 +37,11 @@ fun RegisterExpenseDialog(
     existingExpense: Expense? = null,
     onConfirmExpense: (concept: ExpenseConcept, amount: Double, paymentSource: WalletType, timestamp: Long) -> Unit = { _, _, _, _ -> },
     onConfirmUpdate: (Expense) -> Unit = {},
+    initialTimestamp: Long? = null,
     modifier: Modifier = Modifier
 ) {
-    var selectedTimestamp by remember(existingExpense) {
-        mutableStateOf(existingExpense?.timestamp ?: System.currentTimeMillis())
+    var selectedTimestamp by remember(existingExpense, initialTimestamp) {
+        mutableStateOf(existingExpense?.timestamp ?: initialTimestamp ?: System.currentTimeMillis())
     }
     var selectedConcept by remember(existingExpense) {
         mutableStateOf(existingExpense?.concept ?: ExpenseConcept.RENT)

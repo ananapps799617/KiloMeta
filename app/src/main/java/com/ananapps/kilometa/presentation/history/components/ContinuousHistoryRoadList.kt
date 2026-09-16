@@ -37,6 +37,11 @@ fun ContinuousHistoryRoadList(
     onDeleteFueling: (String) -> Unit,
     onDeleteExpense: (String) -> Unit,
     onDeleteMaintenance: (String) -> Unit,
+    onAddTrip: (Long) -> Unit = {},
+    onAddFueling: (Long) -> Unit = {},
+    onAddExpense: (Long) -> Unit = {},
+    onAddMaintenance: (Long) -> Unit = {},
+    onEditDayMetrics: (DayHistorySummary) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val monthFormatter = remember { SimpleDateFormat("MMMM yyyy", Locale("es", "CO")) }
@@ -85,7 +90,12 @@ fun ContinuousHistoryRoadList(
                     onDeleteTrip = onDeleteTrip,
                     onDeleteFueling = onDeleteFueling,
                     onDeleteExpense = onDeleteExpense,
-                    onDeleteMaintenance = onDeleteMaintenance
+                    onDeleteMaintenance = onDeleteMaintenance,
+                    onAddTrip = onAddTrip,
+                    onAddFueling = onAddFueling,
+                    onAddExpense = onAddExpense,
+                    onAddMaintenance = onAddMaintenance,
+                    onEditDayMetrics = onEditDayMetrics
                 )
             }
         }
