@@ -77,12 +77,13 @@ fun RegisterMaintenanceDialog(
 
     Dialog(
         onDismissRequest = { if (hasDirtyData) showDiscardDialog = true else onDismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Surface(
             modifier = modifier
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.85f)
+                .imePadding()
                 .border(1.dp, DeepObsidianBorder.copy(alpha = 0.5f), RoundedCornerShape(24.dp)),
             shape = RoundedCornerShape(24.dp),
             color = DeepObsidianSurface
