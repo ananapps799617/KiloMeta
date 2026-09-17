@@ -180,12 +180,23 @@ fun DayHistoryCard(
                     }
                 }
 
-                // 2. LÍNEA DE ACTIVIDADES CRONOLÓGICAS DEL DÍA
+                // 2. BOTONES DE ACCIÓN RÁPIDA (Reubicados entre Balance y Actividades a solicitud de Gerencia)
+                DayQuickActionRow(
+                    onAddTrip = { onAddTrip(day.dateMillis) },
+                    onAddFueling = { onAddFueling(day.dateMillis) },
+                    onAddExpense = { onAddExpense(day.dateMillis) },
+                    onAddMaintenance = { onAddMaintenance(day.dateMillis) },
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 2.dp))
+
+                // 3. LÍNEA DE ACTIVIDADES CRONOLÓGICAS DEL DÍA
                 Text(
                     text = "ACTIVIDADES EN CARRETERA (${day.events.size})",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = TextSecondary,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -214,15 +225,6 @@ fun DayHistoryCard(
                         )
                     }
                 }
-
-                HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 4.dp))
-
-                DayQuickActionRow(
-                    onAddTrip = { onAddTrip(day.dateMillis) },
-                    onAddFueling = { onAddFueling(day.dateMillis) },
-                    onAddExpense = { onAddExpense(day.dateMillis) },
-                    onAddMaintenance = { onAddMaintenance(day.dateMillis) }
-                )
             }
         }
     }
