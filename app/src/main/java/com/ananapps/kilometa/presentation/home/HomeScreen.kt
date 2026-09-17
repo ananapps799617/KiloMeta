@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
@@ -44,6 +45,7 @@ import com.ananapps.kilometa.presentation.home.components.ContinuousTimelineCock
 import com.ananapps.kilometa.presentation.home.components.ExpenseEditDialog
 import com.ananapps.kilometa.presentation.home.components.FuelingEditDialog
 import com.ananapps.kilometa.presentation.home.components.HomeCockpitModals
+import com.ananapps.kilometa.presentation.home.components.PocketLedgerDialog
 import com.ananapps.kilometa.presentation.home.components.StandbyPlaceholderView
 import com.ananapps.kilometa.presentation.home.components.TripEditDialog
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
@@ -56,6 +58,7 @@ import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = viewModel(),
+    pocketLedgerViewModel: PocketLedgerViewModel = hiltViewModel(),
     showTopBar: Boolean = false,
     triggerQuickTrip: Boolean = false, onResetQuickTripTrigger: () -> Unit = {},
     triggerQuickFueling: Boolean = false, onResetQuickFuelingTrigger: () -> Unit = {},
@@ -63,6 +66,8 @@ fun HomeScreen(
     triggerQuickMaintenance: Boolean = false, onResetQuickMaintenanceTrigger: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val selectedPocketForLedger by pocketLedgerViewModel.selectedPocket.collectAsState()
+    val pocketLedgerSummary by pocketLedgerViewModel.ledgerSummary.collectAsState()
     val vehicle by viewModel.vehicleProfile.collectAsState()
     val lastKnownOdometer by viewModel.lastKnownOdometer.collectAsState()
     val dayContinuousTimeline by viewModel.dayContinuousTimeline.collectAsState()
@@ -132,7 +137,8 @@ fun HomeScreen(
                         onEditTrip = { editingTrip = it },
                         onEditExpense = { editingExpense = it },
                         onEditFueling = { editingFueling = it },
-                        onTransferClick = { showTransferDialog = true }
+                        onTransferClick = { showTransferDialog = true },
+                        onPocketClick = { pocket -> pocketLedgerViewModel.selectPocket(pocket) }
                     )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
@@ -157,6 +163,15 @@ fun HomeScreen(
         onDismissTransferDialog = { showTransferDialog = false },
         lastKnownOdometer = lastKnownOdometer
     )
+
+    if (selectedPocketForLedger != null) {
+        PocketLedgerDialog(
+            summary = pocketLedgerSummary,
+            onDismiss = { pocketLedgerViewModel.selectPocket(null) },
+            onPreviousWeek = { pocketLedgerViewModel.previousWeek() },
+            onNextWeek = { pocketLedgerViewModel.nextWeek() }
+        )
+    }
 
     editingTrip?.let { trip ->
         TripEditDialog(

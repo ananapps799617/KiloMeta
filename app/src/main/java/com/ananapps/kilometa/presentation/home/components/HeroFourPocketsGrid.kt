@@ -28,10 +28,14 @@ import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.presentation.theme.*
 import java.util.Locale
 
+import androidx.compose.foundation.clickable
+import com.ananapps.kilometa.domain.model.PocketType
+
 @Composable
 fun HeroFourPocketsGrid(
     cashSettlement: CashSettlementSummary?,
     onTransferClick: () -> Unit,
+    onPocketClick: ((PocketType) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val cash = cashSettlement?.cashPhysicalBalance ?: 0.0
@@ -85,14 +89,16 @@ fun HeroFourPocketsGrid(
                 label = "Efectivo Físico",
                 amount = cash,
                 accentColor = StatusGreen,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { onPocketClick?.invoke(PocketType.CASH_PHYSICAL) }
             )
             PocketItemCell(
                 icon = "🟣",
                 label = "Nequi / Davi",
                 amount = digital,
                 accentColor = Color(0xFFBA68C8),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { onPocketClick?.invoke(PocketType.DIGITAL_WALLET) }
             )
         }
 
@@ -106,14 +112,16 @@ fun HeroFourPocketsGrid(
                 label = "Billetera Uber",
                 amount = uber,
                 accentColor = TextPrimary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { onPocketClick?.invoke(PocketType.UBER) }
             )
             PocketItemCell(
                 icon = "🧡",
                 label = "Billetera DiDi",
                 amount = didi,
                 accentColor = Color(0xFFFF7A00),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = { onPocketClick?.invoke(PocketType.DIDI) }
             )
         }
     }
@@ -125,13 +133,15 @@ private fun PocketItemCell(
     label: String,
     amount: Double,
     accentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .background(DeepObsidianSurfaceVariant)
             .border(1.dp, DeepObsidianBorder.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(horizontal = 10.dp, vertical = 7.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

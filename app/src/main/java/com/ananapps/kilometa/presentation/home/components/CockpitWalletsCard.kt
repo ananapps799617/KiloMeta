@@ -27,11 +27,15 @@ import com.ananapps.kilometa.domain.model.CashSettlementSummary
 import com.ananapps.kilometa.presentation.theme.*
 import java.util.Locale
 
+import androidx.compose.foundation.clickable
+import com.ananapps.kilometa.domain.model.PocketType
+
 @Composable
 fun CockpitWalletsCard(
     settlement: CashSettlementSummary?,
     cycleLabel: String? = null,
     onTransferClick: () -> Unit,
+    onPocketClick: ((PocketType) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val effective = settlement ?: CashSettlementSummary()
@@ -89,6 +93,7 @@ fun CockpitWalletsCard(
                     .clip(RoundedCornerShape(14.dp))
                     .background(DeepObsidianSurfaceVariant)
                     .border(1.dp, ElectricBluePrimary.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                    .clickable(enabled = onPocketClick != null) { onPocketClick?.invoke(PocketType.CAR_QUOTA) }
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Row(
@@ -137,15 +142,23 @@ fun CockpitWalletsCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                WalletMiniChip("💵 Efectivo Físico", effective.cashPhysicalBalance, StatusGreen, Modifier.weight(1f))
-                WalletMiniChip("🟣 Nequi / Davi", effective.digitalWalletBalance, PlatformPrivate, Modifier.weight(1f))
+                WalletMiniChip("💵 Efectivo Físico", effective.cashPhysicalBalance, StatusGreen, Modifier.weight(1f)) {
+                    onPocketClick?.invoke(PocketType.CASH_PHYSICAL)
+                }
+                WalletMiniChip("🟣 Nequi / Davi", effective.digitalWalletBalance, PlatformPrivate, Modifier.weight(1f)) {
+                    onPocketClick?.invoke(PocketType.DIGITAL_WALLET)
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                WalletMiniChip("🖤 Billetera Uber", effective.uberWalletBalance, TextPrimary, Modifier.weight(1f))
-                WalletMiniChip("🧡 Billetera DiDi", effective.didiWalletBalance, StatusAmber, Modifier.weight(1f))
+                WalletMiniChip("🖤 Billetera Uber", effective.uberWalletBalance, TextPrimary, Modifier.weight(1f)) {
+                    onPocketClick?.invoke(PocketType.UBER)
+                }
+                WalletMiniChip("🧡 Billetera DiDi", effective.didiWalletBalance, StatusAmber, Modifier.weight(1f)) {
+                    onPocketClick?.invoke(PocketType.DIDI)
+                }
             }
         }
     }
@@ -156,13 +169,15 @@ private fun WalletMiniChip(
     label: String,
     balance: Double,
     accentColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(DeepObsidianSurfaceVariant)
             .border(1.dp, DeepObsidianBorder.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

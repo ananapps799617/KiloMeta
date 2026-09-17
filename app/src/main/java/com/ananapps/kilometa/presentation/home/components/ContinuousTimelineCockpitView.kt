@@ -48,6 +48,7 @@ fun ContinuousTimelineCockpitView(
     onEditFueling: (Fueling) -> Unit = {},
     onEditMaintenance: (MaintenanceRecord) -> Unit = {},
     onTransferClick: () -> Unit = {},
+    onPocketClick: ((PocketType) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val effectiveSettlement = timelineSummary.cashSettlement ?: cashSettlement
@@ -121,7 +122,8 @@ fun ContinuousTimelineCockpitView(
         CockpitWalletsCard(
             settlement = effectiveSettlement,
             cycleLabel = timelineSummary.cycleLabel,
-            onTransferClick = onTransferClick
+            onTransferClick = onTransferClick,
+            onPocketClick = onPocketClick
         )
 
         // 4. Feed de Actividades de Hoy sobre la Pista de Asfalto Continua
