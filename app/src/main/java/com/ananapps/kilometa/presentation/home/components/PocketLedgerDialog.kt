@@ -1,10 +1,10 @@
 // ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/PocketLedgerDialog.kt
-// DESCRIPCI?N PEDAG?GICA:
-// Modal flotante de cabina que presenta el Libro Mayor y Extracto Contable de un bolsillo espec?fico (Orden #044).
-// Ofrece selector semanal con flechas [ ? ] y [ ? ], balance neto del ciclo, desglose de ingresos y egresos,
-// y la lista cronol?gica exhaustiva de movimientos con tipado estricto.
+// DESCRIPCIÓN PEDAGÓGICA:
+// Modal flotante de cabina que presenta el Libro Mayor y Extracto Contable de un bolsillo específico (Orden #044).
+// Ofrece selector semanal con flechas [ ◀ ] y [ ▶ ], balance neto del ciclo, desglose de ingresos y egresos,
+// y la lista cronológica exhaustiva de movimientos con tipado estricto.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -138,7 +138,7 @@ fun PocketLedgerDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No hay carreras ni movimientos registrados en este per?odo.",
+                            text = "No hay carreras ni movimientos registrados en este período.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary,
                             textAlign = TextAlign.Center

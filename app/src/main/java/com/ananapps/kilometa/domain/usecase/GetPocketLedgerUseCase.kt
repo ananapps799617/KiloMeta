@@ -1,8 +1,8 @@
 // ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/usecase/GetPocketLedgerUseCase.kt
-// DESCRIPCI?N PEDAG?GICA:
-// Caso de uso reactivo que computa el extracto contable y libro mayor de un bolsillo espec?fico (Orden #044).
+// DESCRIPCIÓN PEDAGÓGICA:
+// Caso de uso reactivo que computa el extracto contable y libro mayor de un bolsillo específico (Orden #044).
 // Aplica ventana semanal estricta (Lunes-Domingo para Apps; Corte de cuota para Efectivo/Caja).
 // ==============================================================================
 
@@ -82,8 +82,8 @@ class GetPocketLedgerUseCase @Inject constructor(
             val sLd = Instant.ofEpochMilli(start).atZone(zoneId).toLocalDate()
             val eLd = Instant.ofEpochMilli(end).atZone(zoneId).toLocalDate()
             val fmt = DateTimeFormatter.ofPattern("d 'de' MMM", esCo)
-            val t = if (weekOffset == 0) "Esta Semana (${sLd.format(fmt)} ? ${eLd.format(fmt)})" else "Semana: ${sLd.format(fmt)} ? ${eLd.format(fmt)} (Cerrada)"
-            val sub = "Lun 00:00 ? Dom 23:59 (Plataformas)"
+            val t = if (weekOffset == 0) "Esta Semana (${sLd.format(fmt)} – ${eLd.format(fmt)})" else "Semana: ${sLd.format(fmt)} – ${eLd.format(fmt)} (Cerrada)"
+            val sub = "Lun 00:00 ➔ Dom 23:59 (Plataformas)"
             Tuple4(start, end, t, sub)
         } else {
             val cutoffDay = DayOfWeek.of(vehicle.quotaCutoffDay.coerceIn(1, 7))
@@ -97,8 +97,8 @@ class GetPocketLedgerUseCase @Inject constructor(
             val sLd = Instant.ofEpochMilli(start).atZone(zoneId).toLocalDate()
             val eLd = Instant.ofEpochMilli(end).atZone(zoneId).toLocalDate()
             val fmt = DateTimeFormatter.ofPattern("d 'de' MMM", esCo)
-            val t = if (weekOffset == 0) "Esta Semana" else "Semana: ${sLd.format(fmt)} ? ${eLd.format(fmt)} (Cerrada)"
-            val sub = "${sLd.dayOfWeek.getDisplayName(TextStyle.SHORT, esCo)} 00:00 ? ${eLd.dayOfWeek.getDisplayName(TextStyle.SHORT, esCo)} 23:59"
+            val t = if (weekOffset == 0) "Esta Semana" else "Semana: ${sLd.format(fmt)} – ${eLd.format(fmt)} (Cerrada)"
+            val sub = "${sLd.dayOfWeek.getDisplayName(TextStyle.SHORT, esCo)} 00:00 ➔ ${eLd.dayOfWeek.getDisplayName(TextStyle.SHORT, esCo)} 23:59"
             Tuple4(start, end, t, sub)
         }
 
@@ -122,7 +122,7 @@ class GetPocketLedgerUseCase @Inject constructor(
                                 title = "Carrera Digital",
                                 subtitle = "Bruto $ ${trip.grossAmount.toInt()} - Com. $ ${trip.commissionAmount.toInt()}",
                                 amount = trip.netAmount,
-                                icon = "??"
+                                icon = "📱"
                             )
                         )
                     } else if (trip.paymentMethod == PaymentMethod.CASH && trip.commissionAmount > 0) {
@@ -130,10 +130,10 @@ class GetPocketLedgerUseCase @Inject constructor(
                             PocketTransactionItem(
                                 id = "${trip.id}_comm",
                                 timestamp = trip.timestamp,
-                                title = "Comisi?n Efectivo (${trip.platformType.displayName})",
-                                subtitle = "Descuento de comisi?n de carrera en efectivo",
+                                title = "Comisión Efectivo (${trip.platformType.displayName})",
+                                subtitle = "Descuento de comisión de carrera en efectivo",
                                 amount = -trip.commissionAmount,
-                                icon = "??"
+                                icon = "📉"
                             )
                         )
                     }
@@ -142,53 +142,53 @@ class GetPocketLedgerUseCase @Inject constructor(
                 val targetWallet = if (pocketType == PocketType.UBER) WalletType.UBER else WalletType.DIDI
                 fTransfers.forEach { tr ->
                     if (tr.sourceWallet == targetWallet) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Dispersi?n / Retiro", tr.notes ?: "Traslado a cuenta bancaria", -tr.amount, "??"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Dispersión / Retiro", tr.notes ?: "Traslado a cuenta bancaria", -tr.amount, "🏦"))
                     } else if (tr.destinationWallet == targetWallet) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Recarga de Billetera", tr.notes ?: "Ingreso a app", tr.amount, "??"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Recarga de Billetera", tr.notes ?: "Ingreso a app", tr.amount, "📥"))
                     }
                 }
             }
 
             PocketType.CASH_PHYSICAL -> {
                 fTrips.filter { it.paymentMethod == PaymentMethod.CASH }.forEach { trip ->
-                    items.add(PocketTransactionItem(trip.id, trip.timestamp, "Carrera en Efectivo (${trip.platformType.displayName})", "Cobro f?sico en mano", trip.grossAmount, "??"))
+                    items.add(PocketTransactionItem(trip.id, trip.timestamp, "Carrera en Efectivo (${trip.platformType.displayName})", "Cobro físico en mano", trip.grossAmount, "💵"))
                 }
                 fFuelings.filter { it.paymentSource == WalletType.CASH_PHYSICAL }.forEach { fuel ->
-                    items.add(PocketTransactionItem(fuel.id, fuel.timestamp, "Tanqueo ${fuel.fuelType.displayName}", "${fuel.volume} m?/gal", -fuel.amountPaid, "?"))
+                    items.add(PocketTransactionItem(fuel.id, fuel.timestamp, "Tanqueo ${fuel.fuelType.displayName}", "${fuel.volume} m³/gal", -fuel.amountPaid, "⛽"))
                 }
                 fExpenses.filter { it.paymentSource == WalletType.CASH_PHYSICAL }.forEach { exp ->
-                    items.add(PocketTransactionItem(exp.id, exp.timestamp, "Gasto: ${exp.concept.displayName}", "Efectivo en ruta", -exp.amount, "??"))
+                    items.add(PocketTransactionItem(exp.id, exp.timestamp, "Gasto: ${exp.concept.displayName}", "Efectivo en ruta", -exp.amount, "🧾"))
                 }
                 fMaintenances.filter { it.paymentSource == WalletType.CASH_PHYSICAL }.forEach { m ->
-                    items.add(PocketTransactionItem(m.id, m.timestamp, "Mantenimiento: ${m.type.displayName}", m.serviceTitle ?: "Taller", -m.costCop, "??"))
+                    items.add(PocketTransactionItem(m.id, m.timestamp, "Mantenimiento: ${m.type.displayName}", m.serviceTitle ?: "Taller", -m.costCop, "🔧"))
                 }
                 fTransfers.forEach { tr ->
                     if (tr.sourceWallet == WalletType.CASH_PHYSICAL) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Apartado / Traslado", tr.notes ?: "Salida de efectivo", -tr.amount, "?"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Apartado / Traslado", tr.notes ?: "Salida de efectivo", -tr.amount, "⇄"))
                     } else if (tr.destinationWallet == WalletType.CASH_PHYSICAL) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Entrada a Efectivo", tr.notes ?: "Ingreso en mano", tr.amount, "?"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Entrada a Efectivo", tr.notes ?: "Ingreso en mano", tr.amount, "⇄"))
                     }
                 }
             }
 
             PocketType.DIGITAL_WALLET -> {
                 fTrips.filter { it.paymentMethod == PaymentMethod.NEQUI }.forEach { trip ->
-                    items.add(PocketTransactionItem(trip.id, trip.timestamp, "Carrera Directa (${trip.platformType.displayName})", "Transferencia recibida", trip.grossAmount, "??"))
+                    items.add(PocketTransactionItem(trip.id, trip.timestamp, "Carrera Directa (${trip.platformType.displayName})", "Transferencia recibida", trip.grossAmount, "🟣"))
                 }
                 fFuelings.filter { it.paymentSource == WalletType.DIGITAL_WALLET }.forEach { fuel ->
-                    items.add(PocketTransactionItem(fuel.id, fuel.timestamp, "Tanqueo ${fuel.fuelType.displayName}", "${fuel.volume} m?/gal", -fuel.amountPaid, "?"))
+                    items.add(PocketTransactionItem(fuel.id, fuel.timestamp, "Tanqueo ${fuel.fuelType.displayName}", "${fuel.volume} m³/gal", -fuel.amountPaid, "⛽"))
                 }
                 fExpenses.filter { it.paymentSource == WalletType.DIGITAL_WALLET }.forEach { exp ->
-                    items.add(PocketTransactionItem(exp.id, exp.timestamp, "Gasto: ${exp.concept.displayName}", "Transferencia digital", -exp.amount, "??"))
+                    items.add(PocketTransactionItem(exp.id, exp.timestamp, "Gasto: ${exp.concept.displayName}", "Transferencia digital", -exp.amount, "🧾"))
                 }
                 fMaintenances.filter { it.paymentSource == WalletType.DIGITAL_WALLET }.forEach { m ->
-                    items.add(PocketTransactionItem(m.id, m.timestamp, "Mantenimiento: ${m.type.displayName}", m.serviceTitle ?: "Taller", -m.costCop, "??"))
+                    items.add(PocketTransactionItem(m.id, m.timestamp, "Mantenimiento: ${m.type.displayName}", m.serviceTitle ?: "Taller", -m.costCop, "🔧"))
                 }
                 fTransfers.forEach { tr ->
                     if (tr.sourceWallet == WalletType.DIGITAL_WALLET) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Salida Nequi/Davi", tr.notes ?: "Traslado de fondos", -tr.amount, "?"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Salida Nequi/Davi", tr.notes ?: "Traslado de fondos", -tr.amount, "⇄"))
                     } else if (tr.destinationWallet == WalletType.DIGITAL_WALLET) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Recibido en Nequi/Davi", tr.notes ?: "Ingreso a cuenta", tr.amount, "??"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Recibido en Nequi/Davi", tr.notes ?: "Ingreso a cuenta", tr.amount, "🟣"))
                     }
                 }
             }
@@ -196,14 +196,14 @@ class GetPocketLedgerUseCase @Inject constructor(
             PocketType.CAR_QUOTA -> {
                 fTransfers.forEach { tr ->
                     if (tr.destinationWallet == WalletType.CAR_QUOTA) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Apartado para Cuota", tr.notes ?: "Abono a cuota", tr.amount, "??"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Apartado para Cuota", tr.notes ?: "Abono a cuota", tr.amount, "🚘"))
                     }
                     if (tr.sourceWallet == WalletType.CAR_QUOTA) {
-                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Retiro de Cuota", tr.notes ?: "Traslado de fondos", -tr.amount, "?"))
+                        items.add(PocketTransactionItem(tr.id, tr.timestamp, "Retiro de Cuota", tr.notes ?: "Traslado de fondos", -tr.amount, "⇄"))
                     }
                 }
                 fExpenses.filter { it.paymentSource == WalletType.CAR_QUOTA }.forEach { exp ->
-                    items.add(PocketTransactionItem(exp.id, exp.timestamp, "Pago Cuota Carro", exp.concept.displayName, -exp.amount, "??"))
+                    items.add(PocketTransactionItem(exp.id, exp.timestamp, "Pago Cuota Carro", exp.concept.displayName, -exp.amount, "💳"))
                 }
             }
         }
