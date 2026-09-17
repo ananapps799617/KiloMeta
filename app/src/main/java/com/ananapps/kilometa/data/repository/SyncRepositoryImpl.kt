@@ -71,12 +71,14 @@ class SyncRepositoryImpl @Inject constructor(
             val fuelings = fuelingDao.getAllFuelings().first().toFuelingDtoList()
             val expenses = expenseDao.getAllExpenses().first().toExpenseDtoList()
             val maintenances = database.maintenanceDao().getAllMaintenances().first().toMaintenanceDtoList()
+            val transfers = database.walletTransferDao().getAllTransfers().first().toTransferDtoList()
 
             firestoreDataSource.saveShifts(user.uid, shifts).getOrThrow()
             firestoreDataSource.saveTrips(user.uid, trips).getOrThrow()
             firestoreDataSource.saveFuelings(user.uid, fuelings).getOrThrow()
             firestoreDataSource.saveExpenses(user.uid, expenses).getOrThrow()
             firestoreDataSource.saveMaintenances(user.uid, maintenances).getOrThrow()
+            firestoreDataSource.saveWalletTransfers(user.uid, transfers).getOrThrow()
 
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,
@@ -105,12 +107,14 @@ class SyncRepositoryImpl @Inject constructor(
             val remoteFuelings = firestoreDataSource.getFuelings(user.uid).getOrThrow().toFuelingEntityList()
             val remoteExpenses = firestoreDataSource.getExpenses(user.uid).getOrThrow().toExpenseEntityList()
             val remoteMaintenances = firestoreDataSource.getMaintenances(user.uid).getOrThrow().toMaintenanceEntityList()
+            val remoteTransfers = firestoreDataSource.getWalletTransfers(user.uid).getOrThrow().toTransferEntityList()
 
             syncReconciler.reconcileShifts(user.uid, remoteShifts, deletedIds)
             syncReconciler.reconcileTrips(user.uid, remoteTrips, deletedIds)
             syncReconciler.reconcileFuelings(user.uid, remoteFuelings, deletedIds)
             syncReconciler.reconcileExpenses(user.uid, remoteExpenses, deletedIds)
             syncReconciler.reconcileMaintenances(user.uid, remoteMaintenances, deletedIds)
+            syncReconciler.reconcileTransfers(user.uid, remoteTransfers, deletedIds)
 
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,
@@ -165,7 +169,11 @@ class SyncRepositoryImpl @Inject constructor(
             val maintenances = firestoreDataSource.getMaintenances(user.uid).getOrThrow().toMaintenanceEntityList()
             for (maint in maintenances) { database.maintenanceDao().insertMaintenance(maint) }
 
-            // 6. Finalización exitosa
+            // 6. Reconstrucción de Transferencias
+            val transfers = firestoreDataSource.getWalletTransfers(user.uid).getOrThrow().toTransferEntityList()
+            for (transfer in transfers) { database.walletTransferDao().insertTransfer(transfer) }
+
+            // 7. Finalización exitosa
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,
                 lastSyncTimestamp = System.currentTimeMillis()

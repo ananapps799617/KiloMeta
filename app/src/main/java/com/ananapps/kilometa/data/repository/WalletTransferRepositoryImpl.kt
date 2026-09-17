@@ -69,7 +69,10 @@ class WalletTransferRepositoryImpl @Inject constructor(
             pendingDeletionDao.insert(PendingDeletionEntity(id, "WALLET_TRANSFER"))
             val user = authRepository.getCurrentUser()
             if (user != null) {
-                firestoreDataSource.deleteWalletTransfer(user.uid, id)
+                val result = firestoreDataSource.deleteWalletTransfer(user.uid, id)
+                if (result.isSuccess) {
+                    pendingDeletionDao.deleteByEntityId(id)
+                }
             }
         }
     }

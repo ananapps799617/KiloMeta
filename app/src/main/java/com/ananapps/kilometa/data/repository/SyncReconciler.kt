@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/repository/SyncReconciler.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -15,6 +15,7 @@ import com.ananapps.kilometa.data.local.entity.FuelingEntity
 import com.ananapps.kilometa.data.local.entity.MaintenanceEntity
 import com.ananapps.kilometa.data.local.entity.ShiftEntity
 import com.ananapps.kilometa.data.local.entity.TripEntity
+import com.ananapps.kilometa.data.local.entity.WalletTransferEntity
 import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -177,6 +178,35 @@ class SyncReconciler @Inject constructor(
                 maintenanceDao.insertMaintenance(remote)
             } else {
                 maintenanceDao.updateMaintenance(remote)
+            }
+        }
+    }
+
+    suspend fun reconcileTransfers(
+        userId: String,
+        remoteTransfers: List<WalletTransferEntity>,
+        deletedIds: Set<String>
+    ) {
+        val transferDao = database.walletTransferDao()
+        val remoteMap = remoteTransfers.associateBy { it.id }
+        val localTransfers = transferDao.getAllTransfers().first()
+
+        for (local in localTransfers) {
+            if (local.id !in remoteMap && local.id !in deletedIds) {
+                transferDao.deleteTransferById(local.id)
+            }
+        }
+
+        for (remote in remoteTransfers) {
+            if (remote.id in deletedIds) {
+                firestoreDataSource.deleteWalletTransfer(userId, remote.id)
+                continue
+            }
+            val local = localTransfers.find { it.id == remote.id }
+            if (local == null) {
+                transferDao.insertTransfer(remote)
+            } else {
+                transferDao.updateTransfer(remote)
             }
         }
     }
