@@ -13,15 +13,13 @@ import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.domain.model.MaintenanceType
 import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.MaintenanceRepository
-import com.ananapps.kilometa.domain.repository.ShiftRepository
+import com.ananapps.kilometa.domain.usecase.GetLastKnownOdometerUseCase
 import com.ananapps.kilometa.domain.usecase.GetMaintenanceSummaryUseCase
 import com.ananapps.kilometa.domain.usecase.GetVehicleMaintenanceAlertsUseCase
 import com.ananapps.kilometa.domain.usecase.RegisterMaintenanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -35,33 +33,27 @@ class MaintenanceViewModel @Inject constructor(
     private val registerMaintenanceUseCase: RegisterMaintenanceUseCase,
     private val maintenanceRepository: MaintenanceRepository,
     private val driverProfileRepository: DriverProfileRepository,
-    private val shiftRepository: ShiftRepository,
-    private val calculateDailyQuotaUseCase: com.ananapps.kilometa.domain.usecase.CalculateDailyQuotaUseCase,
+    private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase,
     private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository
 ) : ViewModel() {
 
-    private val _currentOdo = MutableStateFlow(100_000)
     val savedPlaces: StateFlow<List<com.ananapps.kilometa.domain.model.Place>> = placeRepository.getAllPlaces()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     val uiState: StateFlow<MaintenanceUiState> = combine(
         getMaintenanceSummaryUseCase(),
         driverProfileRepository.getProfile(),
-        shiftRepository.getActiveShift(),
-        _currentOdo
-    ) { dashboard: com.ananapps.kilometa.domain.usecase.MaintenanceDashboardData, profile: com.ananapps.kilometa.domain.model.DriverProfile, activeShift: com.ananapps.kilometa.domain.model.Shift?, manualOdo: Int ->
-        val effectiveOdo = activeShift?.startOdometer ?: manualOdo
-        val alerts = getVehicleMaintenanceAlertsUseCase(effectiveOdo)
-        val quotaProgress = calculateDailyQuotaUseCase()
+        getLastKnownOdometerUseCase()
+    ) { dashboard: com.ananapps.kilometa.domain.usecase.MaintenanceDashboardData, profile: com.ananapps.kilometa.domain.model.DriverProfile, currentOdometer: Int ->
+        val alerts = getVehicleMaintenanceAlertsUseCase(currentOdometer)
 
         MaintenanceUiState(
             isLoading = false,
             records = dashboard.records,
             alerts = alerts,
             totalInvestmentCop = dashboard.totalInvestmentCop,
-            currentOdometer = effectiveOdo,
-            vehiclePlate = profile.vehiclePlate,
-            weeklyQuotaProgress = quotaProgress
+            currentOdometer = currentOdometer,
+            vehiclePlate = profile.vehiclePlate
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), MaintenanceUiState())
 
@@ -85,7 +77,6 @@ class MaintenanceViewModel @Inject constructor(
                 customNextDueOdo = customNextDueOdo,
                 timestamp = timestamp
             )
-            _currentOdo.value = odometer
         }
     }
 

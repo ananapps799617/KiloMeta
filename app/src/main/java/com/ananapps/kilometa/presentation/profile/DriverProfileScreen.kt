@@ -68,6 +68,7 @@ fun DriverProfileScreen(
     var workDaysWeek by remember(initialVehicle.workDaysWeek) { mutableIntStateOf(initialVehicle.workDaysWeek) }
     var quotaCutoffDay by remember(initialVehicle.quotaCutoffDay) { mutableIntStateOf(initialVehicle.quotaCutoffDay) }
     var quotaCutoffHour by remember(initialVehicle.quotaCutoffHour) { mutableIntStateOf(initialVehicle.quotaCutoffHour) }
+    var initialOdometer by remember(initialVehicle.initialOdometer) { mutableIntStateOf(initialVehicle.initialOdometer) }
 
     // Retorno reactivo post-guardado exitoso
     LaunchedEffect(isSaved) {
@@ -153,6 +154,8 @@ fun DriverProfileScreen(
                     onPropulsionChange = { propulsionType = it },
                     tenureType = tenureType,
                     onTenureChange = { tenureType = it },
+                    initialOdometer = initialOdometer,
+                    onInitialOdometerChange = { initialOdometer = it },
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -216,7 +219,8 @@ fun DriverProfileScreen(
                         quotaPeriodicity = quotaPeriodicity,
                         workDaysWeek = workDaysWeek,
                         quotaCutoffDay = quotaCutoffDay,
-                        quotaCutoffHour = quotaCutoffHour
+                        quotaCutoffHour = quotaCutoffHour,
+                        initialOdometer = initialOdometer
                     )
                     viewModel.saveFullProfile(updatedDriver, updatedVehicle)
                 },

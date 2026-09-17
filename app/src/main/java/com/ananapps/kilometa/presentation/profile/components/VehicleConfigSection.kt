@@ -13,6 +13,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -52,10 +54,13 @@ fun VehicleConfigSection(
     onPropulsionChange: (PropulsionType) -> Unit,
     tenureType: VehicleTenure,
     onTenureChange: (VehicleTenure) -> Unit,
+    initialOdometer: Int = 0,
+    onInitialOdometerChange: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showBrandDialog by remember { mutableStateOf(false) }
     var showModelDialog by remember { mutableStateOf(false) }
+    var odoText by remember(initialOdometer) { mutableStateOf(if (initialOdometer > 0) initialOdometer.toString() else "") }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
@@ -115,6 +120,24 @@ fun VehicleConfigSection(
                     singleLine = true
                 )
             }
+        }
+
+        // 2b. Odómetro Base de Ingreso al Registrar el Carro (Orden de Gerencia)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(text = "Odómetro Base de Ingreso (km)", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+            OutlinedTextField(
+                value = odoText,
+                onValueChange = { input ->
+                    val clean = input.filter { it.isDigit() }
+                    odoText = clean
+                    onInitialOdometerChange(clean.toIntOrNull() ?: 0)
+                },
+                placeholder = { Text("Ej: 208500") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                supportingText = { Text("Kilometraje físico del carro con el que ingresa a la app.") }
+            )
         }
 
         // 3. Selector de Marca Desplegable con Buscador

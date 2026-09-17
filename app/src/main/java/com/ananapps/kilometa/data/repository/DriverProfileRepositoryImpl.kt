@@ -48,6 +48,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
         private const val KEY_TENURE_TYPE = "tenure_type"; private const val KEY_QUOTA_PERIODICITY = "quota_periodicity"
         private const val KEY_QUOTA_AMOUNT = "quota_amount"; private const val KEY_WORK_DAYS_WEEK = "work_days_week"
         private const val KEY_CUTOFF_DAY = "quota_cutoff_day"; private const val KEY_CUTOFF_HOUR = "quota_cutoff_hour"
+        private const val KEY_INITIAL_ODOMETER = "initial_odometer"
         private const val KEY_ACTIVE_PLATFORMS = "active_platforms"
         private const val KEY_IS_PROFILE_COMPLETED = "is_profile_completed"; private const val KEY_UPDATED_AT = "updated_at"
     }
@@ -85,17 +86,14 @@ class DriverProfileRepositoryImpl @Inject constructor(
     override suspend fun saveVehicleProfile(vehicle: VehicleProfile) = withContext(dispatchers.io) {
         val updated = vehicle.copy(updatedAt = System.currentTimeMillis())
         prefs.edit().apply {
-            putString(KEY_VEHICLE_PLATE, updated.vehiclePlate)
-            putString(KEY_VEHICLE_TYPE, updated.vehicleType.name)
-            putString(KEY_BRAND, updated.brand)
-            putString(KEY_MODEL, updated.model)
-            putString(KEY_PROPULSION_TYPE, updated.propulsionType.name)
-            putString(KEY_TENURE_TYPE, updated.tenureType.name)
+            putString(KEY_VEHICLE_PLATE, updated.vehiclePlate); putString(KEY_VEHICLE_TYPE, updated.vehicleType.name)
+            putString(KEY_BRAND, updated.brand); putString(KEY_MODEL, updated.model)
+            putString(KEY_PROPULSION_TYPE, updated.propulsionType.name); putString(KEY_TENURE_TYPE, updated.tenureType.name)
             putString(KEY_QUOTA_PERIODICITY, updated.quotaPeriodicity.name)
             putFloat(KEY_QUOTA_AMOUNT, updated.quotaAmount.toFloat())
             putInt(KEY_WORK_DAYS_WEEK, updated.workDaysWeek)
-            putInt(KEY_CUTOFF_DAY, updated.quotaCutoffDay)
-            putInt(KEY_CUTOFF_HOUR, updated.quotaCutoffHour)
+            putInt(KEY_CUTOFF_DAY, updated.quotaCutoffDay); putInt(KEY_CUTOFF_HOUR, updated.quotaCutoffHour)
+            putInt(KEY_INITIAL_ODOMETER, updated.initialOdometer)
             putLong(KEY_UPDATED_AT, updated.updatedAt)
             apply()
         }
@@ -245,6 +243,7 @@ class DriverProfileRepositoryImpl @Inject constructor(
             workDaysWeek = prefs.getInt(KEY_WORK_DAYS_WEEK, def.workDaysWeek),
             quotaCutoffDay = prefs.getInt(KEY_CUTOFF_DAY, def.quotaCutoffDay),
             quotaCutoffHour = prefs.getInt(KEY_CUTOFF_HOUR, def.quotaCutoffHour),
+            initialOdometer = prefs.getInt(KEY_INITIAL_ODOMETER, def.initialOdometer),
             updatedAt = prefs.getLong(KEY_UPDATED_AT, def.updatedAt)
         )
     }
@@ -259,8 +258,8 @@ class DriverProfileRepositoryImpl @Inject constructor(
             "propulsionType" to vehicle.propulsionType.name, "tenureType" to vehicle.tenureType.name,
             "quotaPeriodicity" to vehicle.quotaPeriodicity.name, "quotaAmount" to vehicle.quotaAmount,
             "workDaysWeek" to vehicle.workDaysWeek, "quotaCutoffDay" to vehicle.quotaCutoffDay,
-            "quotaCutoffHour" to vehicle.quotaCutoffHour, "isProfileCompleted" to driver.isProfileCompleted,
-            "updatedAt" to System.currentTimeMillis()
+            "quotaCutoffHour" to vehicle.quotaCutoffHour, "initialOdometer" to vehicle.initialOdometer,
+            "isProfileCompleted" to driver.isProfileCompleted, "updatedAt" to System.currentTimeMillis()
         )
         firestoreDataSource.saveDriverProfile(currentUser.uid, map)
     }

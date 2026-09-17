@@ -21,6 +21,7 @@ import com.ananapps.kilometa.domain.usecase.GenerateCsvReportUseCase
 import com.ananapps.kilometa.domain.usecase.GenerateShareableSummaryUseCase
 import com.ananapps.kilometa.domain.usecase.GetBiFuelSavingsUseCase
 import com.ananapps.kilometa.domain.usecase.GetShiftHistoryUseCase
+import com.ananapps.kilometa.presentation.history.DayHistoryMapper
 import com.ananapps.kilometa.presentation.history.ExportUiState
 import com.ananapps.kilometa.presentation.reports.components.ExpenseDonutSlice
 import com.ananapps.kilometa.presentation.reports.components.KpiReportData
@@ -98,25 +99,16 @@ class ReportsViewModel @Inject constructor(
             val totalCosts = fuelCost + expenseCost + maintCost
             val netBalance = netTripIncome - totalCosts
 
-            val tripKm = fTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()
-            val minOdo = (fTrips.mapNotNull { it.startOdometer } + fFuelings.map { it.odometer } + fMaintenances.map { it.odometer }).minOrNull()
-            val maxOdo = (fTrips.mapNotNull { it.endOdometer ?: it.startOdometer } + fFuelings.map { it.odometer } + fMaintenances.map { it.odometer }).maxOrNull()
-            val odoKm = if (minOdo != null && maxOdo != null && maxOdo > minOdo) maxOdo - minOdo else 0
-            val totalDistanceKm = maxOf(tripKm, odoKm)
-
-            val calendar = Calendar.getInstance()
-            val activeDays = (fTrips.map { it.timestamp } + fFuelings.map { it.timestamp } + fExpenses.map { it.timestamp } + fMaintenances.map { it.timestamp })
-                .map {
-                    calendar.timeInMillis = it
-                    "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.DAY_OF_YEAR)}"
-                }.distinct().size
+            val days = DayHistoryMapper.mapToDays(fTrips, fFuelings, fExpenses, fMaintenances)
+            val totalDistanceKm = days.sumOf { it.distanceKm }
+            val activeDays = maxOf(1, days.size)
 
             val kpiData = KpiReportData(
                 netBalance = netBalance,
                 totalDistanceKm = totalDistanceKm,
                 totalCosts = totalCosts,
                 grossIncome = grossIncome,
-                activeDaysCount = maxOf(1, activeDays)
+                activeDaysCount = activeDays
             )
 
             val rentCost = fExpenses.filter { it.concept == ExpenseConcept.RENT }.sumOf { it.amount }

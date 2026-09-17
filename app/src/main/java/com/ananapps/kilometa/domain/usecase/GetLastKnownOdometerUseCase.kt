@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/usecase/GetLastKnownOdometerUseCase.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -9,8 +9,10 @@
 
 package com.ananapps.kilometa.domain.usecase
 
+import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -19,16 +21,25 @@ import javax.inject.Inject
 // BLOQUE 1: CASO DE USO DE ODÓMETRO INTELIGENTE
 // ------------------------------------------------------------------------------
 class GetLastKnownOdometerUseCase @Inject constructor(
-    private val shiftRepository: ShiftRepository
+    private val shiftRepository: ShiftRepository,
+    private val driverProfileRepository: DriverProfileRepository? = null
 ) {
 
     /**
      * Emite de forma reactiva el último odómetro conocido registrado en el sistema.
-     * Si la base de datos está totalmente vacía, retorna 0 (nunca un valor inventado).
+     * Si no hay odómetros en la base de datos de actividades, utiliza el odómetro base
+     * registrado en el perfil del vehículo como suelo canónico.
      */
     operator fun invoke(): Flow<Int> {
-        return shiftRepository.getLastKnownOdometer().map { lastOdo ->
-            lastOdo ?: 0
+        val shiftOdoFlow = shiftRepository.getLastKnownOdometer()
+        val profileRepo = driverProfileRepository
+        return if (profileRepo != null) {
+            combine(shiftOdoFlow, profileRepo.getVehicleProfile()) { lastOdo, vehicle ->
+                val odo = lastOdo ?: 0
+                if (odo > 0) odo else vehicle.initialOdometer
+            }
+        } else {
+            shiftOdoFlow.map { it ?: 0 }
         }
     }
 
