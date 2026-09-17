@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/history/HistoryDataProcessor.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -70,7 +70,12 @@ class HistoryDataProcessor @Inject constructor(
         return when (period) {
             HistoryFilterPeriod.WEEK -> {
                 val cutoffDay = DayOfWeek.of(vehicle.quotaCutoffDay.coerceIn(1, 7))
-                val (start, _) = calculateWeeklyCycleBoundsUseCase(nowMillis, cutoffDay, vehicle.quotaCutoffHour, zone)
+                val (start, _) = calculateWeeklyCycleBoundsUseCase(
+                    nowMillis = nowMillis,
+                    cutoffDay = cutoffDay,
+                    cutoffHour = vehicle.quotaCutoffHour,
+                    zoneId = zone
+                )
                 start
             }
             HistoryFilterPeriod.MONTH -> now.with(TemporalAdjusters.firstDayOfMonth()).truncatedTo(ChronoUnit.DAYS).toInstant().toEpochMilli()

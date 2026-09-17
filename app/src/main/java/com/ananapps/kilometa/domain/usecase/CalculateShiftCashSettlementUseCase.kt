@@ -27,7 +27,8 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         trips: List<Trip>,
         fuelings: List<Fueling>,
         expenses: List<Expense>,
-        transfers: List<WalletTransfer> = emptyList()
+        transfers: List<WalletTransfer> = emptyList(),
+        platformTrips: List<Trip> = trips
     ): CashSettlementSummary {
         var cashPhysicalGross = 0.0
         var digitalWalletGross = 0.0
@@ -42,30 +43,37 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         }
 
         trips.forEach { trip ->
-            val acc = platformMap.getOrPut(trip.platformType) { MutablePlatformAccumulator(trip.platformType) }
             val netTripCash = (trip.grossAmount - trip.platformPromoDiscount).coerceAtLeast(0.0)
-
             when (trip.paymentMethod) {
                 PaymentMethod.CASH -> {
                     cashPhysicalGross += netTripCash
                     cashCommissions += trip.commissionAmount
-                    acc.cashGross += trip.grossAmount
-                    acc.cashCommissionOwed += trip.commissionAmount
                 }
                 PaymentMethod.NEQUI -> {
                     digitalWalletGross += netTripCash
                     cashCommissions += trip.commissionAmount
-                    acc.cashGross += trip.grossAmount
-                    acc.cashCommissionOwed += trip.commissionAmount
                 }
                 PaymentMethod.APP_WALLET -> {
                     digitalGross += trip.grossAmount
                     digitalCommissions += trip.commissionAmount
+                }
+            }
+            totalCommission += trip.commissionAmount
+        }
+
+        // Acumulación soberana de bolsillos de plataforma (Ciclo Lunes a Domingo)
+        platformTrips.forEach { trip ->
+            val acc = platformMap.getOrPut(trip.platformType) { MutablePlatformAccumulator(trip.platformType) }
+            when (trip.paymentMethod) {
+                PaymentMethod.CASH, PaymentMethod.NEQUI -> {
+                    acc.cashGross += trip.grossAmount
+                    acc.cashCommissionOwed += trip.commissionAmount
+                }
+                PaymentMethod.APP_WALLET -> {
                     acc.digitalGross += trip.grossAmount
                     acc.digitalCommission += trip.commissionAmount
                 }
             }
-            totalCommission += trip.commissionAmount
         }
 
         // Deducción de combustible y gastos por origen soberano de fondos

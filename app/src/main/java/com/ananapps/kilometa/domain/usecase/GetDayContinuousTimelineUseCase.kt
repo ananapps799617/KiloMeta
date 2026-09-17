@@ -144,23 +144,32 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 else -> DayOfWeek.TUESDAY
             }
 
+            // 1. Ciclo Operativo del Conductor y Cuota del Carro (según día de corte configurado)
             val (cycleStartMillis, cycleEndMillis) = calculateWeeklyCycleBoundsUseCase(
                 cutoffDay = cutoffDay,
                 cutoffHour = vehicle.quotaCutoffHour
             )
             val cycleLabel = formatCycleRange(cycleStartMillis, cycleEndMillis)
 
-            // Bolsillos Semanales Soberanos: acumulan todas las transacciones del ciclo en curso
+            // Acumulan transacciones del ciclo en curso del conductor
             val cycleTrips = allTrips.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
             val cycleFuelings = allFuelings.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
             val cycleExpenses = allExpenses.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
             val cycleTransfers = allTransfers.filter { it.timestamp in cycleStartMillis..cycleEndMillis }
 
+            // 2. Ciclo Soberano de Bolsillos de Plataformas (Estricto Lunes 00:00 a Domingo 23:59)
+            val (platformStartMillis, platformEndMillis) = calculateWeeklyCycleBoundsUseCase(
+                cutoffDay = DayOfWeek.SUNDAY,
+                cutoffHour = 23
+            )
+            val platformCycleTrips = allTrips.filter { it.timestamp in platformStartMillis..platformEndMillis }
+
             val cashSettlement = calculateShiftCashSettlementUseCase(
-                cycleTrips,
-                cycleFuelings,
-                cycleExpenses,
-                cycleTransfers
+                trips = cycleTrips,
+                fuelings = cycleFuelings,
+                expenses = cycleExpenses,
+                transfers = cycleTransfers,
+                platformTrips = platformCycleTrips
             )
 
             DayContinuousSummary(

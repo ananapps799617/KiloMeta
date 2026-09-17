@@ -161,6 +161,7 @@ fun HomeScreen(
     editingTrip?.let { trip ->
         TripEditDialog(
             trip = trip,
+            vehicleProfile = vehicle,
             onDismiss = { editingTrip = null },
             onConfirm = { updated ->
                 viewModel.updateTrip(updated)

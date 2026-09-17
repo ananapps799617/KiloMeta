@@ -30,5 +30,6 @@ data class DayHistorySummary(
     val events: List<DayActivityEvent>,
     val startTimeMillis: Long = 0L,
     val endTimeMillis: Long = 0L,
-    val shiftId: String? = null
+    val shiftId: String? = null,
+    val platformEarnings: Map<PlatformType, Double> = emptyMap()
 )

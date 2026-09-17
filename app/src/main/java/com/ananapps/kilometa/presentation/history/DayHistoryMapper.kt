@@ -77,6 +77,12 @@ object DayHistoryMapper {
                 ?: dayFuelings.firstOrNull()?.shiftId
                 ?: dayExpenses.firstOrNull()?.shiftId
 
+            val platformEarnings = PlatformType.entries.mapNotNull { platform ->
+                val tripsForPlatform = dayTrips.filter { it.platformType == platform }
+                val netSum = tripsForPlatform.sumOf { it.netAmount }
+                if (netSum > 0.0) platform to netSum else null
+            }.toMap()
+
             DayHistorySummary(
                 dateMillis = firstEventTime,
                 dateFormatted = dayTitleFormatter.format(Date(firstEventTime)).replaceFirstChar { it.uppercase() },
@@ -95,7 +101,8 @@ object DayHistoryMapper {
                 events = sortedEvents,
                 startTimeMillis = firstEventTime,
                 endTimeMillis = lastEventTime,
-                shiftId = resolvedShiftId
+                shiftId = resolvedShiftId,
+                platformEarnings = platformEarnings
             )
         }.sortedByDescending { it.dateMillis }
     }

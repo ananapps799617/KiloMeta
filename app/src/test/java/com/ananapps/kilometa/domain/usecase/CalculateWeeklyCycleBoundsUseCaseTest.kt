@@ -146,4 +146,32 @@ class CalculateWeeklyCycleBoundsUseCaseTest {
         assertEquals(DayOfWeek.TUESDAY, endZoned.dayOfWeek)
         assertEquals(15, endZoned.dayOfMonth)
     }
+
+    @Test
+    fun `cuando corte es Domingo, ciclo va exactamente de Lunes a Domingo (estandar plataformas)`() {
+        // Miércoles 16 de septiembre de 2026
+        val wednesday = ZonedDateTime.of(2026, 9, 16, 15, 0, 0, 0, zoneId)
+        val (startMillis, endMillis) = useCase(
+            nowMillis = wednesday.toInstant().toEpochMilli(),
+            cutoffDay = DayOfWeek.SUNDAY,
+            cutoffHour = 23,
+            zoneId = zoneId,
+            weekOffset = 0
+        )
+
+        val startZoned = Instant.ofEpochMilli(startMillis).atZone(zoneId)
+        val endZoned = Instant.ofEpochMilli(endMillis).atZone(zoneId)
+
+        // Inicio: Lunes 14 de septiembre a las 00:00:00
+        assertEquals(DayOfWeek.MONDAY, startZoned.dayOfWeek)
+        assertEquals(14, startZoned.dayOfMonth)
+        assertEquals(0, startZoned.hour)
+        assertEquals(0, startZoned.minute)
+
+        // Fin: Domingo 20 de septiembre a las 23:59:59
+        assertEquals(DayOfWeek.SUNDAY, endZoned.dayOfWeek)
+        assertEquals(20, endZoned.dayOfMonth)
+        assertEquals(23, endZoned.hour)
+        assertEquals(59, endZoned.minute)
+    }
 }

@@ -45,7 +45,12 @@ fun HistoryDialogsHost(
     onConfirmAddMaintenance: (MaintenanceType, Int, Double, String?, WalletType, String?, String?, Long) -> Unit
 ) {
     editingTrip?.let { trip ->
-        TripEditDialog(trip = trip, onDismiss = onDismissTripEdit, onConfirm = onUpdateTrip)
+        TripEditDialog(
+            trip = trip,
+            vehicleProfile = vehicleProfile,
+            onDismiss = onDismissTripEdit,
+            onConfirm = onUpdateTrip
+        )
     }
 
     editingFueling?.let { fueling ->
@@ -75,6 +80,7 @@ fun HistoryDialogsHost(
 
     registeringTripTimestamp?.let { timestamp ->
         RegisterTripDialog(
+            vehicleProfile = vehicleProfile,
             lastKnownOdometer = lastKnownOdometer,
             onDismiss = onDismissRegisterTrip,
             initialTimestamp = timestamp,

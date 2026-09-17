@@ -158,6 +158,10 @@ fun DayHistoryCard(
                         FinancialRow("Combustible:", -day.fuelSpent, StatusRed)
                         FinancialRow("Gastos de Ruta:", -day.expensesSpent, StatusRed)
 
+                        day.platformEarnings.forEach { (platform, amount) ->
+                            FinancialRow("Ingresos ${platform.visualToken.badgeLabel}:", amount, StatusGreen)
+                        }
+
                         HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 2.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
