@@ -104,3 +104,20 @@ data class WalletTransferDto(
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false
 )
+
+// ------------------------------------------------------------------------------
+// BLOQUE 6: DTO REMOTO PARA MANTENIMIENTOS MECÁNICOS
+// ------------------------------------------------------------------------------
+data class MaintenanceDto(
+    val id: String = "",
+    val vehicleId: String = "",
+    val maintenanceType: String = "",
+    val odometer: Int = 0,
+    val costCop: Double = 0.0,
+    val notes: String? = null,
+    val nextDueOdometer: Int? = null,
+    val nextDueDateMillis: Long? = null,
+    val timestamp: Long = 0L,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val deleted: Boolean = false
+)

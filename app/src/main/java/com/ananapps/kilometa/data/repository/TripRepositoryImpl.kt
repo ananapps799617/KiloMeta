@@ -45,8 +45,13 @@ class TripRepositoryImpl @Inject constructor(
 
     override suspend fun addTrip(trip: Trip) {
         withContext(dispatchers.io) {
-            tripDao.insertTrip(trip.toEntity())
+            val entity = trip.toEntity()
+            tripDao.insertTrip(entity)
             pendingDeletionDao.deleteByEntityId(trip.id)
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.saveTrips(user.uid, listOf(entity.toDto()))
+            }
         }
     }
 

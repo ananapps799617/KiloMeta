@@ -9,10 +9,15 @@ package com.ananapps.kilometa.data.repository
 
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
 import com.ananapps.kilometa.data.local.dao.MaintenanceDao
+import com.ananapps.kilometa.data.local.dao.PendingDeletionDao
+import com.ananapps.kilometa.data.local.entity.PendingDeletionEntity
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
+import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
+import com.ananapps.kilometa.data.remote.mapper.toDto
 import com.ananapps.kilometa.domain.model.MaintenanceRecord
 import com.ananapps.kilometa.domain.model.MaintenanceType
+import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.MaintenanceRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -27,6 +32,9 @@ import javax.inject.Singleton
 @Singleton
 class MaintenanceRepositoryImpl @Inject constructor(
     private val maintenanceDao: MaintenanceDao,
+    private val pendingDeletionDao: PendingDeletionDao,
+    private val firestoreDataSource: FirestoreDataSource,
+    private val authRepository: AuthRepository,
     private val dispatchers: CoroutineDispatchers
 ) : MaintenanceRepository {
 
@@ -56,19 +64,39 @@ class MaintenanceRepositoryImpl @Inject constructor(
 
     override suspend fun addMaintenance(record: MaintenanceRecord) {
         withContext(dispatchers.io) {
-            maintenanceDao.insertMaintenance(record.toEntity())
+            val entity = record.toEntity()
+            maintenanceDao.insertMaintenance(entity)
+            pendingDeletionDao.deleteByEntityId(record.id)
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.saveMaintenances(user.uid, listOf(entity.toDto()))
+            }
         }
     }
 
     override suspend fun updateMaintenance(record: MaintenanceRecord) {
         withContext(dispatchers.io) {
-            maintenanceDao.updateMaintenance(record.toEntity())
+            val entity = record.toEntity()
+            maintenanceDao.updateMaintenance(entity)
+            pendingDeletionDao.deleteByEntityId(record.id)
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                firestoreDataSource.saveMaintenances(user.uid, listOf(entity.toDto()))
+            }
         }
     }
 
     override suspend fun deleteMaintenance(id: String) {
         withContext(dispatchers.io) {
             maintenanceDao.deleteMaintenance(id)
+            pendingDeletionDao.insert(PendingDeletionEntity(id, "MAINTENANCE"))
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                val result = firestoreDataSource.deleteMaintenance(user.uid, id)
+                if (result.isSuccess) {
+                    pendingDeletionDao.deleteByEntityId(id)
+                }
+            }
         }
     }
 }

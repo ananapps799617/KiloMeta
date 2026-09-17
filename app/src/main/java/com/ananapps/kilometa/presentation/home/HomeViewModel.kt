@@ -59,7 +59,7 @@ class HomeViewModel @Inject constructor(
     init {
         schedulePeriodicSyncUseCase(_syncPreferences.value)
         scheduleWeeklyCutoffNotificationsUseCase()
-        viewModelScope.launch { autoProvisionDailyQuotaUseCase() }
+        viewModelScope.launch { autoProvisionDailyQuotaUseCase(); syncDataUseCase() }
     }
 
     val syncStatus: StateFlow<SyncStatus> = syncRepository.observeSyncStatus()
@@ -239,7 +239,7 @@ class HomeViewModel @Inject constructor(
     fun signInWithGoogle(idToken: String) = viewModelScope.launch {
         _isAuthLoading.value = true; _authError.value = null
         val result = authenticateUserUseCase.signInWithGoogle(idToken)
-        result.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
+        result.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid); syncDataUseCase() }
             ?: run { _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google" }
         _isAuthLoading.value = false
     }
@@ -247,10 +247,12 @@ class HomeViewModel @Inject constructor(
     fun signInWithEmail(email: String, pass: String) = viewModelScope.launch {
         _isAuthLoading.value = true; _authError.value = null
         val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
-        if (signIn.isSuccess) signIn.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid) }
-        else {
+        if (signIn.isSuccess) {
+            signIn.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid); syncDataUseCase() }
+        } else {
             val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
             if (signUp.isFailure) _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error auth"
+            else signUp.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid); syncDataUseCase() }
         }
         _isAuthLoading.value = false
     }

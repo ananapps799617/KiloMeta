@@ -5,32 +5,17 @@
 package com.ananapps.kilometa.data.repository
 
 import com.ananapps.kilometa.core.dispatcher.CoroutineDispatchers
+import com.ananapps.kilometa.data.local.KiloMetaDatabase
 import com.ananapps.kilometa.data.local.dao.ExpenseDao
 import com.ananapps.kilometa.data.local.dao.FuelingDao
 import com.ananapps.kilometa.data.local.dao.ShiftDao
 import com.ananapps.kilometa.data.local.dao.TripDao
 import com.ananapps.kilometa.data.remote.firebase.FirestoreDataSource
-import com.ananapps.kilometa.data.remote.mapper.toExpenseDtoList
-import com.ananapps.kilometa.data.remote.mapper.toExpenseEntityList
-import com.ananapps.kilometa.data.remote.mapper.toFuelingDtoList
-import com.ananapps.kilometa.data.remote.mapper.toFuelingEntityList
-import com.ananapps.kilometa.data.remote.mapper.toShiftDtoList
-import com.ananapps.kilometa.data.remote.mapper.toShiftEntityList
-import com.ananapps.kilometa.data.remote.mapper.toTripDtoList
-import com.ananapps.kilometa.data.remote.mapper.toTripEntityList
-import com.ananapps.kilometa.data.local.KiloMetaDatabase
-import com.ananapps.kilometa.domain.model.ConnectionDiagnostic
-import com.ananapps.kilometa.domain.model.RestoreProgress
-import com.ananapps.kilometa.domain.model.SyncState
-import com.ananapps.kilometa.domain.model.SyncStatus
+import com.ananapps.kilometa.data.remote.mapper.*
+import com.ananapps.kilometa.domain.model.*
 import com.ananapps.kilometa.domain.repository.AuthRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -43,6 +28,7 @@ class SyncRepositoryImpl @Inject constructor(
     private val tripDao: TripDao,
     private val fuelingDao: FuelingDao,
     private val expenseDao: ExpenseDao,
+    private val syncReconciler: SyncReconciler,
     private val firestoreDataSource: FirestoreDataSource,
     private val authRepository: AuthRepository,
     private val dispatchers: CoroutineDispatchers
@@ -75,6 +61,7 @@ class SyncRepositoryImpl @Inject constructor(
                     "EXPENSE" -> firestoreDataSource.deleteExpense(user.uid, del.entityId)
                     "SHIFT" -> firestoreDataSource.deleteShift(user.uid, del.entityId)
                     "WALLET_TRANSFER" -> firestoreDataSource.deleteWalletTransfer(user.uid, del.entityId)
+                    "MAINTENANCE" -> firestoreDataSource.deleteMaintenance(user.uid, del.entityId)
                 }
                 database.pendingDeletionDao().deleteByEntityId(del.entityId)
             }
@@ -83,11 +70,13 @@ class SyncRepositoryImpl @Inject constructor(
             val trips = tripDao.getAllTrips().first().toTripDtoList()
             val fuelings = fuelingDao.getAllFuelings().first().toFuelingDtoList()
             val expenses = expenseDao.getAllExpenses().first().toExpenseDtoList()
+            val maintenances = database.maintenanceDao().getAllMaintenances().first().toMaintenanceDtoList()
 
             firestoreDataSource.saveShifts(user.uid, shifts).getOrThrow()
             firestoreDataSource.saveTrips(user.uid, trips).getOrThrow()
             firestoreDataSource.saveFuelings(user.uid, fuelings).getOrThrow()
             firestoreDataSource.saveExpenses(user.uid, expenses).getOrThrow()
+            firestoreDataSource.saveMaintenances(user.uid, maintenances).getOrThrow()
 
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,
@@ -102,7 +91,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    // --- BLOQUE 3: PULL CON MERGE INTELIGENTE ---
+    // --- BLOQUE 3: PULL CON MERGE INTELIGENTE Y CONCILIACIÓN ---
     override suspend fun pullRemoteChanges(): Result<Unit> = withContext(dispatchers.io) {
         val user = authRepository.getCurrentUser()
             ?: return@withContext Result.failure(IllegalStateException("Sesión no disponible"))
@@ -115,71 +104,13 @@ class SyncRepositoryImpl @Inject constructor(
             val remoteTrips = firestoreDataSource.getTrips(user.uid).getOrThrow().toTripEntityList()
             val remoteFuelings = firestoreDataSource.getFuelings(user.uid).getOrThrow().toFuelingEntityList()
             val remoteExpenses = firestoreDataSource.getExpenses(user.uid).getOrThrow().toExpenseEntityList()
+            val remoteMaintenances = firestoreDataSource.getMaintenances(user.uid).getOrThrow().toMaintenanceEntityList()
 
-            // Inserción en orden topológico (Primero padres con resolución LWW, luego hijos con FK)
-            for (remoteShift in remoteShifts) {
-                if (remoteShift.id in deletedIds) {
-                    firestoreDataSource.deleteShift(user.uid, remoteShift.id)
-                    continue
-                }
-                val localShift = shiftDao.getShiftById(remoteShift.id)
-                if (localShift == null) {
-                    shiftDao.insertShift(remoteShift)
-                } else if (remoteShift.status == "COMPLETED" && localShift.status == "ACTIVE") {
-                    // Conflicto LWW: El remoto finalizó la jornada, actualiza estado local
-                    shiftDao.updateShift(remoteShift)
-                } else if (remoteShift.endOdometer != null && localShift.endOdometer == null) {
-                    shiftDao.updateShift(remoteShift)
-                }
-            }
-            // Merge inteligente de Carreras: preservar odómetros locales si el
-            // remoto carece de ellos (Firestore legacy sin esos campos).
-            for (remoteTrip in remoteTrips) {
-                if (remoteTrip.id in deletedIds) {
-                    firestoreDataSource.deleteTrip(user.uid, remoteTrip.id)
-                    continue
-                }
-                val localTrip = tripDao.getTripById(remoteTrip.id)
-                if (localTrip == null) {
-                    tripDao.insertTrip(remoteTrip)
-                } else {
-                    val merged = remoteTrip.copy(
-                        startOdometer = remoteTrip.startOdometer ?: localTrip.startOdometer,
-                        endOdometer = remoteTrip.endOdometer ?: localTrip.endOdometer,
-                        paymentDestination = if (remoteTrip.paymentDestination != "CASH_IN_HAND" || localTrip.paymentDestination == "CASH_IN_HAND") remoteTrip.paymentDestination else localTrip.paymentDestination
-                    )
-                    tripDao.updateTrip(merged)
-                }
-            }
-            // Merge defensivo de Tanqueos: preservar odómetro local si remoto es 0
-            for (remoteFueling in remoteFuelings) {
-                if (remoteFueling.id in deletedIds) {
-                    firestoreDataSource.deleteFueling(user.uid, remoteFueling.id)
-                    continue
-                }
-                val localFueling = fuelingDao.getFuelingById(remoteFueling.id)
-                if (localFueling == null) {
-                    fuelingDao.insertFueling(remoteFueling)
-                } else {
-                    val merged = if (remoteFueling.odometer == 0 && localFueling.odometer != 0) {
-                        remoteFueling.copy(odometer = localFueling.odometer)
-                    } else remoteFueling
-                    fuelingDao.updateFueling(merged)
-                }
-            }
-            // Merge defensivo de Gastos: upsert seguro
-            for (remoteExpense in remoteExpenses) {
-                if (remoteExpense.id in deletedIds) {
-                    firestoreDataSource.deleteExpense(user.uid, remoteExpense.id)
-                    continue
-                }
-                val localExpense = expenseDao.getExpenseById(remoteExpense.id)
-                if (localExpense == null) {
-                    expenseDao.insertExpense(remoteExpense)
-                } else {
-                    expenseDao.updateExpense(remoteExpense)
-                }
-            }
+            syncReconciler.reconcileShifts(user.uid, remoteShifts, deletedIds)
+            syncReconciler.reconcileTrips(user.uid, remoteTrips, deletedIds)
+            syncReconciler.reconcileFuelings(user.uid, remoteFuelings, deletedIds)
+            syncReconciler.reconcileExpenses(user.uid, remoteExpenses, deletedIds)
+            syncReconciler.reconcileMaintenances(user.uid, remoteMaintenances, deletedIds)
 
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,
@@ -210,27 +141,31 @@ class SyncRepositoryImpl @Inject constructor(
             emit(RestoreProgress.Running("Descargando Jornadas...", 0, 0.15f))
             val shifts = firestoreDataSource.getShifts(user.uid).getOrThrow().toShiftEntityList()
             for (shift in shifts) { shiftDao.insertShift(shift) }
-            emit(RestoreProgress.Running("Jornadas reconstruidas", shifts.size, 0.35f))
+            emit(RestoreProgress.Running("Jornadas reconstruidas", shifts.size, 0.30f))
 
             // 2. Reconstrucción de Carreras
-            emit(RestoreProgress.Running("Descargando Carreras...", 0, 0.45f))
+            emit(RestoreProgress.Running("Descargando Carreras...", 0, 0.40f))
             val trips = firestoreDataSource.getTrips(user.uid).getOrThrow().toTripEntityList()
             for (trip in trips) { tripDao.insertTrip(trip) }
-            emit(RestoreProgress.Running("Carreras reconstruidas", trips.size, 0.60f))
+            emit(RestoreProgress.Running("Carreras reconstruidas", trips.size, 0.55f))
 
             // 3. Reconstrucción de Abastecimientos
-            emit(RestoreProgress.Running("Descargando Tanqueos...", 0, 0.70f))
+            emit(RestoreProgress.Running("Descargando Tanqueos...", 0, 0.65f))
             val fuelings = firestoreDataSource.getFuelings(user.uid).getOrThrow().toFuelingEntityList()
             for (fueling in fuelings) { fuelingDao.insertFueling(fueling) }
-            emit(RestoreProgress.Running("Tanqueos reconstruidos", fuelings.size, 0.80f))
+            emit(RestoreProgress.Running("Tanqueos reconstruidos", fuelings.size, 0.75f))
 
             // 4. Reconstrucción de Gastos
-            emit(RestoreProgress.Running("Descargando Gastos en Ruta...", 0, 0.85f))
+            emit(RestoreProgress.Running("Descargando Gastos en Ruta...", 0, 0.80f))
             val expenses = firestoreDataSource.getExpenses(user.uid).getOrThrow().toExpenseEntityList()
             for (expense in expenses) { expenseDao.insertExpense(expense) }
-            emit(RestoreProgress.Running("Gastos reconstruidos", expenses.size, 0.95f))
+            emit(RestoreProgress.Running("Gastos reconstruidos", expenses.size, 0.90f))
 
-            // 5. Finalización exitosa
+            // 5. Reconstrucción de Mantenimientos
+            val maintenances = firestoreDataSource.getMaintenances(user.uid).getOrThrow().toMaintenanceEntityList()
+            for (maint in maintenances) { database.maintenanceDao().insertMaintenance(maint) }
+
+            // 6. Finalización exitosa
             _syncStatus.value = SyncStatus(
                 state = SyncState.SUCCESS,
                 lastSyncTimestamp = System.currentTimeMillis()

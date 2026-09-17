@@ -10,11 +10,13 @@ package com.ananapps.kilometa.data.remote.mapper
 
 import com.ananapps.kilometa.data.local.entity.ExpenseEntity
 import com.ananapps.kilometa.data.local.entity.FuelingEntity
+import com.ananapps.kilometa.data.local.entity.MaintenanceEntity
 import com.ananapps.kilometa.data.local.entity.ShiftEntity
 import com.ananapps.kilometa.data.local.entity.TripEntity
 import com.ananapps.kilometa.data.local.entity.WalletTransferEntity
 import com.ananapps.kilometa.data.remote.dto.ExpenseDto
 import com.ananapps.kilometa.data.remote.dto.FuelingDto
+import com.ananapps.kilometa.data.remote.dto.MaintenanceDto
 import com.ananapps.kilometa.data.remote.dto.ShiftDto
 import com.ananapps.kilometa.data.remote.dto.TripDto
 import com.ananapps.kilometa.data.remote.dto.WalletTransferDto
@@ -185,3 +187,38 @@ fun WalletTransferDto.toEntity(): WalletTransferEntity = WalletTransferEntity(
 
 fun List<WalletTransferEntity>.toTransferDtoList(): List<WalletTransferDto> = map { it.toDto() }
 fun List<WalletTransferDto>.toTransferEntityList(): List<WalletTransferEntity> = map { it.toEntity() }
+
+// ------------------------------------------------------------------------------
+// BLOQUE 6: MAPEO BIDIRECCIONAL DE MANTENIMIENTOS (MAINTENANCES)
+// ------------------------------------------------------------------------------
+fun MaintenanceEntity.toDto(
+    updatedAt: Long = System.currentTimeMillis(),
+    deleted: Boolean = false
+): MaintenanceDto = MaintenanceDto(
+    id = this.id,
+    vehicleId = this.vehicleId,
+    maintenanceType = this.maintenanceType,
+    odometer = this.odometer,
+    costCop = this.costCop,
+    notes = this.notes,
+    nextDueOdometer = this.nextDueOdometer,
+    nextDueDateMillis = this.nextDueDateMillis,
+    timestamp = this.timestamp,
+    updatedAt = updatedAt,
+    deleted = deleted
+)
+
+fun MaintenanceDto.toEntity(): MaintenanceEntity = MaintenanceEntity(
+    id = this.id,
+    vehicleId = this.vehicleId,
+    maintenanceType = this.maintenanceType,
+    odometer = this.odometer,
+    costCop = this.costCop,
+    notes = this.notes,
+    nextDueOdometer = this.nextDueOdometer,
+    nextDueDateMillis = this.nextDueDateMillis,
+    timestamp = this.timestamp
+)
+
+fun List<MaintenanceEntity>.toMaintenanceDtoList(): List<MaintenanceDto> = map { it.toDto() }
+fun List<MaintenanceDto>.toMaintenanceEntityList(): List<MaintenanceEntity> = map { it.toEntity() }
