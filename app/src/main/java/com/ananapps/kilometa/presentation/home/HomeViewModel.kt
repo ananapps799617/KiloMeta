@@ -40,7 +40,8 @@ class HomeViewModel @Inject constructor(
     private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase, private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
     private val executeWalletTransferUseCase: ExecuteWalletTransferUseCase, private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository,
     private val maintenanceRepository: com.ananapps.kilometa.domain.repository.MaintenanceRepository, private val autoProvisionDailyQuotaUseCase: AutoProvisionDailyQuotaUseCase,
-    private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository
+    private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository,
+    private val processReceiptImageUseCase: ProcessReceiptImageUseCase
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
@@ -255,6 +256,13 @@ class HomeViewModel @Inject constructor(
     fun signInWithEmail(email: String, pass: String) = authDelegate.signInWithEmail(viewModelScope, email, pass)
     fun signInAnonymously() = authDelegate.signInAnonymously(viewModelScope)
     fun signOut() = authDelegate.signOut(viewModelScope)
+
+    private val receiptScanner = HomeReceiptScanner(processReceiptImageUseCase)
+    val scannedReceipt: StateFlow<ScannedTripReceipt?> = receiptScanner.scannedReceipt
+    val isScanningReceipt: StateFlow<Boolean> = receiptScanner.isScanning
+    val scanReceiptError: StateFlow<String?> = receiptScanner.scanError
+    fun clearScannedReceipt() = receiptScanner.clearScannedReceipt()
+    fun scanReceipt(uri: android.net.Uri, onSuccess: (ScannedTripReceipt) -> Unit = {}) = receiptScanner.scanReceipt(viewModelScope, uri, onSuccess)
 
     fun onToggleAutoSync(enabled: Boolean) {
         _syncPreferences.value = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)

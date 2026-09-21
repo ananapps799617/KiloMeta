@@ -8,9 +8,17 @@
 
 package com.ananapps.kilometa.presentation.home.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.*
 import com.ananapps.kilometa.presentation.common.CockpitFloatingScaffold
 import com.ananapps.kilometa.presentation.theme.*
@@ -23,6 +31,7 @@ fun RegisterTripDialog(
     lastKnownOdometer: Int = 0,
     onDismiss: () -> Unit,
     existingTrip: Trip? = null,
+    scannedReceipt: ScannedTripReceipt? = null,
     onConfirmTrip: (
         platform: PlatformType,
         gross: Double,
@@ -38,21 +47,21 @@ fun RegisterTripDialog(
     modifier: Modifier = Modifier
 ) {
     val isEditing = existingTrip != null
-    var selectedPlatform by remember(existingTrip) {
-        mutableStateOf(existingTrip?.platformType ?: PlatformType.UBER)
-    }
-    var selectedDateTimeMillis by remember(existingTrip, initialTimestamp) {
-        mutableStateOf(existingTrip?.timestamp ?: initialTimestamp ?: System.currentTimeMillis())
-    }
-    var grossAmountText by remember(existingTrip) {
-        mutableStateOf(existingTrip?.grossAmount?.toLong()?.toString() ?: "")
-    }
-    var commissionAmountText by remember(existingTrip) {
-        mutableStateOf(existingTrip?.commissionAmount?.toLong()?.toString() ?: "")
-    }
-    var selectedPaymentMethod by remember(existingTrip) {
-        mutableStateOf(existingTrip?.paymentMethod ?: PaymentMethod.CASH)
-    }
+    val initialPlatform = existingTrip?.platformType ?: scannedReceipt?.platform ?: PlatformType.UBER
+    val initialTime = existingTrip?.timestamp ?: scannedReceipt?.timestamp ?: initialTimestamp ?: System.currentTimeMillis()
+    val initialGross = existingTrip?.grossAmount?.toLong()?.toString()
+        ?: scannedReceipt?.grossAmount?.takeIf { it > 0.0 }?.toLong()?.toString()
+        ?: ""
+    val initialComm = existingTrip?.commissionAmount?.toLong()?.toString()
+        ?: scannedReceipt?.commissionAmount?.toLong()?.toString()
+        ?: ""
+    val initialPayment = existingTrip?.paymentMethod ?: scannedReceipt?.paymentMethod ?: PaymentMethod.CASH
+
+    var selectedPlatform by remember(existingTrip, scannedReceipt) { mutableStateOf(initialPlatform) }
+    var selectedDateTimeMillis by remember(existingTrip, scannedReceipt, initialTimestamp) { mutableStateOf(initialTime) }
+    var grossAmountText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialGross) }
+    var commissionAmountText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialComm) }
+    var selectedPaymentMethod by remember(existingTrip, scannedReceipt) { mutableStateOf(initialPayment) }
 
     fun updateSuggestedCommission(grossStr: String, platform: PlatformType) {
         val g = grossStr.toDoubleOrNull() ?: 0.0
@@ -130,6 +139,22 @@ fun RegisterTripDialog(
         hasDirtyData = hasDirtyData,
         modifier = modifier
     ) {
+        if (scannedReceipt != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(StatusGreen.copy(alpha = 0.15f))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "📸 Auto-completado (${scannedReceipt.confidenceSummary ?: scannedReceipt.platform.displayName})",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = StatusGreen
+                )
+            }
+        }
+
         TripPlatformSelector(
             selectedPlatform = selectedPlatform,
             onPlatformSelected = { newPlatform ->

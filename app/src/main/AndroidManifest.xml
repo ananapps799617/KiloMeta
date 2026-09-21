@@ -34,7 +34,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Auto-Captura de Pantallazos: Receptor de Compartir Imagen desde Uber / DiDi -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
         </activity>
+
+        <!-- Pre-descarga del modelo ML Kit Text Recognition para reconocimiento OCR offline inmediato -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
 
         <!-- Deshabilitación del inicializador por defecto de WorkManager para inyección con HiltWorkerFactory -->
         <provider

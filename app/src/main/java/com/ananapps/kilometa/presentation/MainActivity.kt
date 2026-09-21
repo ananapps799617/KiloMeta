@@ -37,20 +37,33 @@ import com.ananapps.kilometa.presentation.profile.DriverProfileScreen
 import com.ananapps.kilometa.presentation.reports.ReportsScreen
 import com.ananapps.kilometa.presentation.sync.CloudSyncStatusSheet
 import com.ananapps.kilometa.presentation.sync.HydrationRecoveryScreen
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import com.ananapps.kilometa.presentation.common.extractSharedImageUri
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.theme.KiloMetaTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val viewModel: HomeViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        extractSharedImageUri(intent)?.let { viewModel.scanReceipt(it) }
         setContent {
             KiloMetaTheme {
-                MainAppHost()
+                MainAppHost(viewModel = viewModel)
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        extractSharedImageUri(intent)?.let { viewModel.scanReceipt(it) }
     }
 }
 
@@ -94,6 +107,18 @@ private fun MainAppHost(
     var triggerQuickFueling by rememberSaveable { mutableStateOf(false) }
     var triggerQuickExpense by rememberSaveable { mutableStateOf(false) }
     var triggerQuickMaintenance by rememberSaveable { mutableStateOf(false) }
+
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { viewModel.scanReceipt(it) }
+    }
+    val scannedReceipt by viewModel.scannedReceipt.collectAsState()
+    LaunchedEffect(scannedReceipt) {
+        if (scannedReceipt != null) {
+            currentNavTab = KiloMetaNavTab.ROUTE
+            activeSubDestination = null
+            triggerQuickTrip = true
+        }
+    }
 
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }
     var showRecoveryScreen by rememberSaveable { mutableStateOf(false) }
@@ -158,58 +183,36 @@ private fun MainAppHost(
                 .padding(innerPadding)
         ) {
             when {
-                activeSubDestination == AppDestination.PROFILE -> {
-                    DriverProfileScreen(
-                        onNavigateBack = { activeSubDestination = null },
-                        isOnboardingMode = false,
-                        userEmail = userSession?.email ?: ""
-                    )
-                }
-                activeSubDestination == AppDestination.PLACES -> {
-                    PlacesScreen(
-                        onNavigateBack = { activeSubDestination = null }
-                    )
-                }
-                activeSubDestination == AppDestination.EXPENSES -> {
-                    ExpensesScreen(
-                        onNavigateBack = { activeSubDestination = null }
-                    )
-                }
-                activeSubDestination == AppDestination.MAINTENANCE -> {
-                    MaintenanceScreen(
-                        onNavigateBack = { activeSubDestination = null }
-                    )
-                }
-                currentNavTab == KiloMetaNavTab.ROUTE -> {
-                    HomeScreen(
-                        viewModel = viewModel,
-                        showTopBar = false,
-                        triggerQuickTrip = triggerQuickTrip,
-                        onResetQuickTripTrigger = { triggerQuickTrip = false },
-                        triggerQuickFueling = triggerQuickFueling,
-                        onResetQuickFuelingTrigger = { triggerQuickFueling = false },
-                        triggerQuickExpense = triggerQuickExpense,
-                        onResetQuickExpenseTrigger = { triggerQuickExpense = false },
-                        triggerQuickMaintenance = triggerQuickMaintenance,
-                        onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
-                    )
-                }
-                currentNavTab == KiloMetaNavTab.HISTORY -> {
-                    HistoryScreen()
-                }
-                currentNavTab == KiloMetaNavTab.REPORTS -> {
-                    ReportsScreen()
-                }
-                currentNavTab == KiloMetaNavTab.MORE -> {
-                    MoreScreen(
-                        onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE },
-                        onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
-                        onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
-                        onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
-                        onNavigateToSync = { showSyncSheet = true },
-                        onSignOut = { viewModel.signOut() }
-                    )
-                }
+                activeSubDestination == AppDestination.PROFILE -> DriverProfileScreen(
+                    onNavigateBack = { activeSubDestination = null },
+                    isOnboardingMode = false,
+                    userEmail = userSession?.email ?: ""
+                )
+                activeSubDestination == AppDestination.PLACES -> PlacesScreen(onNavigateBack = { activeSubDestination = null })
+                activeSubDestination == AppDestination.EXPENSES -> ExpensesScreen(onNavigateBack = { activeSubDestination = null })
+                activeSubDestination == AppDestination.MAINTENANCE -> MaintenanceScreen(onNavigateBack = { activeSubDestination = null })
+                currentNavTab == KiloMetaNavTab.ROUTE -> HomeScreen(
+                    viewModel = viewModel,
+                    showTopBar = false,
+                    triggerQuickTrip = triggerQuickTrip,
+                    onResetQuickTripTrigger = { triggerQuickTrip = false },
+                    triggerQuickFueling = triggerQuickFueling,
+                    onResetQuickFuelingTrigger = { triggerQuickFueling = false },
+                    triggerQuickExpense = triggerQuickExpense,
+                    onResetQuickExpenseTrigger = { triggerQuickExpense = false },
+                    triggerQuickMaintenance = triggerQuickMaintenance,
+                    onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
+                )
+                currentNavTab == KiloMetaNavTab.HISTORY -> HistoryScreen()
+                currentNavTab == KiloMetaNavTab.REPORTS -> ReportsScreen()
+                currentNavTab == KiloMetaNavTab.MORE -> MoreScreen(
+                    onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE },
+                    onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
+                    onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
+                    onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
+                    onNavigateToSync = { showSyncSheet = true },
+                    onSignOut = { viewModel.signOut() }
+                )
             }
         }
     }
@@ -218,25 +221,13 @@ private fun MainAppHost(
         QuickActionSheet(
             sheetState = quickActionSheetState,
             onDismiss = { showQuickActionSheet = false },
-            onSelectTrip = {
-                currentNavTab = KiloMetaNavTab.ROUTE
-                activeSubDestination = null
-                triggerQuickTrip = true
-            },
-            onSelectFueling = {
-                currentNavTab = KiloMetaNavTab.ROUTE
-                activeSubDestination = null
-                triggerQuickFueling = true
-            },
-            onSelectExpense = {
-                currentNavTab = KiloMetaNavTab.ROUTE
-                activeSubDestination = null
-                triggerQuickExpense = true
-            },
-            onSelectMaintenance = {
-                currentNavTab = KiloMetaNavTab.ROUTE
-                activeSubDestination = null
-                triggerQuickMaintenance = true
+            onSelectTrip = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickTrip = true },
+            onSelectFueling = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickFueling = true },
+            onSelectExpense = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickExpense = true },
+            onSelectMaintenance = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickMaintenance = true },
+            onSelectScanReceipt = {
+                showQuickActionSheet = false
+                photoPicker.launch("image/*")
             }
         )
     }

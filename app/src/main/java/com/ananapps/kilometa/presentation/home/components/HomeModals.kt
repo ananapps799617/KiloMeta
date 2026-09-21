@@ -58,11 +58,17 @@ fun HomeCockpitModals(
 
     if (showTripDialog) {
         val vehicleProfile by viewModel.vehicleProfile.collectAsState()
+        val scannedReceipt by viewModel.scannedReceipt.collectAsState()
         RegisterTripDialog(
             vehicleProfile = vehicleProfile,
             lastKnownOdometer = resolvedOdo,
-            onDismiss = onDismissTripDialog,
+            scannedReceipt = scannedReceipt,
+            onDismiss = {
+                viewModel.clearScannedReceipt()
+                onDismissTripDialog()
+            },
             onConfirmTrip = { platform, gross, commission, payment, destination, timestamp, startOdo, endOdo ->
+                viewModel.clearScannedReceipt()
                 viewModel.registerTrip(
                     platform = platform,
                     gross = gross,

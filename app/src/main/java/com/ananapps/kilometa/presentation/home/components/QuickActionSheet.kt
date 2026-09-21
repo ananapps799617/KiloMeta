@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
@@ -38,6 +39,7 @@ fun QuickActionSheet(
     onSelectFueling: () -> Unit,
     onSelectExpense: () -> Unit,
     onSelectMaintenance: () -> Unit = {},
+    onSelectScanReceipt: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     ModalBottomSheet(
@@ -62,11 +64,23 @@ fun QuickActionSheet(
             )
 
             QuickActionOption(
+                icon = Icons.Default.Add,
+                iconBg = ElectricBluePrimary,
+                iconTint = Color.Black,
+                title = "📸 Auto-Captura Pantallazo",
+                subtitle = "Escanear recibo de Uber o DiDi desde foto",
+                onClick = {
+                    onDismiss()
+                    onSelectScanReceipt()
+                }
+            )
+
+            QuickActionOption(
                 icon = Icons.Default.LocationOn,
                 iconBg = StatusGreen,
                 iconTint = Color.Black,
-                title = "Registrar Carrera",
-                subtitle = "Uber, DiDi, InDrive o Particular",
+                title = "Registrar Carrera Manual",
+                subtitle = "Uber, DiDi, inDrive o Particular",
                 onClick = {
                     onDismiss()
                     onSelectTrip()
