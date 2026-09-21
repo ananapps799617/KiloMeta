@@ -44,13 +44,6 @@ fun RegisterTripDialog(
     var selectedDateTimeMillis by remember(existingTrip, initialTimestamp) {
         mutableStateOf(existingTrip?.timestamp ?: initialTimestamp ?: System.currentTimeMillis())
     }
-    var startOdometerText by remember(existingTrip, lastKnownOdometer) {
-        val odo = existingTrip?.startOdometer ?: if (lastKnownOdometer > 0) lastKnownOdometer else null
-        mutableStateOf(odo?.toString() ?: "")
-    }
-    var endOdometerText by remember(existingTrip) {
-        mutableStateOf(existingTrip?.endOdometer?.toString() ?: "")
-    }
     var grossAmountText by remember(existingTrip) {
         mutableStateOf(existingTrip?.grossAmount?.toLong()?.toString() ?: "")
     }
@@ -72,22 +65,17 @@ fun RegisterTripDialog(
 
     val gross = grossAmountText.toDoubleOrNull() ?: 0.0
     val commission = commissionAmountText.toDoubleOrNull() ?: 0.0
-    val startOdo = startOdometerText.toIntOrNull()
-    val endOdo = endOdometerText.toIntOrNull()
     val net = (gross - commission).coerceAtLeast(0.0)
 
     val hasDirtyData = if (isEditing) {
         gross != existingTrip.grossAmount ||
                 commission != existingTrip.commissionAmount ||
                 selectedPlatform != existingTrip.platformType ||
-                selectedPaymentMethod != existingTrip.paymentMethod ||
-                startOdo != existingTrip.startOdometer ||
-                endOdo != existingTrip.endOdometer
+                selectedPaymentMethod != existingTrip.paymentMethod
     } else {
-        grossAmountText.isNotBlank() || commissionAmountText.isNotBlank() || endOdometerText.isNotBlank()
+        grossAmountText.isNotBlank() || commissionAmountText.isNotBlank()
     }
-    val isOdometerValid = if (startOdo != null && endOdo != null) endOdo >= startOdo else true
-    val isFormValid = gross > 0.0 && commission <= gross && isOdometerValid
+    val isFormValid = gross > 0.0 && commission <= gross
 
     val dialogTitle = if (isEditing) "🏁 Editar Carrera" else "🏁 Nueva Carrera"
     val buttonText = if (isEditing) {
@@ -121,9 +109,7 @@ fun RegisterTripDialog(
                             netAmount = net,
                             paymentMethod = selectedPaymentMethod,
                             paymentDestination = dest,
-                            timestamp = selectedDateTimeMillis,
-                            startOdometer = startOdo,
-                            endOdometer = endOdo
+                            timestamp = selectedDateTimeMillis
                         )
                     )
                 } else {
@@ -134,8 +120,8 @@ fun RegisterTripDialog(
                         selectedPaymentMethod,
                         dest,
                         selectedDateTimeMillis,
-                        startOdo,
-                        endOdo
+                        null,
+                        null
                     )
                 }
                 onDismiss()
@@ -155,12 +141,7 @@ fun RegisterTripDialog(
         TripTelemetrySection(
             vehicleProfile = vehicleProfile,
             selectedDateTimeMillis = selectedDateTimeMillis,
-            onDateTimeSelected = { selectedDateTimeMillis = it },
-            startOdometerText = startOdometerText,
-            onStartOdometerChange = { startOdometerText = it },
-            endOdometerText = endOdometerText,
-            onEndOdometerChange = { endOdometerText = it },
-            lastKnownOdometer = lastKnownOdometer
+            onDateTimeSelected = { selectedDateTimeMillis = it }
         )
 
         TripFinancialSection(

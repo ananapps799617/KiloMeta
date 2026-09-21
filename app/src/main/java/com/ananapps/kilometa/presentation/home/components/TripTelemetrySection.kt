@@ -2,21 +2,18 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripTelemetrySection.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Sección de telemetría estilo Cockpit KiloMeta: vehículo activo, fecha/hora interactiva
-// con Date/Time pickers, odómetro inicial editable con cálculo de km en vacío
-// y odómetro final con cálculo de km de carrera con pasajero.
+// Sección de telemetría de carrera estilo Cockpit KiloMeta: vehículo activo y fecha/hora interactiva
+// con Date/Time pickers nativos. Entrada ágil y limpia sin fricción de odómetros en cabina.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
@@ -27,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.VehicleProfile
@@ -42,11 +38,6 @@ fun TripTelemetrySection(
     vehicleProfile: VehicleProfile,
     selectedDateTimeMillis: Long,
     onDateTimeSelected: (Long) -> Unit,
-    startOdometerText: String,
-    onStartOdometerChange: (String) -> Unit,
-    endOdometerText: String,
-    onEndOdometerChange: (String) -> Unit,
-    lastKnownOdometer: Int,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -56,21 +47,6 @@ fun TripTelemetrySection(
 
     val dateFormatter = remember { SimpleDateFormat("dd/MMM/yyyy", Locale("es", "CO")) }
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale("es", "CO")) }
-
-    val startOdo = startOdometerText.toIntOrNull()
-    val endOdo = endOdometerText.toIntOrNull()
-
-    // Cálculo reactivo de km en vacío
-    val emptyKm = if (startOdo != null && lastKnownOdometer > 0 && startOdo > lastKnownOdometer) {
-        startOdo - lastKnownOdometer
-    } else null
-
-    // Cálculo reactivo de km con pasajero
-    val passengerKm = if (startOdo != null && endOdo != null && endOdo >= startOdo) {
-        endOdo - startOdo
-    } else null
-
-    val isOdometerError = startOdo != null && endOdo != null && endOdo < startOdo
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // 1. Vehículo Activo (Formato Flat List Cockpit KiloMeta con icono dinámico)
@@ -96,16 +72,11 @@ fun TripTelemetrySection(
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrimary
                     )
-                    Text(
-                        text = "Base odómetro: ${lastKnownOdometer} km",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
-                    )
                 }
             }
         }
 
-        // 2. Fila Fecha & Hora Interactivas
+        // 2. Fila Fecha & Hora Interactivas (Preservadas 100% simétricas)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             // Selector Fecha
             Surface(
@@ -177,67 +148,6 @@ fun TripTelemetrySection(
                     }
                 }
             }
-        }
-
-        // 3. Odómetros: Inicial (editable) y Final (opcional)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(
-                value = startOdometerText,
-                onValueChange = onStartOdometerChange,
-                label = { Text("Odómetro Inicial (km)") },
-                placeholder = { Text(lastKnownOdometer.toString()) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ElectricBluePrimary,
-                    unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                modifier = Modifier.weight(1f)
-            )
-
-            OutlinedTextField(
-                value = endOdometerText,
-                onValueChange = onEndOdometerChange,
-                label = { Text("Odómetro Final") },
-                placeholder = { Text("Opcional") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                isError = isOdometerError,
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ElectricBluePrimary,
-                    unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // 4. Indicadores en vivo de Km en vacío y Km de carrera
-        if (emptyKm != null && emptyKm > 0) {
-            Text(
-                text = "💨 $emptyKm km rodados en vacío antes de este viaje",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = StatusAmber
-            )
-        }
-
-        if (passengerKm != null) {
-            Text(
-                text = "🚗 $passengerKm km recorridos con pasajero en esta carrera",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = StatusGreen
-            )
-        }
-
-        if (isOdometerError) {
-            Text(
-                text = "⚠️ El odómetro final no puede ser menor al inicial ($startOdo km)",
-                style = MaterialTheme.typography.labelSmall,
-                color = StatusRed
-            )
         }
     }
 }

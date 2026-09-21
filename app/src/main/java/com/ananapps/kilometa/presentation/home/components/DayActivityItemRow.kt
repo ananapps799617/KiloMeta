@@ -147,11 +147,6 @@ fun DayActivityItemRow(
                     DetailRow("COMISIÓN DESCONTADA", "- $ ${String.format(Locale.US, "%,.0f", trip.commissionAmount)}")
                     DetailRow("GANANCIA LIMPIA", "$ ${String.format(Locale.US, "%,.0f", trip.netAmount)}", isHighlight = true)
                     DetailRow("MEDIO DE PAGO", trip.paymentMethod.displayName)
-                    if (trip.startOdometer != null || trip.endOdometer != null) {
-                        val odoText = "${trip.startOdometer ?: "-"} km ➔ ${trip.endOdometer ?: "-"} km"
-                        val distText = trip.tripDistanceKm?.let { " (${it.toInt()} km)" } ?: ""
-                        DetailRow("ODÓMETRO", "$odoText$distText")
-                    }
                     DetailRow("HORA REGISTRO", timeFormatted)
                 }
                 is DayActivityEvent.FuelingItem -> {
