@@ -49,6 +49,7 @@ fun ContinuousTimelineCockpitView(
     onEditMaintenance: (MaintenanceRecord) -> Unit = {},
     onTransferClick: () -> Unit = {},
     onPocketClick: ((PocketType) -> Unit)? = null,
+    onOpenDayOdometerDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val effectiveSettlement = timelineSummary.cashSettlement ?: cashSettlement
@@ -118,7 +119,16 @@ fun ContinuousTimelineCockpitView(
             vehicle = vehicle
         )
 
-        // 3. Tarjeta CockpitWalletsCard (Saldos de los 5 bolsillos con ciclo semanal y aire)
+        // 3. Chip Interactivo de Odómetros de Jornada (Opción 4, Orden #043)
+        DayOdometerChip(
+            dayStartOdometer = timelineSummary.dayStartOdometer,
+            dayEndOdometer = timelineSummary.dayEndOdometer,
+            isDayClosed = timelineSummary.isDayClosed,
+            lastKnownOdometer = lastKnownOdometer,
+            onOpenDayOdometerDialog = onOpenDayOdometerDialog
+        )
+
+        // 4. Tarjeta CockpitWalletsCard (Saldos de los 5 bolsillos con ciclo semanal y aire)
         CockpitWalletsCard(
             settlement = effectiveSettlement,
             cycleLabel = timelineSummary.cycleLabel,

@@ -96,6 +96,9 @@ data class DayContinuousSummary(
     val cycleLabel: String? = null,
     val cycleStartMillis: Long? = null,
     val cycleEndMillis: Long? = null,
-    val events: List<DayActivityEvent> = emptyList()
+    val events: List<DayActivityEvent> = emptyList(),
+    val dayStartOdometer: Int? = null,
+    val dayEndOdometer: Int? = null,
+    val isDayClosed: Boolean = false
 )
 

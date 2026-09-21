@@ -55,7 +55,8 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             shiftRepository.getLastKnownOdometer(),
             walletTransferRepository.getAllTransfers(),
             maintenanceRepository.getAllMaintenances(),
-            driverProfileRepository.getVehicleProfile()
+            driverProfileRepository.getVehicleProfile(),
+            shiftRepository.getAllShifts()
         ) { args: Array<Any?> ->
             val allTrips = args[0] as List<Trip>
             val allFuelings = args[1] as List<Fueling>
@@ -64,6 +65,7 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             val allTransfers = args[4] as List<WalletTransfer>
             val allMaintenances = args[5] as List<MaintenanceRecord>
             val vehicle = args[6] as VehicleProfile
+            val allShifts = args[7] as List<com.ananapps.kilometa.domain.model.Shift>
 
             val calendar = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
@@ -112,21 +114,27 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 "0h 0m"
             }
 
-            // Odómetros automáticos de hoy
+            // Odómetros automáticos y jornada de hoy
+            val todayShifts = allShifts.filter { it.startTime >= todayStartMillis || (it.endTime ?: 0L) >= todayStartMillis }
+            val primaryShift = todayShifts.firstOrNull()
+            val shiftStartOdo = primaryShift?.startOdometer?.takeIf { it > 0 }
+            val shiftEndOdo = primaryShift?.endOdometer?.takeIf { it > 0 && it >= (shiftStartOdo ?: 0) }
+
             val tripMinOdo = todayTrips.mapNotNull { it.startOdometer ?: it.endOdometer }.minOrNull()
             val fuelMinOdo = todayFuelings.map { it.odometer }.minOrNull()
             val maintMinOdo = todayMaintenances.map { it.odometer }.minOrNull()
-            val firstOdoCandidates = listOfNotNull(tripMinOdo, fuelMinOdo, maintMinOdo)
-            val firstOdo = firstOdoCandidates.minOrNull() ?: lastOdo
+            val firstOdoCandidates = listOfNotNull(shiftStartOdo, tripMinOdo, fuelMinOdo, maintMinOdo)
+            val firstOdo = firstOdoCandidates.minOrNull() ?: lastOdo ?: vehicle.initialOdometer
 
             val tripMaxOdo = todayTrips.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
             val fuelMaxOdo = todayFuelings.map { it.odometer }.maxOrNull()
             val maintMaxOdo = todayMaintenances.map { it.odometer }.maxOrNull()
-            val lastOdoCandidates = listOfNotNull(tripMaxOdo, fuelMaxOdo, maintMaxOdo, lastOdo, firstOdo)
-            val effectiveLastOdo = lastOdoCandidates.maxOrNull() ?: firstOdo ?: 0
+            val lastOdoCandidates = listOfNotNull(shiftEndOdo, tripMaxOdo, fuelMaxOdo, maintMaxOdo)
+            val effectiveLastOdo = lastOdoCandidates.maxOrNull() ?: firstOdo
 
+            val isDayClosed = shiftEndOdo != null && shiftEndOdo > firstOdo
             val sumTripKm = todayTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()
-            val odoDistanceKm = if (firstOdo != null && effectiveLastOdo > firstOdo && events.isNotEmpty()) {
+            val odoDistanceKm = if (firstOdo > 0 && effectiveLastOdo > firstOdo) {
                 effectiveLastOdo - firstOdo
             } else {
                 0
@@ -191,7 +199,10 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 cycleLabel = cycleLabel,
                 cycleStartMillis = cycleStartMillis,
                 cycleEndMillis = cycleEndMillis,
-                events = events
+                events = events,
+                dayStartOdometer = firstOdo,
+                dayEndOdometer = shiftEndOdo,
+                isDayClosed = isDayClosed
             )
         }
     }

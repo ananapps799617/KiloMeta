@@ -231,40 +231,30 @@ class HomeViewModel @Inject constructor(
     fun startDisasterRecovery() = viewModelScope.launch { restoreDataUseCase().collect { _restoreProgress.value = it } }
     fun resetRecoveryProgress() { _restoreProgress.value = RestoreProgress.Idle }
 
-    private val _authError = MutableStateFlow<String?>(null); val authError: StateFlow<String?> = _authError.asStateFlow()
-    private val _isAuthLoading = MutableStateFlow(false); val isAuthLoading: StateFlow<Boolean> = _isAuthLoading.asStateFlow()
-    fun setAuthError(message: String) { _authError.value = message }
-    fun clearAuthError() { _authError.value = null }
-
-    fun signInWithGoogle(idToken: String) = viewModelScope.launch {
-        _isAuthLoading.value = true; _authError.value = null
-        val result = authenticateUserUseCase.signInWithGoogle(idToken)
-        result.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid); syncDataUseCase() }
-            ?: run { _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error Google" }
-        _isAuthLoading.value = false
+    fun updateDayOdometers(startOdo: Int, endOdo: Int?) = viewModelScope.launch {
+        val shift = manageShiftUseCase.getOrCreateShiftForDay(
+            timestamp = System.currentTimeMillis(),
+            startOdometer = startOdo,
+            endOdometer = endOdo
+        )
+        shiftRepository.updateShift(
+            shift.copy(
+                startOdometer = startOdo,
+                endOdometer = endOdo
+            )
+        )
+        syncDataUseCase()
     }
 
-    fun signInWithEmail(email: String, pass: String) = viewModelScope.launch {
-        _isAuthLoading.value = true; _authError.value = null
-        val signIn = authenticateUserUseCase.signInWithEmail(email.trim(), pass)
-        if (signIn.isSuccess) {
-            signIn.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid); syncDataUseCase() }
-        } else {
-            val signUp = authenticateUserUseCase.signUpWithEmail(email.trim(), pass)
-            if (signUp.isFailure) _authError.value = signUp.exceptionOrNull()?.localizedMessage ?: "Error auth"
-            else signUp.getOrNull()?.let { driverProfileRepository.fetchAndHydrateRemoteProfile(it.uid); syncDataUseCase() }
-        }
-        _isAuthLoading.value = false
-    }
-
-    fun signInAnonymously() = viewModelScope.launch {
-        _isAuthLoading.value = true; _authError.value = null
-        val result = authenticateUserUseCase.signInAnonymously()
-        if (result.isFailure) _authError.value = result.exceptionOrNull()?.localizedMessage ?: "Error sesión"
-        _isAuthLoading.value = false
-    }
-
-    fun signOut() = viewModelScope.launch { signOutUseCase() }
+    private val authDelegate = HomeAuthDelegate(authenticateUserUseCase, driverProfileRepository, syncDataUseCase, signOutUseCase)
+    val authError: StateFlow<String?> = authDelegate.authError
+    val isAuthLoading: StateFlow<Boolean> = authDelegate.isAuthLoading
+    fun setAuthError(message: String) = authDelegate.setAuthError(message)
+    fun clearAuthError() = authDelegate.clearAuthError()
+    fun signInWithGoogle(idToken: String) = authDelegate.signInWithGoogle(viewModelScope, idToken)
+    fun signInWithEmail(email: String, pass: String) = authDelegate.signInWithEmail(viewModelScope, email, pass)
+    fun signInAnonymously() = authDelegate.signInAnonymously(viewModelScope)
+    fun signOut() = authDelegate.signOut(viewModelScope)
 
     fun onToggleAutoSync(enabled: Boolean) {
         _syncPreferences.value = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)

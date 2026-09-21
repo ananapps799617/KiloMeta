@@ -42,6 +42,7 @@ import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
 import com.ananapps.kilometa.domain.model.Trip
 import com.ananapps.kilometa.presentation.home.components.ContinuousTimelineCockpitView
+import com.ananapps.kilometa.presentation.home.components.DayOdometerDialog
 import com.ananapps.kilometa.presentation.home.components.ExpenseEditDialog
 import com.ananapps.kilometa.presentation.home.components.FuelingEditDialog
 import com.ananapps.kilometa.presentation.home.components.HomeCockpitModals
@@ -87,6 +88,7 @@ fun HomeScreen(
     var showExpenseDialog by remember { mutableStateOf(false) }
     var showMaintenanceDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
+    var showDayOdometerDialog by remember { mutableStateOf(false) }
     var editingTrip by remember { mutableStateOf<Trip?>(null) }
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var editingFueling by remember { mutableStateOf<Fueling?>(null) }
@@ -138,7 +140,8 @@ fun HomeScreen(
                         onEditExpense = { editingExpense = it },
                         onEditFueling = { editingFueling = it },
                         onTransferClick = { showTransferDialog = true },
-                        onPocketClick = { pocket -> pocketLedgerViewModel.selectPocket(pocket) }
+                        onPocketClick = { pocket -> pocketLedgerViewModel.selectPocket(pocket) },
+                        onOpenDayOdometerDialog = { showDayOdometerDialog = true }
                     )
                 }
                 is HomeUiState.StandbyPlaceholder -> {
@@ -203,6 +206,19 @@ fun HomeScreen(
             onConfirm = { updated ->
                 viewModel.updateFueling(updated)
                 editingFueling = null
+            }
+        )
+    }
+
+    if (showDayOdometerDialog) {
+        DayOdometerDialog(
+            dayStartOdometer = dayContinuousTimeline.dayStartOdometer,
+            dayEndOdometer = dayContinuousTimeline.dayEndOdometer,
+            lastKnownOdometer = lastKnownOdometer,
+            onDismiss = { showDayOdometerDialog = false },
+            onConfirmSave = { startOdo, endOdo ->
+                viewModel.updateDayOdometers(startOdo, endOdo)
+                showDayOdometerDialog = false
             }
         )
     }
