@@ -9,6 +9,7 @@
 
 package com.ananapps.kilometa.presentation.profile
 
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +48,7 @@ fun DriverProfileScreen(
     val initialVehicle by viewModel.vehicleProfile.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
 
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -74,6 +77,7 @@ fun DriverProfileScreen(
     LaunchedEffect(isSaved) {
         if (isSaved) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            Toast.makeText(context, "Perfil guardado exitosamente", Toast.LENGTH_SHORT).show()
             viewModel.resetSavedNotification()
             delay(250)
             onNavigateBack()

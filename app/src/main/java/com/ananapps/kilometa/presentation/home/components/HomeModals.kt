@@ -145,8 +145,8 @@ fun HomeCockpitModals(
         StartShiftDialog(
             initialOdometer = resolvedOdo,
             onDismiss = onDismissStartShiftDialog,
-            onConfirm = { startOdo ->
-                viewModel.startShift(startOdometer = startOdo)
+            onConfirm = { startOdo, startTime ->
+                viewModel.startShift(startOdometer = startOdo, startTime = startTime)
                 onDismissStartShiftDialog()
                 onStartShiftConfirmed()
             }
@@ -158,8 +158,8 @@ fun HomeCockpitModals(
         CloseShiftDialog(
             startOdometer = startOdo,
             onDismiss = onDismissCloseShiftDialog,
-            onConfirm = { endOdo ->
-                viewModel.closeShift(endOdometer = endOdo)
+            onConfirm = { endOdo, endTime ->
+                viewModel.closeShift(endOdometer = endOdo, endTime = endTime)
                 onDismissCloseShiftDialog()
             }
         )

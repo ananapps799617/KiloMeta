@@ -89,6 +89,8 @@ fun HomeScreen(
     var showMaintenanceDialog by remember { mutableStateOf(false) }
     var showTransferDialog by remember { mutableStateOf(false) }
     var showDayOdometerDialog by remember { mutableStateOf(false) }
+    var showStartShiftDialog by remember { mutableStateOf(false) }
+    var showCloseShiftDialog by remember { mutableStateOf(false) }
     var editingTrip by remember { mutableStateOf<Trip?>(null) }
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     var editingFueling by remember { mutableStateOf<Fueling?>(null) }
@@ -141,6 +143,8 @@ fun HomeScreen(
                         onEditFueling = { editingFueling = it },
                         onTransferClick = { showTransferDialog = true },
                         onPocketClick = { pocket -> pocketLedgerViewModel.selectPocket(pocket) },
+                        onStartShiftClick = { showStartShiftDialog = true },
+                        onCloseShiftClick = { showCloseShiftDialog = true },
                         onOpenDayOdometerDialog = { showDayOdometerDialog = true }
                     )
                 }
@@ -164,6 +168,10 @@ fun HomeScreen(
         onDismissMaintenanceDialog = { showMaintenanceDialog = false },
         showTransferDialog = showTransferDialog,
         onDismissTransferDialog = { showTransferDialog = false },
+        showStartShiftDialog = showStartShiftDialog,
+        onDismissStartShiftDialog = { showStartShiftDialog = false },
+        showCloseShiftDialog = showCloseShiftDialog,
+        onDismissCloseShiftDialog = { showCloseShiftDialog = false },
         lastKnownOdometer = lastKnownOdometer
     )
 

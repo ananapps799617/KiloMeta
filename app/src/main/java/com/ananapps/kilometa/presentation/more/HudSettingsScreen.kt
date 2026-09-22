@@ -11,6 +11,7 @@ package com.ananapps.kilometa.presentation.more
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,11 +38,11 @@ fun HudSettingsScreen(
 ) {
     val config by viewModel.config.collectAsState()
     val context = LocalContext.current
-    var showSavedSnackbar by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewModel.saveSuccess) {
+    LaunchedEffect(Unit) {
         viewModel.saveSuccess.collect {
-            showSavedSnackbar = true
+            Toast.makeText(context, "Parámetros del Copiloto guardados", Toast.LENGTH_SHORT).show()
+            onNavigateBack()
         }
     }
 

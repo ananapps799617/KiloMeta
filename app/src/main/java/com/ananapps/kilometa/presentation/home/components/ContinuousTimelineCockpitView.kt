@@ -49,6 +49,8 @@ fun ContinuousTimelineCockpitView(
     onEditMaintenance: (MaintenanceRecord) -> Unit = {},
     onTransferClick: () -> Unit = {},
     onPocketClick: ((PocketType) -> Unit)? = null,
+    onStartShiftClick: () -> Unit = {},
+    onCloseShiftClick: () -> Unit = {},
     onOpenDayOdometerDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -125,6 +127,9 @@ fun ContinuousTimelineCockpitView(
             dayEndOdometer = timelineSummary.dayEndOdometer,
             isDayClosed = timelineSummary.isDayClosed,
             lastKnownOdometer = lastKnownOdometer,
+            hasActiveShift = timelineSummary.hasActiveShift,
+            onStartShiftClick = onStartShiftClick,
+            onCloseShiftClick = onCloseShiftClick,
             onOpenDayOdometerDialog = onOpenDayOdometerDialog
         )
 

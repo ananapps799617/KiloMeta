@@ -217,10 +217,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun deleteMaintenance(id: String) = viewModelScope.launch { maintenanceRepository.deleteMaintenance(id) }
-    fun startShift(startOdometer: Int, dailyQuota: Double? = null) = viewModelScope.launch { manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0) }
-    fun closeShift(endOdometer: Int, notes: String? = null) {
+    fun startShift(startOdometer: Int, dailyQuota: Double? = null, startTime: Long = System.currentTimeMillis()) = viewModelScope.launch {
+        manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0, startTime = startTime)
+    }
+    fun closeShift(endOdometer: Int, endTime: Long = System.currentTimeMillis(), notes: String? = null) {
         val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch { manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, notes = notes) }
+        viewModelScope.launch { manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, endTime = endTime, notes = notes) }
     }
 
     fun syncNow() = viewModelScope.launch { syncDataUseCase() }

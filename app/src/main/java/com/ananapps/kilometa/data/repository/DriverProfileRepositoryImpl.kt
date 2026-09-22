@@ -249,18 +249,20 @@ class DriverProfileRepositoryImpl @Inject constructor(
     }
 
     private suspend fun syncToCloudIfAuthenticated(driver: DriverProfile, vehicle: VehicleProfile) {
-        val currentUser = authRepository.getCurrentUser() ?: return
-        val map = mapOf<String, Any>(
-            "driverName" to driver.driverName, "email" to driver.email, "phone" to driver.phone,
-            "gender" to driver.gender.name, "vehiclePlate" to vehicle.vehiclePlate,
-            "vehicleType" to vehicle.vehicleType.name,
-            "brand" to vehicle.brand, "model" to vehicle.model,
-            "propulsionType" to vehicle.propulsionType.name, "tenureType" to vehicle.tenureType.name,
-            "quotaPeriodicity" to vehicle.quotaPeriodicity.name, "quotaAmount" to vehicle.quotaAmount,
-            "workDaysWeek" to vehicle.workDaysWeek, "quotaCutoffDay" to vehicle.quotaCutoffDay,
-            "quotaCutoffHour" to vehicle.quotaCutoffHour, "initialOdometer" to vehicle.initialOdometer,
-            "isProfileCompleted" to driver.isProfileCompleted, "updatedAt" to System.currentTimeMillis()
-        )
-        firestoreDataSource.saveDriverProfile(currentUser.uid, map)
+        runCatching {
+            val currentUser = authRepository.getCurrentUser() ?: return@runCatching
+            val map = mapOf<String, Any>(
+                "driverName" to driver.driverName, "email" to driver.email, "phone" to driver.phone,
+                "gender" to driver.gender.name, "vehiclePlate" to vehicle.vehiclePlate,
+                "vehicleType" to vehicle.vehicleType.name,
+                "brand" to vehicle.brand, "model" to vehicle.model,
+                "propulsionType" to vehicle.propulsionType.name, "tenureType" to vehicle.tenureType.name,
+                "quotaPeriodicity" to vehicle.quotaPeriodicity.name, "quotaAmount" to vehicle.quotaAmount,
+                "workDaysWeek" to vehicle.workDaysWeek, "quotaCutoffDay" to vehicle.quotaCutoffDay,
+                "quotaCutoffHour" to vehicle.quotaCutoffHour, "initialOdometer" to vehicle.initialOdometer,
+                "isProfileCompleted" to driver.isProfileCompleted, "updatedAt" to System.currentTimeMillis()
+            )
+            firestoreDataSource.saveDriverProfile(currentUser.uid, map)
+        }
     }
 }

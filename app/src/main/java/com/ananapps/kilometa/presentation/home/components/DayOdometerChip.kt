@@ -35,7 +35,10 @@ fun DayOdometerChip(
     dayEndOdometer: Int?,
     isDayClosed: Boolean,
     lastKnownOdometer: Int,
-    onOpenDayOdometerDialog: () -> Unit,
+    hasActiveShift: Boolean = false,
+    onStartShiftClick: () -> Unit = {},
+    onCloseShiftClick: () -> Unit = {},
+    onOpenDayOdometerDialog: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val effectiveStartOdo = (dayStartOdometer?.takeIf { it > 0 }) ?: lastKnownOdometer
@@ -45,11 +48,17 @@ fun DayOdometerChip(
         0
     }
 
+    val cardClickAction = when {
+        isDayClosed -> onOpenDayOdometerDialog
+        hasActiveShift -> onCloseShiftClick
+        else -> onStartShiftClick
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable { onOpenDayOdometerDialog() },
+            .clickable { cardClickAction() },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface)
     ) {
@@ -69,12 +78,19 @@ fun DayOdometerChip(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = if (isDayClosed) "🏁 JORNADA CERRADA" else "🚗 ODÓMETRO DEL DÍA",
+                        text = when {
+                            isDayClosed -> "🏁 JORNADA CERRADA"
+                            hasActiveShift -> "🟢 TURNO EN CURSO"
+                            else -> "🚦 CABINA EN ESPERA"
+                        },
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         ),
-                        color = if (isDayClosed) StatusGreen else TextSecondary
+                        color = when {
+                            isDayClosed || hasActiveShift -> StatusGreen
+                            else -> ElectricBluePrimary
+                        }
                     )
                     if (isDayClosed && totalKmDriven > 0) {
                         Box(
@@ -104,9 +120,18 @@ fun DayOdometerChip(
                         ),
                         color = TextPrimary
                     )
-                } else {
+                } else if (hasActiveShift) {
                     Text(
                         text = "Inicio: ${String.format(Locale.US, "%,d", effectiveStartOdo)} km",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        ),
+                        color = TextPrimary
+                    )
+                } else {
+                    Text(
+                        text = "Último odómetro: ${String.format(Locale.US, "%,d", effectiveStartOdo)} km",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace
@@ -116,38 +141,57 @@ fun DayOdometerChip(
                 }
             }
 
-            if (isDayClosed) {
-                IconButton(
-                    onClick = onOpenDayOdometerDialog,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar Odómetro",
-                        tint = TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
+            when {
+                isDayClosed -> {
+                    IconButton(
+                        onClick = onOpenDayOdometerDialog,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Editar Odómetro",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-            } else {
-                Button(
-                    onClick = onOpenDayOdometerDialog,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ElectricBluePrimary,
-                        contentColor = TextPrimary
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Cierre",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                hasActiveShift -> {
+                    Button(
+                        onClick = onCloseShiftClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = StatusRed,
+                            contentColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Finalizar",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+                else -> {
+                    Button(
+                        onClick = onStartShiftClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ElectricBluePrimary,
+                            contentColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Iniciar Turno 🚀",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
             }
         }
