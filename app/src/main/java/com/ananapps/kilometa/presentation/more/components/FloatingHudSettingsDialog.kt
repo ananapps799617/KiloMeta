@@ -25,12 +25,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.presentation.theme.*
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.ananapps.kilometa.presentation.common.PermissionHelper
+
 @Composable
 fun FloatingHudSettingsDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    var hasOverlayPermission by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var hasOverlayPermission by remember { mutableStateOf(PermissionHelper.canDrawOverlays(context)) }
+    var hasAccessibilityPermission by remember { mutableStateOf(PermissionHelper.isAccessibilityServiceEnabled(context)) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasOverlayPermission = PermissionHelper.canDrawOverlays(context)
+                hasAccessibilityPermission = PermissionHelper.isAccessibilityServiceEnabled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -47,7 +65,7 @@ fun FloatingHudSettingsDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "La burbuja acompaña tu turno activo sobre Uber, DiDi y Waze. Para operar requiere 2 permisos del sistema:",
+                    text = "Para calcular tus ganancias sobre Uber, DiDi y Waze, el Copiloto requiere 2 permisos en verde:",
                     color = TextSecondary,
                     fontSize = 13.sp
                 )
@@ -57,29 +75,18 @@ fun FloatingHudSettingsDialog(
                     title = "1. Dibujar sobre otras apps",
                     isGranted = hasOverlayPermission,
                     actionLabel = if (hasOverlayPermission) "Concedido" else "Activar",
-                    onAction = {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:${context.packageName}")
-                        ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
-                        context.startActivity(intent)
-                    }
+                    onAction = { PermissionHelper.openOverlaySettings(context) }
                 )
 
                 // Permiso 2: Accesibilidad Pasiva
                 PermissionStatusRow(
-                    title = "2. Lector Pasivo de Ofertas",
-                    isGranted = true, // Guía hacia ajustes
-                    actionLabel = "Ajustes",
-                    onAction = {
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        context.startActivity(intent)
-                    }
+                    title = "2. Lector Pasivo (Uber/DiDi)",
+                    isGranted = hasAccessibilityPermission,
+                    actionLabel = if (hasAccessibilityPermission) "Concedido" else "Activar",
+                    onAction = { PermissionHelper.openAccessibilitySettings(context) }
                 )
 
-                if (!hasOverlayPermission) {
+                if (!hasOverlayPermission || !hasAccessibilityPermission) {
                     Surface(
                         color = StatusAmber.copy(alpha = 0.12f),
                         shape = RoundedCornerShape(10.dp)
@@ -92,18 +99,12 @@ fun FloatingHudSettingsDialog(
                                 fontSize = 11.sp
                             )
                             Text(
-                                text = "1. Toca 'Desbloquear Permisos' abajo.\n2. Toca los 3 puntos (⋮) arriba a la derecha.\n3. Selecciona 'Permitir ajustes restringidos'.",
+                                text = "1. Toca 'Desbloquear Permisos' abajo.\n2. Toca los 3 puntos (⋮) arriba a la derecha.\n3. Elige 'Permitir ajustes restringidos' y vuelve a activar.",
                                 color = TextPrimary,
                                 fontSize = 11.sp
                             )
                             OutlinedButton(
-                                onClick = {
-                                    val intent = Intent(
-                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                        Uri.parse("package:${context.packageName}")
-                                    ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
-                                    context.startActivity(intent)
-                                },
+                                onClick = { PermissionHelper.openAppSettings(context) },
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                             ) {

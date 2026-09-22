@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ananapps.kilometa.presentation.more.components.HudPermissionsCard
 import com.ananapps.kilometa.presentation.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +68,11 @@ fun HudSettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Sección 0: Estado de Permisos del Copiloto Flotante
+            item {
+                HudPermissionsCard()
+            }
+
             // Sección 1: Umbrales del Semáforo
             item {
                 SectionCard(title = "🚦 Semáforo de Rentabilidad") {

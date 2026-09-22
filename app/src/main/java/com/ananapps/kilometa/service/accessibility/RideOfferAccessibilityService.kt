@@ -72,7 +72,7 @@ class RideOfferAccessibilityService : AccessibilityService() {
         // Filtro ultra-rápido (< 1 ms): solo procesar apps de transporte autorizadas
         if (!isAuthorizedPlatform(packageName)) return
 
-        val rootNode = rootInActiveWindow ?: return
+        val rootNode = event.source ?: rootInActiveWindow ?: return
         serviceScope.launch {
             try {
                 val texts = parser.extractAllTexts(rootNode)
@@ -91,11 +91,12 @@ class RideOfferAccessibilityService : AccessibilityService() {
                 lastOfferTime = now
 
                 val evaluation = evaluateTripOfferUseCase(offer, currentConfig)
+                android.util.Log.d("RideOfferService", "Oferta detectada: ${offer.platform} Fare: ${offer.offeredFare} - Semáforo: ${evaluation.semaphoreTier}")
                 withContext(Dispatchers.Main) {
                     overlayManager.showOfferEvaluation(evaluation)
                 }
-            } catch (_: Exception) {
-                // Modo resiliente ante cambios imprevistos en vistas del OS
+            } catch (e: Exception) {
+                android.util.Log.w("RideOfferService", "Error procesando evento de accesibilidad: ${e.message}")
             }
         }
     }

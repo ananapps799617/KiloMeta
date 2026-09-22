@@ -60,22 +60,30 @@ class OfferNodeParser @Inject constructor() {
     }
 
     private fun extractFare(texts: List<String>): Double? {
+        val candidates = mutableListOf<Double>()
         for (text in texts) {
+            val lower = text.lowercase()
+            if (lower.contains("/km") || lower.contains("/ km") || lower.contains("/h") ||
+                lower.contains("gasolina") || lower.contains("estimado")
+            ) continue
+
             val match = fareRegex.find(text)
             if (match != null) {
                 val raw = match.groupValues[1].replace(".", "").replace(",", "")
                 val value = raw.toDoubleOrNull()
-                if (value != null && value >= 3000.0 && value <= 500_000.0) {
-                    return value
+                if (value != null && value in 3000.0..500_000.0) {
+                    candidates.add(value)
                 }
             }
         }
-        return null
+        return candidates.maxOrNull()
     }
 
     private fun extractDistances(texts: List<String>): Pair<Double, Double> {
         val distances = mutableListOf<Double>()
         for (text in texts) {
+            val lower = text.lowercase()
+            if (lower.contains("/km") || lower.contains("/ km")) continue
             val matches = distanceRegex.findAll(text)
             for (m in matches) {
                 val num = m.groupValues[1].replace(",", ".").toDoubleOrNull() ?: continue
@@ -95,15 +103,20 @@ class OfferNodeParser @Inject constructor() {
     }
 
     private fun extractDurationMinutes(texts: List<String>): Int {
+        val durations = mutableListOf<Int>()
         for (text in texts) {
-            val match = durationRegex.find(text)
-            if (match != null) {
-                val hours = match.groupValues[1].toIntOrNull() ?: 0
-                val mins = match.groupValues[2].toIntOrNull() ?: 0
+            val matches = durationRegex.findAll(text)
+            for (m in matches) {
+                val hours = m.groupValues[1].toIntOrNull() ?: 0
+                val mins = m.groupValues[2].toIntOrNull() ?: 0
                 val total = (hours * 60) + mins
-                if (total in 1..300) return total
+                if (total in 1..300) durations.add(total)
             }
         }
-        return 12 // Fallback razonable de duración promedio urbana
+        return when {
+            durations.size >= 2 -> durations[0] + durations[1]
+            durations.size == 1 -> durations[0]
+            else -> 12 // Fallback razonable de duración promedio urbana
+        }
     }
 }

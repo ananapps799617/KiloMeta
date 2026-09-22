@@ -8,8 +8,7 @@
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagRetrieveInteractiveWindows"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagReportViewIds"
     android:canRetrieveWindowContent="true"
     android:description="@string/accessibility_service_description"
-    android:notificationTimeout="50"
-    android:packageNames="com.ubercab.driver,com.didiglobal.driver,sinet.startup.inDriver" />
+    android:notificationTimeout="50" />
