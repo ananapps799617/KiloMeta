@@ -25,4 +25,6 @@
     <string name="surplus_label">Utilidad Neta de Bolsillo: %s</string>
     <string name="start_shift_btn">Iniciar Jornada</string>
     <string name="close_shift_btn">Cerrar Turno</string>
+    <string name="accessibility_service_label">KiloMeta Copiloto de Ofertas</string>
+    <string name="accessibility_service_description">Evalúa en tiempo real y de forma pasiva la rentabilidad de las ofertas de Uber, DiDi e inDrive directamente en pantalla.</string>
 </resources>

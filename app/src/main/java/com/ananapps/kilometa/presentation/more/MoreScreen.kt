@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.BuildConfig
 import com.ananapps.kilometa.presentation.common.AppUpdateDialog
+import com.ananapps.kilometa.presentation.more.components.FloatingHudSettingsDialog
+import com.ananapps.kilometa.presentation.more.components.MoreOptionItem
 import com.ananapps.kilometa.presentation.more.components.PurgeAccountDataDialog
 import com.ananapps.kilometa.presentation.theme.*
 
@@ -48,6 +50,7 @@ fun MoreScreen(
     val isPurging by viewModel.isPurging.collectAsState()
     var showUpToDateDialog by remember { mutableStateOf(false) }
     var showPurgeConfirmDialog by remember { mutableStateOf(false) }
+    var showHudSettingsDialog by remember { mutableStateOf(false) }
     var purgeError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(updateState) {
@@ -138,6 +141,16 @@ fun MoreScreen(
         }
 
         item {
+            MoreOptionItem(
+                icon = Icons.Default.PlayArrow,
+                title = "Copiloto & Burbuja Flotante",
+                subtitle = "HUD de ofertas y Speed Dial sobre Uber, DiDi y Waze",
+                tint = StatusGreen,
+                onClick = { showHudSettingsDialog = true }
+            )
+        }
+
+        item {
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider(color = TextSecondary.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(8.dp))
@@ -166,6 +179,10 @@ fun MoreScreen(
                 onClick = onSignOut
             )
         }
+    }
+
+    if (showHudSettingsDialog) {
+        FloatingHudSettingsDialog(onDismiss = { showHudSettingsDialog = false })
     }
 
     if (showPurgeConfirmDialog) {
@@ -218,59 +235,5 @@ fun MoreScreen(
             titleContentColor = TextPrimary,
             textContentColor = TextSecondary
         )
-    }
-}
-
-// ------------------------------------------------------------------------------
-// BLOQUE 2: COMPONENTE DE FILA DE OPCIÓN
-// ------------------------------------------------------------------------------
-@Composable
-private fun MoreOptionItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    tint: Color = ElectricBluePrimary,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() },
-        color = DeepObsidianSurface,
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = tint,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (tint == StatusRed) StatusRed else TextPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                tint = TextSecondary.copy(alpha = 0.5f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
     }
 }

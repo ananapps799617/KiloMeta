@@ -48,14 +48,16 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: HomeViewModel by viewModels()
+    private val pendingQuickAction = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         extractSharedImageUri(intent)?.let { viewModel.scanReceipt(it) }
+        pendingQuickAction.value = intent.getStringExtra("EXTRA_QUICK_ACTION")
         setContent {
             KiloMetaTheme {
-                MainAppHost(viewModel = viewModel)
+                MainAppHost(viewModel = viewModel, pendingQuickAction = pendingQuickAction)
             }
         }
     }
@@ -64,13 +66,15 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         extractSharedImageUri(intent)?.let { viewModel.scanReceipt(it) }
+        pendingQuickAction.value = intent.getStringExtra("EXTRA_QUICK_ACTION")
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainAppHost(
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    pendingQuickAction: MutableState<String?> = remember { mutableStateOf(null) }
 ) {
     val userSession by viewModel.userSession.collectAsState()
     val authError by viewModel.authError.collectAsState()
@@ -118,6 +122,16 @@ private fun MainAppHost(
             activeSubDestination = null
             triggerQuickTrip = true
         }
+    }
+
+    LaunchedEffect(pendingQuickAction.value) {
+        when (pendingQuickAction.value) {
+            "ACTION_QUICK_TRIP" -> { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickTrip = true }
+            "ACTION_QUICK_FUELING" -> { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickFueling = true }
+            "ACTION_QUICK_EXPENSE" -> { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickExpense = true }
+            "ACTION_QUICK_MAINTENANCE" -> { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickMaintenance = true }
+        }
+        pendingQuickAction.value = null
     }
 
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }

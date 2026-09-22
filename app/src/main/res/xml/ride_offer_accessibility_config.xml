@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
+  ARCHIVO: res/xml/ride_offer_accessibility_config.xml
+  DESCRIPCIÓN: Configuración pasiva del servicio de accesibilidad para lectura de ofertas de viaje (Orden #047).
+  MANDATO DATAGUARD ANTI-BANEO: 100% de solo lectura, sin simulación de toques.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="50"
+    android:packageNames="com.ubercab.driver,com.didiglobal.driver,sinet.startup.inDriver" />
