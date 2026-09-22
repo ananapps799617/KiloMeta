@@ -37,6 +37,9 @@ import com.ananapps.kilometa.presentation.theme.StatusGreen
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import javax.inject.Inject
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import javax.inject.Singleton
 import kotlin.math.abs
 
@@ -46,6 +49,7 @@ class RideOfferOverlayManager @Inject constructor(
 ) {
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var overlayComposeView: ComposeView? = null
+    private var overlayLifecycleOwner: OverlayLifecycleOwner? = null
     private var layoutParams: WindowManager.LayoutParams? = null
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -73,7 +77,15 @@ class RideOfferOverlayManager @Inject constructor(
         }
         layoutParams = params
 
+        val owner = OverlayLifecycleOwner()
+        owner.onCreate()
+        owner.onResume()
+        overlayLifecycleOwner = owner
+
         val composeView = ComposeView(context).apply {
+            setViewTreeLifecycleOwner(owner)
+            setViewTreeSavedStateRegistryOwner(owner)
+            setViewTreeViewModelStoreOwner(owner)
             setContent {
                 OverlayHostContent()
             }
@@ -84,7 +96,10 @@ class RideOfferOverlayManager @Inject constructor(
             windowManager.addView(composeView, params)
             overlayComposeView = composeView
             isBubbleAttached = true
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            owner.onDestroy()
+            overlayLifecycleOwner = null
+        }
     }
 
     fun hideBubble() {
@@ -94,6 +109,8 @@ class RideOfferOverlayManager @Inject constructor(
                 windowManager.removeView(it)
             } catch (_: Exception) {}
         }
+        overlayLifecycleOwner?.onDestroy()
+        overlayLifecycleOwner = null
         overlayComposeView = null
         isBubbleAttached = false
         currentEvaluation = null

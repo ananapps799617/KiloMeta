@@ -42,13 +42,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import com.ananapps.kilometa.presentation.common.extractSharedImageUri
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
+import com.ananapps.kilometa.presentation.overlay.RideOfferOverlayManager
 import com.ananapps.kilometa.presentation.theme.KiloMetaTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: HomeViewModel by viewModels()
     private val pendingQuickAction = mutableStateOf<String?>(null)
+    @Inject lateinit var overlayManager: RideOfferOverlayManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,8 +60,15 @@ class MainActivity : ComponentActivity() {
         pendingQuickAction.value = intent.getStringExtra("EXTRA_QUICK_ACTION")
         setContent {
             KiloMetaTheme {
-                MainAppHost(viewModel = viewModel, pendingQuickAction = pendingQuickAction)
+                MainAppHost(viewModel = viewModel, pendingQuickAction = pendingQuickAction, overlayManager = overlayManager)
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (viewModel.dayContinuousTimeline.value.hasActiveShift && overlayManager.canDrawOverlays()) {
+            overlayManager.showBubble()
         }
     }
 
@@ -74,7 +84,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MainAppHost(
     viewModel: HomeViewModel = viewModel(),
-    pendingQuickAction: MutableState<String?> = remember { mutableStateOf(null) }
+    pendingQuickAction: MutableState<String?> = remember { mutableStateOf(null) },
+    overlayManager: RideOfferOverlayManager? = null
 ) {
     val userSession by viewModel.userSession.collectAsState()
     val authError by viewModel.authError.collectAsState()
@@ -134,6 +145,15 @@ private fun MainAppHost(
         pendingQuickAction.value = null
     }
 
+    val dayContinuousTimeline by viewModel.dayContinuousTimeline.collectAsState()
+    LaunchedEffect(dayContinuousTimeline.hasActiveShift) {
+        if (dayContinuousTimeline.hasActiveShift && overlayManager?.canDrawOverlays() == true) {
+            overlayManager.showBubble()
+        } else if (!dayContinuousTimeline.hasActiveShift) {
+            overlayManager?.hideBubble()
+        }
+    }
+
     var showSyncSheet by rememberSaveable { mutableStateOf(false) }
     var showRecoveryScreen by rememberSaveable { mutableStateOf(false) }
 
@@ -143,11 +163,8 @@ private fun MainAppHost(
     val isPingingCloud by viewModel.isPingingCloud.collectAsState()
     val restoreProgress by viewModel.restoreProgress.collectAsState()
     val homeUiState by viewModel.uiState.collectAsState()
-    val hasPendingAlerts = when (val state = homeUiState) {
-        is com.ananapps.kilometa.presentation.home.HomeUiState.ActiveShift -> state.weeklyProgress.isDeficit
-        is com.ananapps.kilometa.presentation.home.HomeUiState.NoActiveShift -> state.weeklyProgress.isDeficit
-        else -> false
-    }
+    val hasPendingAlerts = (homeUiState as? com.ananapps.kilometa.presentation.home.HomeUiState.ActiveShift)?.weeklyProgress?.isDeficit == true ||
+        (homeUiState as? com.ananapps.kilometa.presentation.home.HomeUiState.NoActiveShift)?.weeklyProgress?.isDeficit == true
 
     val quickActionSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val syncSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -207,16 +224,11 @@ private fun MainAppHost(
                 activeSubDestination == AppDestination.MAINTENANCE -> MaintenanceScreen(onNavigateBack = { activeSubDestination = null })
                 activeSubDestination == AppDestination.HUD_SETTINGS -> com.ananapps.kilometa.presentation.more.HudSettingsScreen(onNavigateBack = { activeSubDestination = null })
                 currentNavTab == KiloMetaNavTab.ROUTE -> HomeScreen(
-                    viewModel = viewModel,
-                    showTopBar = false,
-                    triggerQuickTrip = triggerQuickTrip,
-                    onResetQuickTripTrigger = { triggerQuickTrip = false },
-                    triggerQuickFueling = triggerQuickFueling,
-                    onResetQuickFuelingTrigger = { triggerQuickFueling = false },
-                    triggerQuickExpense = triggerQuickExpense,
-                    onResetQuickExpenseTrigger = { triggerQuickExpense = false },
-                    triggerQuickMaintenance = triggerQuickMaintenance,
-                    onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
+                    viewModel = viewModel, showTopBar = false,
+                    triggerQuickTrip = triggerQuickTrip, onResetQuickTripTrigger = { triggerQuickTrip = false },
+                    triggerQuickFueling = triggerQuickFueling, onResetQuickFuelingTrigger = { triggerQuickFueling = false },
+                    triggerQuickExpense = triggerQuickExpense, onResetQuickExpenseTrigger = { triggerQuickExpense = false },
+                    triggerQuickMaintenance = triggerQuickMaintenance, onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
                 )
                 currentNavTab == KiloMetaNavTab.HISTORY -> HistoryScreen()
                 currentNavTab == KiloMetaNavTab.REPORTS -> ReportsScreen()
@@ -226,8 +238,7 @@ private fun MainAppHost(
                     onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
                     onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
                     onNavigateToHudSettings = { activeSubDestination = AppDestination.HUD_SETTINGS },
-                    onNavigateToSync = { showSyncSheet = true },
-                    onSignOut = { viewModel.signOut() }
+                    onNavigateToSync = { showSyncSheet = true }, onSignOut = { viewModel.signOut() }
                 )
             }
         }
@@ -241,35 +252,19 @@ private fun MainAppHost(
             onSelectFueling = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickFueling = true },
             onSelectExpense = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickExpense = true },
             onSelectMaintenance = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickMaintenance = true },
-            onSelectScanReceipt = {
-                showQuickActionSheet = false
-                photoPicker.launch("image/*")
-            }
+            onSelectScanReceipt = { showQuickActionSheet = false; photoPicker.launch("image/*") }
         )
     }
 
     if (showSyncSheet) {
         CloudSyncStatusSheet(
-            sheetState = syncSheetState,
-            syncStatus = syncStatus,
-            userSession = userSession,
-            connectionDiagnostic = connectionDiagnostic,
-            isPinging = isPingingCloud,
-            syncPreferences = syncPreferences,
-            onToggleAutoSync = { viewModel.onToggleAutoSync(it) },
-            onSelectWifiOnly = { viewModel.onSelectNetworkPreference(it) },
-            onDismiss = { showSyncSheet = false },
-            onSyncNow = { viewModel.syncNow() },
-            onTestConnection = { viewModel.onTestLiveConnection() },
-            onOpenAuth = { showSyncSheet = false },
-            onOpenRecovery = {
-                showSyncSheet = false
-                showRecoveryScreen = true
-            },
-            onSignOut = {
-                showSyncSheet = false
-                viewModel.signOut()
-            }
+            sheetState = syncSheetState, syncStatus = syncStatus, userSession = userSession,
+            connectionDiagnostic = connectionDiagnostic, isPinging = isPingingCloud, syncPreferences = syncPreferences,
+            onToggleAutoSync = { viewModel.onToggleAutoSync(it) }, onSelectWifiOnly = { viewModel.onSelectNetworkPreference(it) },
+            onDismiss = { showSyncSheet = false }, onSyncNow = { viewModel.syncNow() },
+            onTestConnection = { viewModel.onTestLiveConnection() }, onOpenAuth = { showSyncSheet = false },
+            onOpenRecovery = { showSyncSheet = false; showRecoveryScreen = true },
+            onSignOut = { showSyncSheet = false; viewModel.signOut() }
         )
     }
 }

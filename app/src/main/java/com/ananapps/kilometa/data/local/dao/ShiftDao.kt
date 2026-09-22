@@ -30,11 +30,11 @@ interface ShiftDao {
     @Update
     suspend fun updateShift(shift: ShiftEntity)
 
-    @Query("SELECT * FROM shifts WHERE status = 'ACTIVE' LIMIT 1")
+    @Query("SELECT * FROM shifts WHERE status = 'ACTIVE' ORDER BY start_time DESC LIMIT 1")
     fun getActiveShift(): Flow<ShiftEntity?>
 
     @Transaction
-    @Query("SELECT * FROM shifts WHERE status = 'ACTIVE' LIMIT 1")
+    @Query("SELECT * FROM shifts WHERE status = 'ACTIVE' ORDER BY start_time DESC LIMIT 1")
     fun getActiveShiftWithDetails(): Flow<ShiftWithDetails?>
 
     @Transaction

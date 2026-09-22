@@ -116,9 +116,13 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
 
             // Odómetros automáticos y jornada de hoy
             val todayShifts = allShifts.filter { it.startTime >= todayStartMillis || (it.endTime ?: 0L) >= todayStartMillis }
-            val primaryShift = todayShifts.firstOrNull()
+            val activeShift = allShifts.firstOrNull { it.status == com.ananapps.kilometa.domain.model.ShiftStatus.ACTIVE }
+            val hasActiveShift = activeShift != null
+            val activeShiftId = activeShift?.id
+
+            val primaryShift = activeShift ?: todayShifts.firstOrNull { it.status == com.ananapps.kilometa.domain.model.ShiftStatus.COMPLETED } ?: todayShifts.firstOrNull()
             val shiftStartOdo = primaryShift?.startOdometer?.takeIf { it > 0 }
-            val shiftEndOdo = primaryShift?.endOdometer?.takeIf { it > 0 && it >= (shiftStartOdo ?: 0) }
+            val shiftEndOdo = if (hasActiveShift) null else primaryShift?.endOdometer?.takeIf { it > 0 && it >= (shiftStartOdo ?: 0) }
 
             val tripMinOdo = todayTrips.mapNotNull { it.startOdometer ?: it.endOdometer }.minOrNull()
             val fuelMinOdo = todayFuelings.map { it.odometer }.minOrNull()
@@ -132,7 +136,7 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             val lastOdoCandidates = listOfNotNull(shiftEndOdo, tripMaxOdo, fuelMaxOdo, maintMaxOdo)
             val effectiveLastOdo = lastOdoCandidates.maxOrNull() ?: firstOdo
 
-            val isDayClosed = shiftEndOdo != null && shiftEndOdo > firstOdo
+            val isDayClosed = !hasActiveShift && (primaryShift?.status == com.ananapps.kilometa.domain.model.ShiftStatus.COMPLETED && shiftEndOdo != null && shiftEndOdo >= (shiftStartOdo ?: 0))
             val sumTripKm = todayTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()
             val odoDistanceKm = if (firstOdo > 0 && effectiveLastOdo > firstOdo) {
                 effectiveLastOdo - firstOdo
@@ -193,14 +197,14 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 lastEventOdometer = effectiveLastOdo,
                 elapsedHoursFormatted = elapsedHoursFormatted,
                 distanceTraversedKm = distanceKm,
-                hasActiveShift = false,
-                activeShiftId = null,
+                hasActiveShift = hasActiveShift,
+                activeShiftId = activeShiftId,
                 cashSettlement = cashSettlement,
                 cycleLabel = cycleLabel,
                 cycleStartMillis = cycleStartMillis,
                 cycleEndMillis = cycleEndMillis,
                 events = events,
-                dayStartOdometer = firstOdo,
+                dayStartOdometer = shiftStartOdo ?: firstOdo,
                 dayEndOdometer = shiftEndOdo,
                 isDayClosed = isDayClosed
             )

@@ -218,11 +218,20 @@ class HomeViewModel @Inject constructor(
 
     fun deleteMaintenance(id: String) = viewModelScope.launch { maintenanceRepository.deleteMaintenance(id) }
     fun startShift(startOdometer: Int, dailyQuota: Double? = null, startTime: Long = System.currentTimeMillis()) = viewModelScope.launch {
-        manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0, startTime = startTime)
+        try { manageShiftUseCase.startShift(startOdometer, dailyQuota ?: 83_333.0, startTime = startTime) }
+        catch (e: Exception) { android.util.Log.e("HomeViewModel", "Error starting shift", e) }
     }
-    fun closeShift(endOdometer: Int, endTime: Long = System.currentTimeMillis(), notes: String? = null) {
-        val state = uiState.value as? HomeUiState.ActiveShift ?: return
-        viewModelScope.launch { manageShiftUseCase.closeShift(state.summary.shiftId, state.summary.startOdometer, endOdometer, endTime = endTime, notes = notes) }
+    fun closeShift(endOdometer: Int, endTime: Long = System.currentTimeMillis(), notes: String? = null) = viewModelScope.launch {
+        try {
+            val activeShift = (uiState.value as? HomeUiState.ActiveShift)?.let {
+                Shift(it.summary.shiftId, it.summary.startTime, null, it.summary.startOdometer, null, it.dailyQuotaTarget, ShiftStatus.ACTIVE)
+            } ?: shiftRepository.getActiveShift().first()
+            if (activeShift != null) {
+                manageShiftUseCase.closeShift(activeShift.id, activeShift.startOdometer, endOdometer, endTime = endTime, notes = notes)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("HomeViewModel", "Error closing shift", e)
+        }
     }
 
     fun syncNow() = viewModelScope.launch { syncDataUseCase() }
@@ -235,17 +244,8 @@ class HomeViewModel @Inject constructor(
     fun resetRecoveryProgress() { _restoreProgress.value = RestoreProgress.Idle }
 
     fun updateDayOdometers(startOdo: Int, endOdo: Int?) = viewModelScope.launch {
-        val shift = manageShiftUseCase.getOrCreateShiftForDay(
-            timestamp = System.currentTimeMillis(),
-            startOdometer = startOdo,
-            endOdometer = endOdo
-        )
-        shiftRepository.updateShift(
-            shift.copy(
-                startOdometer = startOdo,
-                endOdometer = endOdo
-            )
-        )
+        val shift = manageShiftUseCase.getOrCreateShiftForDay(System.currentTimeMillis(), startOdometer = startOdo, endOdometer = endOdo)
+        shiftRepository.updateShift(shift.copy(startOdometer = startOdo, endOdometer = endOdo))
         syncDataUseCase()
     }
 

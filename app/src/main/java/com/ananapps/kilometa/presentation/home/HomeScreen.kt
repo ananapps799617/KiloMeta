@@ -66,6 +66,7 @@ fun HomeScreen(
     triggerQuickExpense: Boolean = false, onResetQuickExpenseTrigger: () -> Unit = {},
     triggerQuickMaintenance: Boolean = false, onResetQuickMaintenanceTrigger: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val selectedPocketForLedger by pocketLedgerViewModel.selectedPocket.collectAsState()
     val pocketLedgerSummary by pocketLedgerViewModel.ledgerSummary.collectAsState()
@@ -170,6 +171,16 @@ fun HomeScreen(
         onDismissTransferDialog = { showTransferDialog = false },
         showStartShiftDialog = showStartShiftDialog,
         onDismissStartShiftDialog = { showStartShiftDialog = false },
+        onStartShiftConfirmed = {
+            if (!android.provider.Settings.canDrawOverlays(context)) {
+                android.widget.Toast.makeText(context, "Habilita la superposición para la burbuja flotante", android.widget.Toast.LENGTH_LONG).show()
+                val intent = android.content.Intent(
+                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:${context.packageName}")
+                ).apply { flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK }
+                context.startActivity(intent)
+            }
+        },
         showCloseShiftDialog = showCloseShiftDialog,
         onDismissCloseShiftDialog = { showCloseShiftDialog = false },
         lastKnownOdometer = lastKnownOdometer

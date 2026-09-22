@@ -58,16 +58,28 @@ class ManageShiftUseCase @Inject constructor(
         require(startOdometer >= 0) { "El odómetro inicial debe ser mayor o igual a cero" }
         require(dailyQuotaTarget >= 0.0) { "La meta de cuota diaria debe ser mayor o igual a cero" }
 
-        val shift = Shift(
-            id = UUID.randomUUID().toString(),
-            startTime = startTime,
-            endTime = null,
-            startOdometer = startOdometer,
-            endOdometer = null,
-            dailyQuotaTarget = dailyQuotaTarget,
-            status = ShiftStatus.ACTIVE,
-            notes = null
-        )
+        val existingActive = shiftRepository.getActiveShift().first()
+        val shift = if (existingActive != null) {
+            existingActive.copy(
+                startTime = startTime,
+                startOdometer = startOdometer,
+                dailyQuotaTarget = dailyQuotaTarget,
+                status = ShiftStatus.ACTIVE,
+                endTime = null,
+                endOdometer = null
+            )
+        } else {
+            Shift(
+                id = UUID.randomUUID().toString(),
+                startTime = startTime,
+                endTime = null,
+                startOdometer = startOdometer,
+                endOdometer = null,
+                dailyQuotaTarget = dailyQuotaTarget,
+                status = ShiftStatus.ACTIVE,
+                notes = null
+            )
+        }
 
         shiftRepository.startShift(shift)
         return shift
