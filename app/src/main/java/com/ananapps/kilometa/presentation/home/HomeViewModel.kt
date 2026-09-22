@@ -227,11 +227,10 @@ class HomeViewModel @Inject constructor(
                 Shift(it.summary.shiftId, it.summary.startTime, null, it.summary.startOdometer, null, it.dailyQuotaTarget, ShiftStatus.ACTIVE)
             } ?: shiftRepository.getActiveShift().first()
             if (activeShift != null) {
-                manageShiftUseCase.closeShift(activeShift.id, activeShift.startOdometer, endOdometer, endTime = endTime, notes = notes)
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("HomeViewModel", "Error closing shift", e)
-        }
+                val safeStart = minOf(activeShift.startOdometer, endOdometer)
+                manageShiftUseCase.closeShift(activeShift.id, safeStart, endOdometer, endTime = endTime, notes = notes)
+            } else { shiftRepository.closeAllActiveShifts(endOdometer, endTime) }
+        } catch (e: Exception) { android.util.Log.e("HomeViewModel", "Error closing shift", e) }
     }
 
     fun syncNow() = viewModelScope.launch { syncDataUseCase() }

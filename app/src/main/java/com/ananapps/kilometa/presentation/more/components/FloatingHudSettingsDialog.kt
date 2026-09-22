@@ -79,6 +79,40 @@ fun FloatingHudSettingsDialog(
                     }
                 )
 
+                if (!hasOverlayPermission) {
+                    Surface(
+                        color = StatusAmber.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "⚠️ Si el interruptor aparece gris o inhabilitado (Android 13/14):",
+                                color = StatusAmber,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
+                            )
+                            Text(
+                                text = "1. Toca 'Desbloquear Permisos' abajo.\n2. Toca los 3 puntos (⋮) arriba a la derecha.\n3. Selecciona 'Permitir ajustes restringidos'.",
+                                color = TextPrimary,
+                                fontSize = 11.sp
+                            )
+                            OutlinedButton(
+                                onClick = {
+                                    val intent = Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:${context.packageName}")
+                                    ).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
+                                    context.startActivity(intent)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text("🔓 Desbloquear Permisos (3 puntos)", color = StatusAmber, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+
                 Text(
                     text = "🛡️ Modo 100% Pasivo Anti-Baneo: Cero clics automáticos, no interfiere con Uber ni DiDi.",
                     color = TextSecondary,

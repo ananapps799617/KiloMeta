@@ -183,7 +183,8 @@ fun HomeScreen(
         },
         showCloseShiftDialog = showCloseShiftDialog,
         onDismissCloseShiftDialog = { showCloseShiftDialog = false },
-        lastKnownOdometer = lastKnownOdometer
+        lastKnownOdometer = lastKnownOdometer,
+        dayStartOdometer = dayContinuousTimeline.dayStartOdometer
     )
 
     if (selectedPocketForLedger != null) {

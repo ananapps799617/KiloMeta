@@ -102,7 +102,6 @@ class ManageShiftUseCase @Inject constructor(
         endTime: Long = System.currentTimeMillis(),
         notes: String? = null
     ) {
-        // Domain Guards: Odometría consistente
         require(shiftId.isNotBlank()) { "El identificador del turno no puede estar vacío" }
         require(endOdometer >= startOdometer) {
             "El odómetro final ($endOdometer km) no puede ser inferior al inicial ($startOdometer km)"
@@ -113,6 +112,10 @@ class ManageShiftUseCase @Inject constructor(
             endOdometer = endOdometer,
             endTime = endTime,
             notes = notes
+        )
+        shiftRepository.closeAllActiveShifts(
+            endOdometer = endOdometer,
+            endTime = endTime
         )
     }
 

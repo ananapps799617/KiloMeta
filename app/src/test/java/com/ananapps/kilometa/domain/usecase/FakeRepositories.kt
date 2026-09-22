@@ -97,6 +97,13 @@ class FakeShiftRepository : ShiftRepository {
             )
         }
     }
+    override suspend fun closeAllActiveShifts(endOdometer: Int, endTime: Long) {
+        for (i in shifts.indices) {
+            if (shifts[i].isActive) {
+                shifts[i] = shifts[i].copy(status = ShiftStatus.COMPLETED, endOdometer = endOdometer, endTime = endTime)
+            }
+        }
+    }
     override suspend fun updateShift(shift: Shift) {}
     override suspend fun deleteShift(shiftId: String) { shifts.removeAll { it.id == shiftId } }
     override fun getLastKnownOdometer(): Flow<Int?> = flowOf(

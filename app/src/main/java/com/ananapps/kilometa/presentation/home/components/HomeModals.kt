@@ -39,7 +39,8 @@ fun HomeCockpitModals(
     onDismissShiftPrompt: () -> Unit = {},
     onStartShiftFromPrompt: () -> Unit = {},
     onSporadicFromPrompt: () -> Unit = {},
-    lastKnownOdometer: Int = 0
+    lastKnownOdometer: Int = 0,
+    dayStartOdometer: Int? = null
 ) {
     val resolvedOdo = if (lastKnownOdometer > 0) {
         lastKnownOdometer
@@ -154,7 +155,9 @@ fun HomeCockpitModals(
     }
 
     if (showCloseShiftDialog) {
-        val startOdo = (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer ?: resolvedOdo
+        val startOdo = dayStartOdometer?.takeIf { it > 0 }
+            ?: (uiState as? HomeUiState.ActiveShift)?.summary?.startOdometer?.takeIf { it > 0 }
+            ?: resolvedOdo
         CloseShiftDialog(
             startOdometer = startOdo,
             onDismiss = onDismissCloseShiftDialog,

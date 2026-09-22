@@ -119,7 +119,7 @@ fun CloseShiftDialog(
     var selectedEndTime by remember { mutableLongStateOf(initialEndTime) }
 
     val endOdo = endOdoText.filter { it.isDigit() }.toIntOrNull() ?: 0
-    val isValid = endOdo >= startOdometer && endOdo > 0
+    val isValid = endOdo > 0
     val totalKmDriven = if (endOdo >= startOdometer) endOdo - startOdometer else 0
 
     AlertDialog(
@@ -164,6 +164,14 @@ fun CloseShiftDialog(
                         unfocusedTextColor = TextPrimary
                     )
                 )
+
+                if (endOdo > 0 && endOdo < startOdometer) {
+                    Text(
+                        text = "⚠️ Odómetro menor al inicial. Se calibrará automáticamente a $endOdo km.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StatusAmber
+                    )
+                }
 
                 if (isValid && totalKmDriven > 0) {
                     Box(

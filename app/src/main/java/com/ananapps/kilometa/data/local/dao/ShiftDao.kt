@@ -58,6 +58,9 @@ interface ShiftDao {
     @Query("DELETE FROM shifts WHERE id = :shiftId")
     suspend fun deleteShift(shiftId: String)
 
+    @Query("UPDATE shifts SET status = 'COMPLETED', end_time = :endTime, end_odometer = :endOdometer WHERE status = 'ACTIVE'")
+    suspend fun closeAllActiveShifts(endOdometer: Int, endTime: Long)
+
     @Query("DELETE FROM shifts")
     suspend fun clearAllShifts()
 

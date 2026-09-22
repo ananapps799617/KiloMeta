@@ -83,6 +83,11 @@ interface ShiftRepository {
     )
 
     /**
+     * Cierra forzosamente cualquier turno activo remanente en SQLite para evitar inconsistencias.
+     */
+    suspend fun closeAllActiveShifts(endOdometer: Int, endTime: Long)
+
+    /**
      * Actualiza la información de un turno existente.
      */
     suspend fun updateShift(shift: Shift)

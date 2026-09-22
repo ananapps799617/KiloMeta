@@ -64,6 +64,12 @@ class FakeShiftDao : ShiftDao {
         shifts.clear()
     }
 
+    override suspend fun closeAllActiveShifts(endOdometer: Int, endTime: Long) {
+        shifts.values.filter { it.status == "ACTIVE" }.forEach {
+            shifts[it.id] = it.copy(status = "COMPLETED", endOdometer = endOdometer, endTime = endTime)
+        }
+    }
+
     override fun getLastKnownOdometer(): Flow<Int?> = flowOf(
         shifts.values.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
     )

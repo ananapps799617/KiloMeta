@@ -132,6 +132,12 @@ class ShiftRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun closeAllActiveShifts(endOdometer: Int, endTime: Long) {
+        withContext(dispatchers.io) {
+            shiftDao.closeAllActiveShifts(endOdometer, endTime)
+        }
+    }
+
     override suspend fun updateShift(shift: Shift) {
         withContext(dispatchers.io) {
             shiftDao.updateShift(shift.toEntity())
