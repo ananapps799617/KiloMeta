@@ -86,7 +86,8 @@ fun DriverProfileScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = DeepObsidianBackground
+        containerColor = DeepObsidianBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -228,7 +229,9 @@ fun DriverProfileScreen(
                     )
                     viewModel.saveFullProfile(updatedDriver, updatedVehicle)
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp).navigationBarsPadding(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
                 shape = RoundedCornerShape(14.dp)
             ) {
@@ -239,7 +242,7 @@ fun DriverProfileScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 
