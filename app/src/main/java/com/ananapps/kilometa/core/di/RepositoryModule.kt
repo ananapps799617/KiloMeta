@@ -76,4 +76,10 @@ abstract class RepositoryModule {
     abstract fun bindWalletTransferRepository(
         impl: com.ananapps.kilometa.data.repository.WalletTransferRepositoryImpl
     ): com.ananapps.kilometa.domain.repository.WalletTransferRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHudConfigRepository(
+        impl: com.ananapps.kilometa.data.repository.HudConfigRepositoryImpl
+    ): com.ananapps.kilometa.domain.repository.HudConfigRepository
 }

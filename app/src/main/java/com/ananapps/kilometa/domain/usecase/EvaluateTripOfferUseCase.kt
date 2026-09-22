@@ -8,28 +8,28 @@
 
 package com.ananapps.kilometa.domain.usecase
 
-import com.ananapps.kilometa.domain.model.OfferSemaphoreTier
-import com.ananapps.kilometa.domain.model.PlatformType
-import com.ananapps.kilometa.domain.model.TripOffer
-import com.ananapps.kilometa.domain.model.TripOfferEvaluation
+import com.ananapps.kilometa.domain.model.*
 import javax.inject.Inject
 
 class EvaluateTripOfferUseCase @Inject constructor() {
 
     operator fun invoke(
         offer: TripOffer,
+        config: HudConfig = HudConfig(),
         customFuelCostPerKm: Double = 350.0
     ): TripOfferEvaluation {
+        val cfg = config
         val totalDistance = offer.totalDistanceKm
         val commissionRate = when (offer.platform) {
-            PlatformType.UBER -> 0.25
-            PlatformType.DIDI -> 0.20
-            PlatformType.INDRIVE -> 0.10
+            PlatformType.UBER -> cfg.uberCommissionPercent / 100.0
+            PlatformType.DIDI -> cfg.didiCommissionPercent / 100.0
+            PlatformType.INDRIVE -> cfg.indriveCommissionPercent / 100.0
             PlatformType.PRIVATE -> 0.0
         }
 
+        val fuelCostKm = if (cfg.useAutoFuelCost) customFuelCostPerKm else cfg.customFuelCostPerKm
         val estimatedPlatformFee = offer.offeredFare * commissionRate
-        val estimatedFuelCost = totalDistance * customFuelCostPerKm
+        val estimatedFuelCost = totalDistance * fuelCostKm
         val estimatedNetEarnings = (offer.offeredFare - estimatedPlatformFee - estimatedFuelCost).coerceAtLeast(0.0)
 
         val earningsPerKm = if (totalDistance > 0) estimatedNetEarnings / totalDistance else 0.0
@@ -40,18 +40,21 @@ class EvaluateTripOfferUseCase @Inject constructor() {
         }
 
         val alerts = mutableListOf<String>()
-        if (offer.pickupDistanceKm > 3.0) {
-            alerts.add("Recogida lejana (${offer.pickupDistanceKm} km)")
+        if (offer.pickupDistanceKm > cfg.maxPickupDistanceKm) {
+            alerts.add("Recogida lejana (%.1f km > %.1f km)".format(offer.pickupDistanceKm, cfg.maxPickupDistanceKm))
         }
-        if (earningsPerKm < 1800.0) {
+        if (earningsPerKm < cfg.breakEvenPerKm) {
             alerts.add("Tarifa baja ($/km)")
         }
 
         val semaphoreTier = when {
-            earningsPerKm >= 2500.0 && earningsPerHour >= 26000.0 && offer.pickupDistanceKm <= 3.0 -> {
+            earningsPerKm >= cfg.minProfitPerKm &&
+            earningsPerHour >= cfg.minProfitPerHour &&
+            offer.pickupDistanceKm <= cfg.maxPickupDistanceKm -> {
                 OfferSemaphoreTier.GREEN_PROFITABLE
             }
-            earningsPerKm >= 1800.0 && offer.pickupDistanceKm <= 3.5 -> {
+            earningsPerKm >= cfg.breakEvenPerKm &&
+            offer.pickupDistanceKm <= (cfg.maxPickupDistanceKm + 0.5) -> {
                 OfferSemaphoreTier.YELLOW_BREAK_EVEN
             }
             else -> {

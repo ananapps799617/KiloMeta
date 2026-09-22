@@ -205,6 +205,7 @@ private fun MainAppHost(
                 activeSubDestination == AppDestination.PLACES -> PlacesScreen(onNavigateBack = { activeSubDestination = null })
                 activeSubDestination == AppDestination.EXPENSES -> ExpensesScreen(onNavigateBack = { activeSubDestination = null })
                 activeSubDestination == AppDestination.MAINTENANCE -> MaintenanceScreen(onNavigateBack = { activeSubDestination = null })
+                activeSubDestination == AppDestination.HUD_SETTINGS -> com.ananapps.kilometa.presentation.more.HudSettingsScreen(onNavigateBack = { activeSubDestination = null })
                 currentNavTab == KiloMetaNavTab.ROUTE -> HomeScreen(
                     viewModel = viewModel,
                     showTopBar = false,
@@ -224,6 +225,7 @@ private fun MainAppHost(
                     onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
                     onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
                     onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
+                    onNavigateToHudSettings = { activeSubDestination = AppDestination.HUD_SETTINGS },
                     onNavigateToSync = { showSyncSheet = true },
                     onSignOut = { viewModel.signOut() }
                 )

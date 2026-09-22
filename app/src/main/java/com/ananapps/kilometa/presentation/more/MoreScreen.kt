@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.BuildConfig
 import com.ananapps.kilometa.presentation.common.AppUpdateDialog
-import com.ananapps.kilometa.presentation.more.components.FloatingHudSettingsDialog
 import com.ananapps.kilometa.presentation.more.components.MoreOptionItem
 import com.ananapps.kilometa.presentation.more.components.PurgeAccountDataDialog
 import com.ananapps.kilometa.presentation.theme.*
@@ -42,6 +42,7 @@ fun MoreScreen(
     onNavigateToMaintenance: () -> Unit,
     onNavigateToExpenses: () -> Unit,
     onNavigateToSync: () -> Unit,
+    onNavigateToHudSettings: () -> Unit = {},
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MoreViewModel = hiltViewModel()
@@ -50,7 +51,6 @@ fun MoreScreen(
     val isPurging by viewModel.isPurging.collectAsState()
     var showUpToDateDialog by remember { mutableStateOf(false) }
     var showPurgeConfirmDialog by remember { mutableStateOf(false) }
-    var showHudSettingsDialog by remember { mutableStateOf(false) }
     var purgeError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(updateState) {
@@ -146,7 +146,7 @@ fun MoreScreen(
                 title = "Copiloto & Burbuja Flotante",
                 subtitle = "HUD de ofertas y Speed Dial sobre Uber, DiDi y Waze",
                 tint = StatusGreen,
-                onClick = { showHudSettingsDialog = true }
+                onClick = onNavigateToHudSettings
             )
         }
 
@@ -172,17 +172,13 @@ fun MoreScreen(
 
         item {
             MoreOptionItem(
-                icon = Icons.Default.ExitToApp,
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
                 title = "Cerrar Sesión de Cabina",
                 subtitle = "Purga segura de datos locales para cambio de cuenta",
                 tint = StatusRed,
                 onClick = onSignOut
             )
         }
-    }
-
-    if (showHudSettingsDialog) {
-        FloatingHudSettingsDialog(onDismiss = { showHudSettingsDialog = false })
     }
 
     if (showPurgeConfirmDialog) {

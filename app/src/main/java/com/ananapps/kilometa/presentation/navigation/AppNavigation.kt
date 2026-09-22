@@ -24,5 +24,6 @@ enum class AppDestination(
     EXPENSES("Gastos en Ruta", "Lavadas, Peajes & Operación"),
     PROFILE("Mi Perfil & Vehículo", "Configuración Técnica"),
     PLACES("Mis Bombas & Talleres", "Ruta directa a Waze & Maps"),
-    BACKUP("Respaldo Nube", "Cloud Sync & Firestore")
+    BACKUP("Respaldo Nube", "Cloud Sync & Firestore"),
+    HUD_SETTINGS("Copiloto & Burbuja", "Configuración de Ofertas y HUD")
 }

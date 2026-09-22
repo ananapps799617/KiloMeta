@@ -234,6 +234,7 @@ private fun DrawerItem(
         AppDestination.PROFILE -> "🚗" to ElectricBluePrimary
         AppDestination.PLACES -> "⛽" to ElectricBluePrimary
         AppDestination.BACKUP -> "☁️" to Color(0xFFB388FF)
+        AppDestination.HUD_SETTINGS -> "🎛️" to StatusGreen
     }
 
     Box(

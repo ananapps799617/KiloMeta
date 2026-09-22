@@ -10,10 +10,11 @@
 package com.ananapps.kilometa.service.accessibility
 
 import android.accessibilityservice.AccessibilityService
-import android.content.SharedPreferences
 import android.view.accessibility.AccessibilityEvent
+import com.ananapps.kilometa.domain.model.HudConfig
 import com.ananapps.kilometa.domain.model.ShiftStatus
 import com.ananapps.kilometa.domain.parser.OfferNodeParser
+import com.ananapps.kilometa.domain.repository.HudConfigRepository
 import com.ananapps.kilometa.domain.repository.ShiftRepository
 import com.ananapps.kilometa.domain.usecase.EvaluateTripOfferUseCase
 import com.ananapps.kilometa.presentation.overlay.RideOfferOverlayManager
@@ -28,11 +29,13 @@ class RideOfferAccessibilityService : AccessibilityService() {
     @Inject lateinit var parser: OfferNodeParser
     @Inject lateinit var evaluateTripOfferUseCase: EvaluateTripOfferUseCase
     @Inject lateinit var shiftRepository: ShiftRepository
+    @Inject lateinit var hudConfigRepository: HudConfigRepository
 
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var shiftJob: Job? = null
     private var lastOfferSignature: String = ""
     private var lastOfferTime: Long = 0
+    private var currentConfig: HudConfig = HudConfig()
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -42,14 +45,21 @@ class RideOfferAccessibilityService : AccessibilityService() {
     private fun startShiftMonitoring() {
         shiftJob?.cancel()
         shiftJob = serviceScope.launch {
-            shiftRepository.getActiveShift().collect { shift ->
-                val isActive = shift != null && shift.status == ShiftStatus.ACTIVE
-                withContext(Dispatchers.Main) {
-                    if (isActive) {
-                        overlayManager.showBubble()
-                    } else {
-                        overlayManager.hideBubble()
+            launch {
+                shiftRepository.getActiveShift().collect { shift ->
+                    val isActive = shift != null && shift.status == ShiftStatus.ACTIVE
+                    withContext(Dispatchers.Main) {
+                        if (isActive) {
+                            overlayManager.showBubble()
+                        } else {
+                            overlayManager.hideBubble()
+                        }
                     }
+                }
+            }
+            launch {
+                hudConfigRepository.getHudConfig().collect { config ->
+                    currentConfig = config
                 }
             }
         }
@@ -80,7 +90,7 @@ class RideOfferAccessibilityService : AccessibilityService() {
                 lastOfferSignature = signature
                 lastOfferTime = now
 
-                val evaluation = evaluateTripOfferUseCase(offer)
+                val evaluation = evaluateTripOfferUseCase(offer, currentConfig)
                 withContext(Dispatchers.Main) {
                     overlayManager.showOfferEvaluation(evaluation)
                 }
