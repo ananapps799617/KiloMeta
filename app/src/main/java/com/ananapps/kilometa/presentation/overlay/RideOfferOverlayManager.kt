@@ -86,6 +86,7 @@ class RideOfferOverlayManager @Inject constructor(
             setViewTreeLifecycleOwner(owner)
             setViewTreeSavedStateRegistryOwner(owner)
             setViewTreeViewModelStoreOwner(owner)
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnLifecycleDestroyed(owner))
             setContent {
                 OverlayHostContent()
             }
@@ -126,6 +127,7 @@ class RideOfferOverlayManager @Inject constructor(
         currentEvaluation = evaluation
         isSpeedDialOpen = false
         repositionWindow(isCard = true)
+        overlayComposeView?.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
 
         autoDismissJob?.cancel()
         autoDismissJob = scope.launch {
@@ -147,10 +149,14 @@ class RideOfferOverlayManager @Inject constructor(
             params.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             params.x = 0
             params.y = 180
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
         } else {
             params.gravity = Gravity.TOP or Gravity.START
             params.x = savedBubbleX
             params.y = savedBubbleY
+            params.width = WindowManager.LayoutParams.WRAP_CONTENT
+            params.height = WindowManager.LayoutParams.WRAP_CONTENT
         }
         try {
             windowManager.updateViewLayout(view, params)

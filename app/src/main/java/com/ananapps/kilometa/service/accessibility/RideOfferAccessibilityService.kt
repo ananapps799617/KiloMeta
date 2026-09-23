@@ -39,6 +39,12 @@ class RideOfferAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        val info = serviceInfo ?: android.accessibilityservice.AccessibilityServiceInfo()
+        info.flags = info.flags or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
+                android.accessibilityservice.AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+        serviceInfo = info
         startShiftMonitoring()
     }
 
@@ -68,7 +74,7 @@ class RideOfferAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
-        // 1. Obtener la ventana completa de la app de transporte de forma síncrona en el hilo principal
+        // 1. Obtener el paquete de transporte y la raíz visual activa de forma determinista
         val (targetPkg, rootNode) = getTargetRootNode(event) ?: return
         val texts = try {
             parser.extractAllTexts(rootNode)
@@ -93,81 +99,48 @@ class RideOfferAccessibilityService : AccessibilityService() {
                 lastOfferTime = now
 
                 val evaluation = evaluateTripOfferUseCase(offer, currentConfig)
-                android.util.Log.d("RideOfferService", "Oferta detectada: ${offer.platform} Fare: ${offer.offeredFare} - Semáforo: ${evaluation.semaphoreTier}")
+                android.util.Log.i("KiloMetaHUD", "Oferta detectada: ${offer.platform} Fare: ${offer.offeredFare} - Semáforo: ${evaluation.semaphoreTier}")
                 withContext(Dispatchers.Main) {
                     overlayManager.showOfferEvaluation(evaluation)
                 }
             } catch (e: Exception) {
-                android.util.Log.w("RideOfferService", "Error procesando evento de accesibilidad: ${e.message}")
+                android.util.Log.w("KiloMetaHUD", "Error procesando evento de accesibilidad: ${e.message}")
             }
         }
     }
 
     private fun getTargetRootNode(event: AccessibilityEvent): Pair<String, android.view.accessibility.AccessibilityNodeInfo>? {
         val eventPkg = event.packageName?.toString() ?: ""
+        val activeRoot = try { rootInActiveWindow } catch (_: Exception) { null }
+        val activePkg = activeRoot?.packageName?.toString() ?: ""
 
-        // Prioridad 1: Si el evento viene de Uber, DiDi o inDrive, buscar su ventana de aplicación real (TYPE_APPLICATION)
-        if (isAuthorizedPlatform(eventPkg)) {
-            findAppWindowRoot(eventPkg)?.let { return Pair(eventPkg, it) }
-
-            // Fallback al rootInActiveWindow si pertenece al mismo paquete
-            try {
-                rootInActiveWindow?.let { root ->
-                    val activePkg = root.packageName?.toString() ?: ""
-                    if (activePkg.equals(eventPkg, ignoreCase = true)) {
-                        return Pair(eventPkg, root)
-                    }
-                }
-            } catch (_: Exception) {}
-
-            // Fallback al source del evento navegando a la raíz del árbol
-            event.source?.let {
-                val root = findWindowRoot(it)
-                val pkg = root.packageName?.toString() ?: eventPkg
-                if (isAuthorizedPlatform(pkg)) return Pair(pkg, root)
-            }
+        val targetPkg = when {
+            isAuthorizedPlatform(eventPkg) -> eventPkg
+            isAuthorizedPlatform(activePkg) -> activePkg
+            else -> return null
         }
 
-        // Prioridad 2: Buscar entre todas las ventanas activas una ventana TYPE_APPLICATION (ignorar burbujas flotantes)
+        // Prioridad 1: Nodo del evento ascendiendo a la raíz de la vista que emitió la alerta
+        event.source?.let { sourceNode ->
+            val root = findWindowRoot(sourceNode)
+            return Pair(targetPkg, root)
+        }
+
+        // Prioridad 2: rootInActiveWindow directo de la pantalla en primer plano
+        if (activeRoot != null) {
+            return Pair(targetPkg, activeRoot)
+        }
+
+        // Prioridad 3: Ventana de aplicación activa en la colección windows
         try {
-            val winList = windows
-            for (win in winList) {
+            for (win in windows) {
                 if (win.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) {
                     val root = win.root ?: continue
-                    val pkg = root.packageName?.toString() ?: ""
-                    if (isAuthorizedPlatform(pkg)) {
-                        return Pair(pkg, root)
-                    }
+                    return Pair(targetPkg, root)
                 }
             }
         } catch (_: Exception) {}
 
-        // Prioridad 3: rootInActiveWindow
-        try {
-            rootInActiveWindow?.let { root ->
-                val pkg = root.packageName?.toString() ?: ""
-                if (isAuthorizedPlatform(pkg)) {
-                    return Pair(pkg, root)
-                }
-            }
-        } catch (_: Exception) {}
-
-        return null
-    }
-
-    private fun findAppWindowRoot(targetPkg: String): android.view.accessibility.AccessibilityNodeInfo? {
-        try {
-            val winList = windows
-            for (win in winList) {
-                if (win.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) {
-                    val root = win.root ?: continue
-                    val pkg = root.packageName?.toString() ?: ""
-                    if (pkg.equals(targetPkg, ignoreCase = true)) {
-                        return root
-                    }
-                }
-            }
-        } catch (_: Exception) {}
         return null
     }
 

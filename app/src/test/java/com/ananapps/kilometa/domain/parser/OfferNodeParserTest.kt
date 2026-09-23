@@ -216,22 +216,14 @@ class OfferNodeParserTest {
 
     @Test
     fun testParseDidiCardOfferWithoutAcceptButton() {
-        // Screenshot media_1790170305529.jpg: Oferta de DiDi táctil sin botón 'Aceptar'
         val texts = listOf(
-            "Pago con tarjeta",
-            "$12.494 ⚡1,2x",
-            "1 punto",
-            "$1.604 de tarifa base dinámica",
-            "$525 de tarifa de gasolina",
-            "4,98 · 615 arrendamientos",
-            "Tarjeta bancaria verificada",
-            "7 min (1,5 km)",
-            "Calle 126 #52A-60, Suba",
-            "25 min (4,2 km)",
-            "Torre Samsung, Usaquén"
+            "Pago con tarjeta", "$12.494 ⚡1,2x", "1 punto",
+            "$1.604 de tarifa base dinámica", "$525 de tarifa de gasolina",
+            "4,98 · 615 arrendamientos", "Tarjeta bancaria verificada",
+            "7 min (1,5 km)", "Calle 126 #52A-60, Suba",
+            "25 min (4,2 km)", "Torre Samsung, Usaquén"
         )
         val offer = parser.parse("com.didiglobal.driver", texts)
-
         assertNotNull("Oferta de DiDi táctil DEBE detectarse aunque no tenga botón Aceptar", offer)
         assertEquals(PlatformType.DIDI, offer?.platform)
         assertEquals(12494.0, offer?.offeredFare ?: 0.0, 0.01)
@@ -242,27 +234,27 @@ class OfferNodeParserTest {
 
     @Test
     fun testParseUberOfferWithGananciasInBottomNav() {
-        // Caso exacto screenshot media_1790130763597.jpg:
-        // Contiene la pestaña fija 'Ganancias' en la barra inferior, pero es una oferta real con 'Aceptar'
         val texts = listOf(
-            "Mañana en 5:50 AM",
-            "Viaje de 38 min (16.5 km)",
-            "Uber Reserve",
-            "Cra. 14 # 4-144, Cajicá",
-            "Aceptar • COP37,055.00",
-            "Inicio",
-            "Descubrir",
-            "Ganancias",
-            "Bandeja de entrada",
-            "Menú"
+            "Mañana en 5:50 AM", "Viaje de 38 min (16.5 km)", "Uber Reserve",
+            "Cra. 14 # 4-144, Cajicá", "Aceptar • COP37,055.00", "Inicio", "Ganancias", "Menú"
         )
         val offer = parser.parse("com.ubercab.driver", texts)
-
-        assertNotNull("Uber con pestaña Ganancias en bottom nav DEBE detectarse si tiene botón Aceptar", offer)
+        assertNotNull(offer)
         assertEquals(PlatformType.UBER, offer?.platform)
         assertEquals(37055.0, offer?.offeredFare ?: 0.0, 0.01)
         assertEquals(16.5, offer?.tripDistanceKm ?: 0.0, 0.01)
         assertEquals(38, offer?.estimatedMinutes)
+    }
+
+    @Test
+    fun testParseOfferWithDurationOnlyAndNoExplicitKm() {
+        val texts = listOf("Uber Flash", "COP 15,000", "18 min", "Aceptar")
+        val offer = parser.parse("com.ubercab.driver", texts)
+        assertNotNull(offer)
+        assertEquals(PlatformType.UBER, offer?.platform)
+        assertEquals(15000.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertTrue((offer?.tripDistanceKm ?: 0.0) > 1.0)
+        assertEquals(18, offer?.estimatedMinutes)
     }
 
     @Test
@@ -275,7 +267,7 @@ class OfferNodeParserTest {
     }
 
     @Test
-    fun testRejectionWhenNoDistancePresent() {
+    fun testRejectionWhenNoDistanceNorDurationPresent() {
         val texts = listOf("UberX", "COP12,500", "Centro Comercial Plaza", "Aceptar")
         assertNull(parser.parse("com.ubercab.driver", texts))
     }

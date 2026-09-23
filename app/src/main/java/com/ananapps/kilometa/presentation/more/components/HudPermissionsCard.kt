@@ -27,7 +27,8 @@ import com.ananapps.kilometa.presentation.theme.*
 
 @Composable
 fun HudPermissionsCard(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSimulateOffer: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -81,6 +82,21 @@ fun HudPermissionsCard(
                 actionLabel = if (hasAccessibilityPermission) "Concedido" else "Activar",
                 onAction = { PermissionHelper.openAccessibilitySettings(context) }
             )
+
+            // Botón de Comprobación Empírica en Vivo
+            Button(
+                onClick = onSimulateOffer,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "🧪 Probar HUD Flotante (Simular Oferta)",
+                    color = StatusGreen,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
 
             if (!hasOverlayPermission || !hasAccessibilityPermission) {
                 Surface(

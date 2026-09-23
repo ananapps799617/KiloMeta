@@ -70,7 +70,9 @@ fun HudSettingsScreen(
         ) {
             // Sección 0: Estado de Permisos del Copiloto Flotante
             item {
-                HudPermissionsCard()
+                HudPermissionsCard(
+                    onSimulateOffer = { viewModel.simulateTestOffer() }
+                )
             }
 
             // Sección 1: Umbrales del Semáforo

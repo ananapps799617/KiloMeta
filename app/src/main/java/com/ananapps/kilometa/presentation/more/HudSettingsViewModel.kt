@@ -12,7 +12,11 @@ import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.domain.model.HudConfig
+import com.ananapps.kilometa.domain.model.PlatformType
+import com.ananapps.kilometa.domain.model.TripOffer
 import com.ananapps.kilometa.domain.repository.HudConfigRepository
+import com.ananapps.kilometa.domain.usecase.EvaluateTripOfferUseCase
+import com.ananapps.kilometa.presentation.overlay.RideOfferOverlayManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
@@ -22,6 +26,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HudSettingsViewModel @Inject constructor(
     private val repository: HudConfigRepository,
+    private val overlayManager: RideOfferOverlayManager,
+    private val evaluateTripOfferUseCase: EvaluateTripOfferUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -50,5 +56,17 @@ class HudSettingsViewModel @Inject constructor(
             repository.saveHudConfig(_config.value)
             _saveSuccess.emit(Unit)
         }
+    }
+
+    fun simulateTestOffer() {
+        val mockOffer = TripOffer(
+            platform = PlatformType.DIDI,
+            offeredFare = 12494.0,
+            pickupDistanceKm = 1.5,
+            tripDistanceKm = 4.2,
+            estimatedMinutes = 25
+        )
+        val evaluation = evaluateTripOfferUseCase(mockOffer, _config.value)
+        overlayManager.showOfferEvaluation(evaluation)
     }
 }

@@ -65,7 +65,10 @@ class OfferNodeParser @Inject constructor() {
                 lower.contains("1 punto") || lower.contains("punto(s)") ||
                 lower.contains("pago con tarjeta") || lower.contains("rechazo permitido") ||
                 lower.contains("toca para aceptar") || lower.contains("exclusivo") ||
-                lower.contains("reserve") || lower.contains("uberya") || lower.contains("uberx")
+                lower.contains("reserve") || lower.contains("uberya") || lower.contains("uberx") ||
+                lower.contains("uber") || lower.contains("comfort") || lower.contains("flash") ||
+                lower.contains("moto") || lower.contains("solicitud") || lower.contains("viaje") ||
+                lower.contains("recoger") || lower.contains("tarifa") || lower.contains("destino")
             ) {
                 return true
             }
@@ -139,11 +142,18 @@ class OfferNodeParser @Inject constructor() {
             }
         }
 
-        return when {
-            distances.size >= 2 -> Pair(distances[0], distances[1])
-            distances.size == 1 -> Pair(0.5, distances[0])
-            else -> null
+        if (distances.size >= 2) return Pair(distances[0], distances[1])
+        if (distances.size == 1) return Pair(0.5, distances[0])
+
+        // Fallback resiliente: Si no hay km explícitos pero hay duración calculable en minutos
+        val hasDuration = texts.any { durationRegex.containsMatchIn(it) }
+        if (hasDuration) {
+            val mins = extractDurationMinutes(texts)
+            val estimatedTripKm = (mins * 0.35).coerceIn(1.5, 35.0)
+            return Pair(0.5, (estimatedTripKm * 10).toInt() / 10.0)
         }
+
+        return null
     }
 
     private fun extractDurationMinutes(texts: List<String>): Int {
