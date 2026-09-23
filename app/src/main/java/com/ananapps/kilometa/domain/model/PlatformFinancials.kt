@@ -65,11 +65,12 @@ data class PlatformWalletBalance(
     val digitalGross: Double = 0.0,
     val digitalCommission: Double = 0.0,
     val cashCommissionOwed: Double = 0.0,
-    val cashGross: Double = 0.0
+    val cashGross: Double = 0.0,
+    val platformSubsidy: Double = 0.0
 ) {
-    val netDisbursementPending: Double get() = (digitalGross - digitalCommission).coerceAtLeast(0.0)
-    // Cruce neto específico de la app: saldo a favor digital menos comisión adeudada por efectivo
-    val netBalance: Double get() = (digitalGross - digitalCommission) - cashCommissionOwed
+    val netDisbursementPending: Double get() = (digitalGross - digitalCommission + platformSubsidy).coerceAtLeast(0.0)
+    // Cruce neto específico de la app: saldo a favor digital + subsidios menos comisión adeudada por efectivo
+    val netBalance: Double get() = (digitalGross - digitalCommission + platformSubsidy) - cashCommissionOwed
 }
 
 // ------------------------------------------------------------------------------

@@ -87,7 +87,8 @@ fun RegisterTripDialog(
 
     val gross = grossAmountText.toDoubleOrNull() ?: 0.0
     val commission = commissionAmountText.toDoubleOrNull() ?: 0.0
-    val net = (gross - commission).coerceAtLeast(0.0)
+    val promoDiscount = if (isEditing) existingTrip.platformPromoDiscount else (scannedReceipt?.platformPromoDiscount ?: 0.0)
+    val net = (gross - commission + promoDiscount).coerceAtLeast(0.0)
     val parsedDist = distanceKmText.replace(',', '.').toDoubleOrNull()
     val parsedDur = durationMinutesText.toIntOrNull()
 
@@ -211,7 +212,8 @@ fun RegisterTripDialog(
                 if (commissionAmountText.isBlank() && grossAmountText.isNotBlank()) {
                     updateSuggestedCommission(grossAmountText, selectedPlatform)
                 }
-            }
+            },
+            platformPromoDiscount = promoDiscount
         )
     }
 }

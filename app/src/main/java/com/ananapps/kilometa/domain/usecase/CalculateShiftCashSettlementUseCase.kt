@@ -36,6 +36,7 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         var digitalCommissions = 0.0
         var cashCommissions = 0.0
         var totalCommission = 0.0
+        var totalPlatformSubsidies = 0.0
 
         val platformMap = mutableMapOf<PlatformType, MutablePlatformAccumulator>()
         PlatformType.entries.forEach {
@@ -43,14 +44,13 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         }
 
         trips.forEach { trip ->
-            val netTripCash = (trip.grossAmount - trip.platformPromoDiscount).coerceAtLeast(0.0)
             when (trip.paymentMethod) {
                 PaymentMethod.CASH -> {
-                    cashPhysicalGross += netTripCash
+                    cashPhysicalGross += trip.grossAmount
                     cashCommissions += trip.commissionAmount
                 }
                 PaymentMethod.NEQUI -> {
-                    digitalWalletGross += netTripCash
+                    digitalWalletGross += trip.grossAmount
                     cashCommissions += trip.commissionAmount
                 }
                 PaymentMethod.APP_WALLET -> {
@@ -58,12 +58,18 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
                     digitalCommissions += trip.commissionAmount
                 }
             }
+            if (trip.platformPromoDiscount > 0.0) {
+                totalPlatformSubsidies += trip.platformPromoDiscount
+            }
             totalCommission += trip.commissionAmount
         }
 
         // Acumulación soberana de bolsillos de plataforma (Ciclo Lunes a Domingo)
         platformTrips.forEach { trip ->
             val acc = platformMap.getOrPut(trip.platformType) { MutablePlatformAccumulator(trip.platformType) }
+            if (trip.platformPromoDiscount > 0.0) {
+                acc.platformSubsidy += trip.platformPromoDiscount
+            }
             when (trip.paymentMethod) {
                 PaymentMethod.CASH, PaymentMethod.NEQUI -> {
                     acc.cashGross += trip.grossAmount
@@ -94,17 +100,17 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         val cashPhysicalBalance = cashPhysicalGross - fuelCash - expenseCash + netTransfersFor(WalletType.CASH_PHYSICAL)
         val digitalWalletBalance = digitalWalletGross - fuelDigital - expenseDigital + netTransfersFor(WalletType.DIGITAL_WALLET)
 
-        val uberBase = (platformMap[PlatformType.UBER]?.let { it.digitalGross - it.digitalCommission - it.cashCommissionOwed } ?: 0.0)
+        val uberBase = (platformMap[PlatformType.UBER]?.let { (it.digitalGross - it.digitalCommission + it.platformSubsidy) - it.cashCommissionOwed } ?: 0.0)
         val uberWalletBalance = uberBase + netTransfersFor(WalletType.UBER)
 
-        val didiBase = (platformMap[PlatformType.DIDI]?.let { it.digitalGross - it.digitalCommission - it.cashCommissionOwed } ?: 0.0)
+        val didiBase = (platformMap[PlatformType.DIDI]?.let { (it.digitalGross - it.digitalCommission + it.platformSubsidy) - it.cashCommissionOwed } ?: 0.0)
         val didiWalletBalance = didiBase + netTransfersFor(WalletType.DIDI)
 
         val carQuotaWalletBalance = netTransfersFor(WalletType.CAR_QUOTA) - expenseCarQuota
 
         val totalNetAssets = cashPhysicalBalance + digitalWalletBalance + uberWalletBalance + didiWalletBalance + carQuotaWalletBalance
 
-        val totalGross = cashPhysicalGross + digitalWalletGross + digitalGross
+        val totalGross = cashPhysicalGross + digitalWalletGross + digitalGross + totalPlatformSubsidies
         val totalNet = totalGross - totalCommission
 
         val wallets = platformMap.mapValues { (_, acc) ->
@@ -113,7 +119,8 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
                 digitalGross = acc.digitalGross,
                 digitalCommission = acc.digitalCommission,
                 cashCommissionOwed = acc.cashCommissionOwed,
-                cashGross = acc.cashGross
+                cashGross = acc.cashGross,
+                platformSubsidy = acc.platformSubsidy
             )
         }
 
@@ -125,12 +132,12 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
             carQuotaWalletBalance = carQuotaWalletBalance,
             totalNetAssets = totalNetAssets,
             cashInHandGross = cashPhysicalGross,
-            digitalBalanceGross = digitalGross + digitalWalletGross,
+            digitalBalanceGross = digitalGross + digitalWalletGross + totalPlatformSubsidies,
             totalNet = totalNet,
             cashInHandAvailable = cashPhysicalBalance,
             digitalPendingDisbursement = (digitalGross - digitalCommissions).coerceAtLeast(0.0),
             cashCommissionsOwed = cashCommissions,
-            netPlatformBalance = (digitalGross - digitalCommissions) - cashCommissions,
+            netPlatformBalance = (digitalGross - digitalCommissions + totalPlatformSubsidies) - cashCommissions,
             uberWallet = wallets[PlatformType.UBER] ?: PlatformWalletBalance(PlatformType.UBER),
             didiWallet = wallets[PlatformType.DIDI] ?: PlatformWalletBalance(PlatformType.DIDI),
             indriveWallet = wallets[PlatformType.INDRIVE] ?: PlatformWalletBalance(PlatformType.INDRIVE),
@@ -143,6 +150,7 @@ class CalculateShiftCashSettlementUseCase @Inject constructor() {
         var digitalGross: Double = 0.0,
         var digitalCommission: Double = 0.0,
         var cashCommissionOwed: Double = 0.0,
-        var cashGross: Double = 0.0
+        var cashGross: Double = 0.0,
+        var platformSubsidy: Double = 0.0
     )
 }

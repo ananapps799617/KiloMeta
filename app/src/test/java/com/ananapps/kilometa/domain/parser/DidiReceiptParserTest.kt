@@ -20,8 +20,8 @@ class DidiReceiptParserTest {
     fun parseStandardCashTrip_extractsNetGrossCommissionAndTelemetry() {
         val ocrText = """
             < Tus solicitudes
-            ${'$'}7.966
-            i Tus ganancias finales se han ajustado...
+            KM ${'$'}7.966
+            i Tus ganancias finales se han ajustado sobre el monto estimado de ${'$'}7.778
             Detalles
             Mery
             23/09/2026, 10:32:35 am
@@ -100,7 +100,7 @@ class DidiReceiptParserTest {
 
         assertEquals(PlatformType.DIDI, receipt.platform)
         assertEquals(19019.0, receipt.netAmount, 0.01)
-        assertEquals(19019.0, receipt.grossAmount, 0.01)
+        assertEquals(16720.0, receipt.grossAmount, 0.01)
         assertEquals(0.0, receipt.commissionAmount, 0.01)
         assertEquals(2299.0, receipt.platformPromoDiscount, 0.01)
         assertEquals(PaymentMethod.NEQUI, receipt.paymentMethod)

@@ -65,7 +65,7 @@ class RegisterTripUseCase @Inject constructor(
             }
         }
 
-        val netAmount = grossAmount - commissionAmount
+        val netAmount = (grossAmount - commissionAmount + platformPromoDiscount).coerceAtLeast(0.0)
 
         val trip = Trip(
             id = UUID.randomUUID().toString(),

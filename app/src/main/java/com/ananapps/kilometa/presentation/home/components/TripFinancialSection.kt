@@ -36,6 +36,7 @@ fun TripFinancialSection(
     onCommissionAmountChange: (String) -> Unit,
     selectedPaymentMethod: PaymentMethod,
     onPaymentMethodSelected: (PaymentMethod) -> Unit,
+    platformPromoDiscount: Double = 0.0,
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
@@ -44,7 +45,7 @@ fun TripFinancialSection(
 
     val gross = grossAmountText.toDoubleOrNull() ?: 0.0
     val commission = commissionAmountText.toDoubleOrNull() ?: 0.0
-    val net = (gross - commission).coerceAtLeast(0.0)
+    val net = (gross - commission + platformPromoDiscount).coerceAtLeast(0.0)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // 1. Campos de Monto Recibido y Descuento de App
@@ -109,7 +110,20 @@ fun TripFinancialSection(
                     )
                 }
 
-                if (commission > 0.0) {
+                if (platformPromoDiscount > 0.0) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Abono App",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = "+${currencyFormatter.format(platformPromoDiscount)}",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = ElectricBluePrimary
+                        )
+                    }
+                } else if (commission > 0.0) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = "Descuento",
@@ -221,7 +235,13 @@ fun TripFinancialSection(
                 }
             }
 
-            if ((isCash || isNequi) && commission > 0.0) {
+            if (platformPromoDiscount > 0.0) {
+                Text(
+                    text = "🎁 DiDi abonó ${currencyFormatter.format(platformPromoDiscount)} a favor directamente en tu Billetera DiDi.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ElectricBluePrimary
+                )
+            } else if ((isCash || isNequi) && commission > 0.0) {
                 Text(
                     text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(commission)} queda como deuda pendiente con la app.",
                     style = MaterialTheme.typography.labelSmall,
