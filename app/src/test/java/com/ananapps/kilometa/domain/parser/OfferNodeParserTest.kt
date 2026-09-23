@@ -122,4 +122,103 @@ class OfferNodeParserTest {
         val offer = parser.parse("com.whatsapp", texts)
         assertNull(offer)
     }
+
+    @Test
+    fun testIgnoreDidiReferralBannerOnHomeScreen() {
+        // Screenshot media_1790129199986.jpg
+        val texts = listOf(
+            "$0",
+            "Parque Principal Cogua",
+            "1,3X-1,9X",
+            "1,5X-2,1X",
+            "ZIPAQUIRÁ",
+            "¡Oportunidad exclusiva para nuevos conductores!",
+            "Genera $600,000 por referir a amigos por tiempo limitado",
+            "Conoce más",
+            "¡Nueva zona de conexión!",
+            "Con 0% de tasa de servicio para que te quede más",
+            "Conectarse"
+        )
+        val offer = parser.parse("com.didiglobal.driver", texts)
+        assertNull("Pantalla de inicio/referidos de DiDi jamás debe detectarse como oferta", offer)
+    }
+
+    @Test
+    fun testParseDidiOfferWithMetersAndCounterOffers() {
+        // Screenshot media_1790129200131.jpg
+        val texts = listOf(
+            "Pon Tu Precio · Efectivo",
+            "$6.763 ⚡1,7x",
+            "1 punto",
+            "$313 de tarifa de gasolina",
+            "4,85 · 112 arrendamientos",
+            "Tarjeta bancaria verificada",
+            "4 min (789 m)",
+            "Carrera 17 # 6B-12, Zipaquirá",
+            "8 min (2,5 km)",
+            "Transversal 7 #23-25, Zipaquirá",
+            "Aceptar $6.763",
+            "$7.263",
+            "$7.563",
+            "$7.763"
+        )
+        val offer = parser.parse("com.didiglobal.driver", texts)
+
+        assertNotNull(offer)
+        assertEquals(PlatformType.DIDI, offer?.platform)
+        assertEquals(6763.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(0.789, offer?.pickupDistanceKm ?: 0.0, 0.001)
+        assertEquals(2.5, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(12, offer?.estimatedMinutes)
+    }
+
+    @Test
+    fun testParseDidiOfferMislabeledAsUber() {
+        // Screenshot media_1790129199891.jpg: packageName era uber pero contenido era DiDi
+        val texts = listOf(
+            "Efectivo",
+            "$5.447 ⚡1,1x",
+            "1 punto",
+            "$1.232 de tarifa base dinámica",
+            "$325 de tarifa de gasolina",
+            "4,92 · 177 arrendamientos",
+            "Perfil avanzado",
+            "6 min (1,6 km)",
+            "Carrera 10-97, Zipaquirá",
+            "1 parada(s)",
+            "9 min (2,6 km)",
+            "Cl. 22b # 5-9, Zipaquirá",
+            "Aceptar $5.447"
+        )
+        val offer = parser.parse("com.ubercab.driver", texts)
+
+        assertNotNull(offer)
+        // Debe resolver a DiDi por el contenido "arrendamientos" y formato
+        assertEquals(PlatformType.DIDI, offer?.platform)
+        assertEquals(5447.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(1.6, offer?.pickupDistanceKm ?: 0.0, 0.01)
+        assertEquals(2.6, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(15, offer?.estimatedMinutes)
+    }
+
+    @Test
+    fun testParseUberReserveOffer() {
+        // Screenshot media_1790129200056.jpg
+        val texts = listOf(
+            "Mañana en 5:50 AM",
+            "Viaje de 38 min (16.5 km)",
+            "Hora de conexión",
+            "5:20 AM",
+            "Uber Reserve",
+            "Cra. 14 # 4-144, Cajicá",
+            "Aceptar • COP37,055.00"
+        )
+        val offer = parser.parse("com.ubercab.driver", texts)
+
+        assertNotNull(offer)
+        assertEquals(PlatformType.UBER, offer?.platform)
+        assertEquals(37055.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(16.5, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(38, offer?.estimatedMinutes)
+    }
 }

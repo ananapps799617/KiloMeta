@@ -20,18 +20,18 @@ class EvaluateTripOfferUseCaseTest {
             estimatedMinutes = 15
         )
         // Total Dist: 5.0 km
-        // Uber Fee (25%): $6.000
+        // Platform Fee: $0.0 (tarifa neta de plataforma)
         // Fuel Cost (350/km): $1.750
-        // Net Earnings: 24000 - 6000 - 1750 = $16.250
-        // $/km: 16250 / 5 = $3.250/km (>= 2500)
-        // $/hora: (16250 / 15) * 60 = $65.000/h (>= 26000)
+        // Net Earnings: 24000 - 1750 = $22.250
+        // $/km: 22250 / 5 = $4.450/km (>= 2500)
+        // $/hora: (22250 / 15) * 60 = $89.000/h (>= 26000)
 
         val eval = evaluateTripOfferUseCase(offer, customFuelCostPerKm = 350.0)
 
         assertEquals(OfferSemaphoreTier.GREEN_PROFITABLE, eval.semaphoreTier)
-        assertEquals(16250.0, eval.estimatedNetEarnings, 0.01)
-        assertEquals(3250.0, eval.earningsPerKm, 0.01)
-        assertEquals(65000.0, eval.earningsPerHour, 0.01)
+        assertEquals(22250.0, eval.estimatedNetEarnings, 0.01)
+        assertEquals(4450.0, eval.earningsPerKm, 0.01)
+        assertEquals(89000.0, eval.earningsPerHour, 0.01)
     }
 
     @Test

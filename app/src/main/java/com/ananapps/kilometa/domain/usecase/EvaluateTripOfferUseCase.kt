@@ -28,9 +28,9 @@ class EvaluateTripOfferUseCase @Inject constructor() {
         }
 
         val fuelCostKm = if (cfg.useAutoFuelCost) customFuelCostPerKm else cfg.customFuelCostPerKm
-        val estimatedPlatformFee = offer.offeredFare * commissionRate
+        val estimatedPlatformFee = 0.0 // Tarifa en pantalla ya incluye descuento de plataforma
         val estimatedFuelCost = totalDistance * fuelCostKm
-        val estimatedNetEarnings = (offer.offeredFare - estimatedPlatformFee - estimatedFuelCost).coerceAtLeast(0.0)
+        val estimatedNetEarnings = (offer.offeredFare - estimatedFuelCost).coerceAtLeast(0.0)
 
         val earningsPerKm = if (totalDistance > 0) estimatedNetEarnings / totalDistance else 0.0
         val earningsPerHour = if (offer.estimatedMinutes > 0) {

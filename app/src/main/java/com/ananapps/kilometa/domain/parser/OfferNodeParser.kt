@@ -36,9 +36,10 @@ class OfferNodeParser @Inject constructor() {
     }
 
     fun parse(packageName: String, texts: List<String>): TripOffer? {
-        val platform = resolvePlatform(packageName) ?: return null
         if (texts.isEmpty()) return null
+        if (!isRealTripOffer(texts)) return null
 
+        val platform = resolvePlatform(packageName, texts) ?: return null
         val fare = extractFare(texts) ?: return null
         val (pickupDist, tripDist) = extractDistances(texts)
         val minutes = extractDurationMinutes(texts)
@@ -52,31 +53,77 @@ class OfferNodeParser @Inject constructor() {
         )
     }
 
-    private fun resolvePlatform(pkg: String): PlatformType? = when {
-        pkg.contains("ubercab", ignoreCase = true) -> PlatformType.UBER
-        pkg.contains("didi", ignoreCase = true) -> PlatformType.DIDI
-        pkg.contains("indriver", ignoreCase = true) -> PlatformType.INDRIVE
-        else -> null
+    fun isRealTripOffer(texts: List<String>): Boolean {
+        var hasAcceptance = false
+        var hasTripKeyword = false
+
+        for (text in texts) {
+            val lower = text.lowercase()
+            if (lower.startsWith("aceptar") || lower.contains("aceptar") ||
+                lower.contains("contraoferta") || lower.contains("oferta de pasajero")
+            ) {
+                hasAcceptance = true
+            }
+            if (lower.contains("parada") || lower.contains("recogida") ||
+                lower.contains("arrendamiento") || lower.contains("en tu precio") ||
+                lower.contains("pon tu precio") || lower.contains("viaje de") ||
+                lower.contains("viaje:") || lower.contains("1 punto") ||
+                lower.contains("punto(s)") || lower.contains("reserve")
+            ) {
+                hasTripKeyword = true
+            }
+        }
+        return hasAcceptance || hasTripKeyword
+    }
+
+    private fun resolvePlatform(pkg: String, texts: List<String>): PlatformType? {
+        val lowerTexts = texts.joinToString(" ").lowercase()
+        return when {
+            lowerTexts.contains("en tu precio") || lowerTexts.contains("pon tu precio") ||
+            lowerTexts.contains("didi") || lowerTexts.contains("arrendamiento") -> PlatformType.DIDI
+
+            lowerTexts.contains("uberya") || lowerTexts.contains("uberx") ||
+            lowerTexts.contains("uber") || lowerTexts.contains("reserve") -> PlatformType.UBER
+
+            lowerTexts.contains("indrive") || lowerTexts.contains("in-drive") -> PlatformType.INDRIVE
+
+            pkg.contains("ubercab", ignoreCase = true) -> PlatformType.UBER
+            pkg.contains("didi", ignoreCase = true) -> PlatformType.DIDI
+            pkg.contains("indriver", ignoreCase = true) -> PlatformType.INDRIVE
+            else -> null
+        }
     }
 
     private fun extractFare(texts: List<String>): Double? {
-        val candidates = mutableListOf<Double>()
+        val acceptCandidates = mutableListOf<Double>()
+        val generalCandidates = mutableListOf<Double>()
+
         for (text in texts) {
             val lower = text.lowercase()
             if (lower.contains("/km") || lower.contains("/ km") || lower.contains("/h") ||
-                lower.contains("gasolina")
+                lower.contains("gasolina") || lower.contains("refer") ||
+                lower.contains("gana") || lower.contains("genera") || lower.contains("invita") ||
+                lower.contains("batería") || lower.contains("bateria")
             ) continue
 
             val match = fareRegex.find(text)
             if (match != null) {
                 val raw = match.groupValues[1].replace(".", "").replace(",", "")
                 val value = raw.toDoubleOrNull()
-                if (value != null && value in 3000.0..500_000.0) {
-                    candidates.add(value)
+                if (value != null && value in 3_000.0..150_000.0) {
+                    if (lower.contains("aceptar")) {
+                        acceptCandidates.add(value)
+                    } else {
+                        generalCandidates.add(value)
+                    }
                 }
             }
         }
-        return candidates.maxOrNull()
+
+        if (acceptCandidates.isNotEmpty()) {
+            return acceptCandidates.first()
+        }
+        return generalCandidates.firstOrNull() ?: generalCandidates.maxOrNull()
     }
 
     private fun extractDistances(texts: List<String>): Pair<Double, Double> {

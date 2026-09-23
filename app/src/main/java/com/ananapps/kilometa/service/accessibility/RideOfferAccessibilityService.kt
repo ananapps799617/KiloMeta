@@ -67,13 +67,17 @@ class RideOfferAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        val packageName = event.packageName?.toString() ?: return
+        val eventPkg = event.packageName?.toString() ?: ""
+        val activePkg = try { rootInActiveWindow?.packageName?.toString() ?: "" } catch (_: Exception) { "" }
 
-        // Filtro ultra-rápido (< 1 ms): solo procesar apps de transporte autorizadas
-        if (!isAuthorizedPlatform(packageName)) return
+        val targetPkg = when {
+            isAuthorizedPlatform(eventPkg) -> eventPkg
+            isAuthorizedPlatform(activePkg) -> activePkg
+            else -> return
+        }
 
         // 1. Obtener la ventana completa de forma síncrona en el hilo principal
-        val rootNode = rootInActiveWindow ?: findWindowRoot(event) ?: return
+        val rootNode = findWindowRoot(event) ?: rootInActiveWindow ?: return
         val texts = try {
             parser.extractAllTexts(rootNode)
         } catch (e: Exception) {
@@ -84,7 +88,7 @@ class RideOfferAccessibilityService : AccessibilityService() {
         // 2. Procesar matemáticamente la oferta en segundo plano
         serviceScope.launch {
             try {
-                val offer = parser.parse(packageName, texts) ?: return@launch
+                val offer = parser.parse(targetPkg, texts) ?: return@launch
                 val signature = "${offer.platform}_${offer.offeredFare}_${offer.pickupDistanceKm}_${offer.tripDistanceKm}"
 
                 // Debounce para evitar recalcular la misma oferta en eventos continuos
