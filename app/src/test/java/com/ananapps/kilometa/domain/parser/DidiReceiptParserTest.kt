@@ -159,4 +159,40 @@ class DidiReceiptParserTest {
         assertEquals("Andrés", receipt.passengerName)
         assertTrue(receipt.confidenceSummary?.contains("Tarjeta") == true)
     }
+
+    @Test
+    fun parseCardTrip_andresCase_withUnicodeNonBreakingSpacesAndIcons() {
+        // Simula la salida real de Google ML Kit con caracteres especiales y espacios no separables (\u00A0)
+        val ocrText = "3:45 ...\n" +
+                "< Tus solicitudes\n" +
+                "KM\u00A0\u00A0$18.000\n" +
+                "Duración 28m50s   Distancia 10,1 km\n" +
+                "Tipo de vehículo Más Rápido\n" +
+                "Método de pago 💳 Pago con tarjeta\n" +
+                "Tus ganancias\n" +
+                "Total\u00A0\u00A0$18.000\n" +
+                "Pagado por el arrendatario\n" +
+                "Se pagó por la solic.\u00A0\u00A0$24.000\n" +
+                "Total 💳 $24.000\n" +
+                "Recibido por DiDi\n" +
+                "Tarifa servicio estimada -$6.000\n" +
+                "Total -$6.000\n" +
+                "Detalles\n" +
+                "Andrés\n" +
+                "21/09/2026, 1:34:09 pm"
+
+        val receipt = DidiReceiptParser.parse(ocrText)
+        assertNotNull(receipt)
+        receipt!!
+
+        assertEquals(PlatformType.DIDI, receipt.platform)
+        assertEquals(18000.0, receipt.netAmount, 0.01)
+        assertEquals(24000.0, receipt.grossAmount, 0.01)
+        assertEquals(6000.0, receipt.commissionAmount, 0.01)
+        assertEquals(PaymentMethod.APP_WALLET, receipt.paymentMethod)
+        assertEquals(10.1, receipt.distanceKm ?: 0.0, 0.01)
+        assertEquals(29, receipt.durationMinutes)
+        assertEquals("Andrés", receipt.passengerName)
+    }
 }
+

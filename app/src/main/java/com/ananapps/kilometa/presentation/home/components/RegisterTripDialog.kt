@@ -9,6 +9,7 @@
 package com.ananapps.kilometa.presentation.home.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -165,14 +166,15 @@ fun RegisterTripDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(StatusGreen.copy(alpha = 0.15f))
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(StatusGreenContainer)
+                    .border(1.dp, StatusGreen.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "📸 Auto-completado (${scannedReceipt.confidenceSummary ?: scannedReceipt.platform.displayName})",
+                    text = "📸 OCR: ${scannedReceipt.confidenceSummary ?: scannedReceipt.platform.displayName}",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = StatusGreen
+                    color = Color.White
                 )
             }
         }
