@@ -202,30 +202,9 @@ class OfferNodeParserTest {
     }
 
     @Test
-    fun testParseUberReserveOffer() {
-        // Screenshot media_1790129200056.jpg
-        val texts = listOf(
-            "Mañana en 5:50 AM",
-            "Viaje de 38 min (16.5 km)",
-            "Hora de conexión",
-            "5:20 AM",
-            "Uber Reserve",
-            "Cra. 14 # 4-144, Cajicá",
-            "Aceptar • COP37,055.00"
-        )
-        val offer = parser.parse("com.ubercab.driver", texts)
-
-        assertNotNull(offer)
-        assertEquals(PlatformType.UBER, offer?.platform)
-        assertEquals(37055.0, offer?.offeredFare ?: 0.0, 0.01)
-        assertEquals(16.5, offer?.tripDistanceKm ?: 0.0, 0.01)
-        assertEquals(38, offer?.estimatedMinutes)
-    }
-
-    @Test
-    fun testParseDirectStandardUberTripWithoutWhitelistWords() {
-        // Viaje directo de Uber sin palabras de whitelist (sin 'aceptar', 'recogida', 'parada')
-        val texts = listOf("UberX", "COP12,500", "Calle 10 # 5-20", "4.5 km", "15 min")
+    fun testParseDirectStandardUberTripWithAcceptButton() {
+        // Viaje directo de Uber con botón de aceptación
+        val texts = listOf("UberX", "COP12,500", "Calle 10 # 5-20", "4.5 km", "15 min", "Aceptar")
         val offer = parser.parse("com.ubercab.driver", texts)
 
         assertNotNull(offer)
@@ -236,9 +215,9 @@ class OfferNodeParserTest {
     }
 
     @Test
-    fun testParseStandardDidiTripWithoutWhitelistWords() {
-        // Viaje de DiDi sin '1 punto' ni 'arrendamientos' ni 'en tu precio'
-        val texts = listOf("DiDi Express", "$ 8.200", "Carrera 7 # 12-40", "3.8 km", "10 min")
+    fun testParseStandardDidiTripWithAcceptButton() {
+        // Viaje de DiDi con botón de aceptación
+        val texts = listOf("DiDi Express", "$ 8.200", "Carrera 7 # 12-40", "3.8 km", "10 min", "Aceptar $8.200")
         val offer = parser.parse("com.didiglobal.driver", texts)
 
         assertNotNull(offer)
@@ -249,7 +228,32 @@ class OfferNodeParserTest {
     }
 
     @Test
-    fun testBlacklistRejectionForInternalMenus() {
+    fun testParseUberOfferWithGananciasInBottomNav() {
+        // Caso exacto screenshot media_1790130763597.jpg:
+        // Contiene la pestaña fija 'Ganancias' en la barra inferior, pero es una oferta real con 'Aceptar'
+        val texts = listOf(
+            "Mañana en 5:50 AM",
+            "Viaje de 38 min (16.5 km)",
+            "Uber Reserve",
+            "Cra. 14 # 4-144, Cajicá",
+            "Aceptar • COP37,055.00",
+            "Inicio",
+            "Descubrir",
+            "Ganancias",
+            "Bandeja de entrada",
+            "Menú"
+        )
+        val offer = parser.parse("com.ubercab.driver", texts)
+
+        assertNotNull("Uber con pestaña Ganancias en bottom nav DEBE detectarse si tiene botón Aceptar", offer)
+        assertEquals(PlatformType.UBER, offer?.platform)
+        assertEquals(37055.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(16.5, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(38, offer?.estimatedMinutes)
+    }
+
+    @Test
+    fun testRejectionForInternalMenusWithoutAcceptButton() {
         val earningsScreen = listOf("Uber", "Ganancias de la semana", "$ 219.205", "38.6 km")
         assertNull(parser.parse("com.ubercab.driver", earningsScreen))
 
@@ -259,7 +263,7 @@ class OfferNodeParserTest {
 
     @Test
     fun testRejectionWhenNoDistancePresent() {
-        val texts = listOf("UberX", "COP12,500", "Centro Comercial Plaza")
+        val texts = listOf("UberX", "COP12,500", "Centro Comercial Plaza", "Aceptar")
         assertNull(parser.parse("com.ubercab.driver", texts))
     }
 }

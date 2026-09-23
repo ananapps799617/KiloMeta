@@ -67,17 +67,9 @@ class RideOfferAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        val eventPkg = event.packageName?.toString() ?: ""
-        val activePkg = try { rootInActiveWindow?.packageName?.toString() ?: "" } catch (_: Exception) { "" }
 
-        val targetPkg = when {
-            isAuthorizedPlatform(eventPkg) -> eventPkg
-            isAuthorizedPlatform(activePkg) -> activePkg
-            else -> return
-        }
-
-        // 1. Obtener la ventana completa de forma síncrona en el hilo principal
-        val rootNode = findWindowRoot(event) ?: rootInActiveWindow ?: return
+        // 1. Obtener la ventana completa de la app de transporte de forma síncrona en el hilo principal
+        val (targetPkg, rootNode) = getTargetRootNode(event) ?: return
         val texts = try {
             parser.extractAllTexts(rootNode)
         } catch (e: Exception) {
@@ -93,7 +85,7 @@ class RideOfferAccessibilityService : AccessibilityService() {
 
                 // Debounce para evitar recalcular la misma oferta en eventos continuos
                 val now = System.currentTimeMillis()
-                if (signature == lastOfferSignature && (now - lastOfferTime) < 5_000) {
+                if (signature == lastOfferSignature && (now - lastOfferTime) < 4_000) {
                     return@launch
                 }
 
@@ -111,8 +103,39 @@ class RideOfferAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun findWindowRoot(event: AccessibilityEvent): android.view.accessibility.AccessibilityNodeInfo? {
-        var current = event.source ?: return null
+    private fun getTargetRootNode(event: AccessibilityEvent): Pair<String, android.view.accessibility.AccessibilityNodeInfo>? {
+        // Prioridad 1: Buscar entre todas las ventanas activas la que pertenezca a una plataforma de transporte
+        try {
+            val winList = windows
+            for (win in winList) {
+                val root = win.root ?: continue
+                val pkg = root.packageName?.toString() ?: ""
+                if (isAuthorizedPlatform(pkg)) {
+                    return Pair(pkg, root)
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Prioridad 2: rootInActiveWindow
+        rootInActiveWindow?.let { root ->
+            val pkg = root.packageName?.toString() ?: ""
+            if (isAuthorizedPlatform(pkg)) {
+                return Pair(pkg, root)
+            }
+        }
+
+        // Prioridad 3: Evento directo si pertenece a una plataforma autorizada
+        val eventPkg = event.packageName?.toString() ?: ""
+        if (isAuthorizedPlatform(eventPkg)) {
+            val root = event.source?.let { findWindowRoot(it) } ?: rootInActiveWindow
+            if (root != null) return Pair(eventPkg, root)
+        }
+
+        return null
+    }
+
+    private fun findWindowRoot(node: android.view.accessibility.AccessibilityNodeInfo): android.view.accessibility.AccessibilityNodeInfo {
+        var current = node
         var parent = current.parent
         while (parent != null) {
             current = parent

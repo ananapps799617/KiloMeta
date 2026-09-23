@@ -56,19 +56,16 @@ class OfferNodeParser @Inject constructor() {
     fun isRealTripOffer(texts: List<String>): Boolean {
         for (text in texts) {
             val lower = text.lowercase()
-            if (lower.contains("ganancias") || lower.contains("billetera") ||
-                lower.contains("balance") || lower.contains("configuración") ||
-                lower.contains("configuracion") || lower.contains("cuenta") ||
-                lower.contains("ayuda") || lower.contains("soporte") ||
-                lower.contains("historial") || lower.contains("documentos") ||
-                lower.contains("calificaciones") || lower.contains("referir a amigos") ||
-                lower.contains("invita a tus amigos") || lower.contains("resumen semanal") ||
-                lower.contains("ingresos")
+            if (lower.startsWith("aceptar") || lower.contains("aceptar") ||
+                lower.contains("oferta de pasajero") || lower.contains("contraoferta") ||
+                lower.contains("recogida") || lower.contains("viaje de") ||
+                lower.contains("viaje:") || lower.contains("en tu precio") ||
+                lower.contains("pon tu precio") || lower.contains("arrendamiento")
             ) {
-                return false
+                return true
             }
         }
-        return true
+        return false
     }
 
     private fun resolvePlatform(pkg: String, texts: List<String>): PlatformType? {
