@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Plataforma-Android_Nativa_(Kotlin)-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Plataforma" />
   <img src="https://img.shields.io/badge/Arquitectura-Clean_%2B_Room_%2B_OSMDroid-purple?style=for-the-badge&logo=sqlite" alt="Arquitectura" />
   <img src="https://img.shields.io/badge/Seguridad-Zero_Trust-red?style=for-the-badge&logo=firebase" alt="Seguridad" />
-  <img src="https://img.shields.io/badge/Versi%C3%B3n-v1.9.8_alpha.1-00C853?style=for-the-badge" alt="Versión" />
+  <img src="https://img.shields.io/badge/Versi%C3%B3n-v2.9.0_alpha.27-00C853?style=for-the-badge" alt="Versión" />
 </p>
 
 > **KiloMeta** es una plataforma móvil nativa de alto rendimiento desarrollada bajo el **Ecosistema AnAnApps 2.0 (División de Movilidad y Finanzas Operativas)**. Creada a la medida de la realidad operativa de los socios conductores de plataformas (Uber, DiDi, inDrive, Cabify, Particular) y vehículos bi-combustibles o de alquiler semanal en Colombia.
@@ -39,6 +39,12 @@ Los conductores modernos —especialmente aquellos que operan vehículos de alto
     Persistencia soberana en Room SQLite combinada con replicación desatendida en Google Cloud Firestore bajo reglas criptográficas Zero-Trust (`request.auth.uid == userId`) y resolución Last-Write-Wins (LWW).
 11. **Edición Integral en Cabina & Odometría Continua:**  
     Modificación completa de carreras (odómetros, plataforma, método de pago, cobrado y comisión), tanqueos y gastos sin perder el historial ni reiniciar a cero las billeteras digitales. Recálculo reactivo en tiempo real de kilómetros recorridos y caja líquida.
+12. **Auto-Captura Heurística de Recibos OCR (Uber & DiDi) con Subsidios Positivos:**  
+    Escaneo instantáneo de pantallazos de viaje. DiDi captura ganancias netas, horas, distancia, cobro en mano y maneja con fidelidad cuando DiDi aporta dinero extra por promociones (saldo positivo a favor en cartera). Uber prioriza la tarifa real incrementada de cabecera sobre la tarifa base preliminar.
+13. **Métricas y Semáforo de Rentabilidad por Carrera en Historial:**  
+    Cálculo en tiempo real de tarifa lograda por kilómetro ($\$/km$), proyección horaria ($\$/h$) y veredicto con semáforo vehicular (🟢 Rentable, 🟡 Equilibrio, 🔴 No rentable) directamente en la ficha técnica expandible de cada carrera en el Historial.
+14. **Cabina 100% Soberana y Silenciosa:**  
+    Lectura pasiva de pantallas en segundo plano completamente desactivada para erradicar cualquier cuadro emergente invasivo mientras el conductor opera.
 
 ---
 
