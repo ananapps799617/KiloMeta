@@ -64,7 +64,7 @@ class OfferNodeParser @Inject constructor() {
         for (text in texts) {
             val lower = text.lowercase()
             if (lower.contains("/km") || lower.contains("/ km") || lower.contains("/h") ||
-                lower.contains("gasolina") || lower.contains("estimado")
+                lower.contains("gasolina")
             ) continue
 
             val match = fareRegex.find(text)

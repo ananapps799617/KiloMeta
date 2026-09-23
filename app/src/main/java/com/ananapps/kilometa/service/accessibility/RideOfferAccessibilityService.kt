@@ -72,12 +72,18 @@ class RideOfferAccessibilityService : AccessibilityService() {
         // Filtro ultra-rápido (< 1 ms): solo procesar apps de transporte autorizadas
         if (!isAuthorizedPlatform(packageName)) return
 
-        val rootNode = event.source ?: rootInActiveWindow ?: return
+        // 1. Obtener la ventana completa de forma síncrona en el hilo principal
+        val rootNode = rootInActiveWindow ?: findWindowRoot(event) ?: return
+        val texts = try {
+            parser.extractAllTexts(rootNode)
+        } catch (e: Exception) {
+            emptyList()
+        }
+        if (texts.isEmpty()) return
+
+        // 2. Procesar matemáticamente la oferta en segundo plano
         serviceScope.launch {
             try {
-                val texts = parser.extractAllTexts(rootNode)
-                if (texts.isEmpty()) return@launch
-
                 val offer = parser.parse(packageName, texts) ?: return@launch
                 val signature = "${offer.platform}_${offer.offeredFare}_${offer.pickupDistanceKm}_${offer.tripDistanceKm}"
 
@@ -99,6 +105,16 @@ class RideOfferAccessibilityService : AccessibilityService() {
                 android.util.Log.w("RideOfferService", "Error procesando evento de accesibilidad: ${e.message}")
             }
         }
+    }
+
+    private fun findWindowRoot(event: AccessibilityEvent): android.view.accessibility.AccessibilityNodeInfo? {
+        var current = event.source ?: return null
+        var parent = current.parent
+        while (parent != null) {
+            current = parent
+            parent = current.parent
+        }
+        return current
     }
 
     private fun isAuthorizedPlatform(pkg: String): Boolean {

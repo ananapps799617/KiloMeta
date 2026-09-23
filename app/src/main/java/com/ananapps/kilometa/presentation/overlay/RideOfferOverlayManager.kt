@@ -118,21 +118,43 @@ class RideOfferOverlayManager @Inject constructor(
         autoDismissJob?.cancel()
     }
 
+    private var savedBubbleX = 20
+    private var savedBubbleY = 300
+
     fun showOfferEvaluation(evaluation: TripOfferEvaluation) {
         if (!isBubbleAttached) showBubble()
         currentEvaluation = evaluation
         isSpeedDialOpen = false
+        repositionWindow(isCard = true)
 
         autoDismissJob?.cancel()
         autoDismissJob = scope.launch {
             delay(15_000)
-            currentEvaluation = null
+            dismissOffer()
         }
     }
 
     fun dismissOffer() {
         currentEvaluation = null
         autoDismissJob?.cancel()
+        repositionWindow(isCard = false)
+    }
+
+    private fun repositionWindow(isCard: Boolean) {
+        val params = layoutParams ?: return
+        val view = overlayComposeView ?: return
+        if (isCard) {
+            params.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            params.x = 0
+            params.y = 180
+        } else {
+            params.gravity = Gravity.TOP or Gravity.START
+            params.x = savedBubbleX
+            params.y = savedBubbleY
+        }
+        try {
+            windowManager.updateViewLayout(view, params)
+        } catch (_: Exception) {}
     }
 
     @Composable
@@ -196,6 +218,7 @@ class RideOfferOverlayManager @Inject constructor(
         var initialTouchY = 0f
 
         view.setOnTouchListener { v, event ->
+            if (currentEvaluation != null) return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params.x
@@ -207,6 +230,8 @@ class RideOfferOverlayManager @Inject constructor(
                 MotionEvent.ACTION_MOVE -> {
                     params.x = initialX + (event.rawX - initialTouchX).toInt()
                     params.y = initialY + (event.rawY - initialTouchY).toInt()
+                    savedBubbleX = params.x
+                    savedBubbleY = params.y
                     try {
                         windowManager.updateViewLayout(v, params)
                     } catch (_: Exception) {}
@@ -216,11 +241,7 @@ class RideOfferOverlayManager @Inject constructor(
                     val deltaX = abs(event.rawX - initialTouchX)
                     val deltaY = abs(event.rawY - initialTouchY)
                     if (deltaX < 15 && deltaY < 15) {
-                        if (currentEvaluation != null) {
-                            currentEvaluation = null
-                        } else {
-                            isSpeedDialOpen = !isSpeedDialOpen
-                        }
+                        isSpeedDialOpen = !isSpeedDialOpen
                     }
                     true
                 }
