@@ -20,17 +20,9 @@ class EvaluateTripOfferUseCase @Inject constructor() {
     ): TripOfferEvaluation {
         val cfg = config
         val totalDistance = offer.totalDistanceKm
-        val commissionRate = when (offer.platform) {
-            PlatformType.UBER -> cfg.uberCommissionPercent / 100.0
-            PlatformType.DIDI -> cfg.didiCommissionPercent / 100.0
-            PlatformType.INDRIVE -> cfg.indriveCommissionPercent / 100.0
-            PlatformType.PRIVATE -> 0.0
-        }
-
-        val fuelCostKm = if (cfg.useAutoFuelCost) customFuelCostPerKm else cfg.customFuelCostPerKm
-        val estimatedPlatformFee = 0.0 // Tarifa en pantalla ya incluye descuento de plataforma
-        val estimatedFuelCost = totalDistance * fuelCostKm
-        val estimatedNetEarnings = (offer.offeredFare - estimatedFuelCost).coerceAtLeast(0.0)
+        val estimatedPlatformFee = 0.0
+        val estimatedFuelCost = 0.0
+        val estimatedNetEarnings = offer.offeredFare
 
         val earningsPerKm = if (totalDistance > 0) estimatedNetEarnings / totalDistance else 0.0
         val earningsPerHour = if (offer.estimatedMinutes > 0) {

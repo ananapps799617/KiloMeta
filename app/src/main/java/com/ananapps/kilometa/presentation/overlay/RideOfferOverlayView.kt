@@ -109,7 +109,7 @@ fun RideOfferOverlayView(
             // Ganancia Limpia Gigante
             Column {
                 Text(
-                    text = "GANANCIA LIMPIA ESTIMADA",
+                    text = "VALOR A COBRAR",
                     color = TextSecondary,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold
