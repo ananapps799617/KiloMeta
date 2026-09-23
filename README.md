@@ -55,7 +55,7 @@ KiloMeta está construida bajo los estándares de ingeniería más avanzados de 
 * **Lenguaje:** Kotlin 2.0.21 (tipado estricto, null-safety absoluto, Compose Compiler plugin integrado).
 * **Patrón de Arquitectura:** **Clean Architecture Modular**:
   * `domain/`: Modelos puros inmutables (`PlatformWalletBalance`, `CashSettlementSummary`), contratos de repositorios, UseCases e interactores financieros, de lugares y mantenimiento.
-  * `data/`: Repositorios desacoplados, Room SQLite 2.6.1 (esquema relacional v6 con `PendingDeletionEntity`, `MIGRATION_5_6`, integridad en cascada y migraciones deterministas), DataSources remotos Firebase (`FirebaseAuthDataSource`, `FirestoreDataSource`), workers en background y mappers puros.
+  * `data/`: Repositorios desacoplados, Room SQLite 2.6.1 (esquema relacional v9 con `PendingDeletionEntity`, `TransferEntity`, `MaintenanceEntity`, telemetría de carreras `distance_km`/`duration_minutes`, `MIGRATION_8_9`, integridad en cascada y migraciones deterministas), DataSources remotos Firebase (`FirebaseAuthDataSource`, `FirestoreDataSource`), workers en background y mappers puros.
   * `presentation/`: Interfaz reactiva 100% Jetpack Compose Material 3 con patrón Unidirectional Data Flow (*UDF*) y `StateFlow`.
   * `core/`: Utilidades contables, sanitización contra inyección de fórmulas (`CsvSanitizer`), monitores de conectividad, instalador de APKs (`ApkInstallerHelper`) y módulos Hilt.
 * **Mapas Nativos & Cartografía:** **OSMDroid 6.1.20** (`org.osmdroid:osmdroid-android`) renderizado nativamente sobre Android Canvas/OpenGL. Libre de WebViews, sin consumo de créditos de Google Maps API y con soporte de cache offline local.
