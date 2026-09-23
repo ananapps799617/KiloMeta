@@ -60,7 +60,12 @@ class OfferNodeParser @Inject constructor() {
                 lower.contains("oferta de pasajero") || lower.contains("contraoferta") ||
                 lower.contains("recogida") || lower.contains("viaje de") ||
                 lower.contains("viaje:") || lower.contains("en tu precio") ||
-                lower.contains("pon tu precio") || lower.contains("arrendamiento")
+                lower.contains("pon tu precio") || lower.contains("arrendamiento") ||
+                lower.contains("tarifa de gasolina") || lower.contains("tarifa base") ||
+                lower.contains("1 punto") || lower.contains("punto(s)") ||
+                lower.contains("pago con tarjeta") || lower.contains("rechazo permitido") ||
+                lower.contains("toca para aceptar") || lower.contains("exclusivo") ||
+                lower.contains("reserve") || lower.contains("uberya") || lower.contains("uberx")
             ) {
                 return true
             }

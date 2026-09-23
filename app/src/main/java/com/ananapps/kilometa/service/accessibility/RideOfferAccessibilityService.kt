@@ -104,11 +104,47 @@ class RideOfferAccessibilityService : AccessibilityService() {
     }
 
     private fun getTargetRootNode(event: AccessibilityEvent): Pair<String, android.view.accessibility.AccessibilityNodeInfo>? {
-        // Prioridad 1: Buscar entre todas las ventanas activas la que pertenezca a una plataforma de transporte
+        val eventPkg = event.packageName?.toString() ?: ""
+
+        // Prioridad 1: Si el evento viene de Uber, DiDi o inDrive, buscar su ventana de aplicación real (TYPE_APPLICATION)
+        if (isAuthorizedPlatform(eventPkg)) {
+            findAppWindowRoot(eventPkg)?.let { return Pair(eventPkg, it) }
+
+            // Fallback al rootInActiveWindow si pertenece al mismo paquete
+            try {
+                rootInActiveWindow?.let { root ->
+                    val activePkg = root.packageName?.toString() ?: ""
+                    if (activePkg.equals(eventPkg, ignoreCase = true)) {
+                        return Pair(eventPkg, root)
+                    }
+                }
+            } catch (_: Exception) {}
+
+            // Fallback al source del evento navegando a la raíz del árbol
+            event.source?.let {
+                val root = findWindowRoot(it)
+                val pkg = root.packageName?.toString() ?: eventPkg
+                if (isAuthorizedPlatform(pkg)) return Pair(pkg, root)
+            }
+        }
+
+        // Prioridad 2: Buscar entre todas las ventanas activas una ventana TYPE_APPLICATION (ignorar burbujas flotantes)
         try {
             val winList = windows
             for (win in winList) {
-                val root = win.root ?: continue
+                if (win.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) {
+                    val root = win.root ?: continue
+                    val pkg = root.packageName?.toString() ?: ""
+                    if (isAuthorizedPlatform(pkg)) {
+                        return Pair(pkg, root)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Prioridad 3: rootInActiveWindow
+        try {
+            rootInActiveWindow?.let { root ->
                 val pkg = root.packageName?.toString() ?: ""
                 if (isAuthorizedPlatform(pkg)) {
                     return Pair(pkg, root)
@@ -116,21 +152,22 @@ class RideOfferAccessibilityService : AccessibilityService() {
             }
         } catch (_: Exception) {}
 
-        // Prioridad 2: rootInActiveWindow
-        rootInActiveWindow?.let { root ->
-            val pkg = root.packageName?.toString() ?: ""
-            if (isAuthorizedPlatform(pkg)) {
-                return Pair(pkg, root)
+        return null
+    }
+
+    private fun findAppWindowRoot(targetPkg: String): android.view.accessibility.AccessibilityNodeInfo? {
+        try {
+            val winList = windows
+            for (win in winList) {
+                if (win.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) {
+                    val root = win.root ?: continue
+                    val pkg = root.packageName?.toString() ?: ""
+                    if (pkg.equals(targetPkg, ignoreCase = true)) {
+                        return root
+                    }
+                }
             }
-        }
-
-        // Prioridad 3: Evento directo si pertenece a una plataforma autorizada
-        val eventPkg = event.packageName?.toString() ?: ""
-        if (isAuthorizedPlatform(eventPkg)) {
-            val root = event.source?.let { findWindowRoot(it) } ?: rootInActiveWindow
-            if (root != null) return Pair(eventPkg, root)
-        }
-
+        } catch (_: Exception) {}
         return null
     }
 

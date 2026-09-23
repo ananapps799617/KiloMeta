@@ -215,16 +215,29 @@ class OfferNodeParserTest {
     }
 
     @Test
-    fun testParseStandardDidiTripWithAcceptButton() {
-        // Viaje de DiDi con botón de aceptación
-        val texts = listOf("DiDi Express", "$ 8.200", "Carrera 7 # 12-40", "3.8 km", "10 min", "Aceptar $8.200")
+    fun testParseDidiCardOfferWithoutAcceptButton() {
+        // Screenshot media_1790170305529.jpg: Oferta de DiDi táctil sin botón 'Aceptar'
+        val texts = listOf(
+            "Pago con tarjeta",
+            "$12.494 ⚡1,2x",
+            "1 punto",
+            "$1.604 de tarifa base dinámica",
+            "$525 de tarifa de gasolina",
+            "4,98 · 615 arrendamientos",
+            "Tarjeta bancaria verificada",
+            "7 min (1,5 km)",
+            "Calle 126 #52A-60, Suba",
+            "25 min (4,2 km)",
+            "Torre Samsung, Usaquén"
+        )
         val offer = parser.parse("com.didiglobal.driver", texts)
 
-        assertNotNull(offer)
+        assertNotNull("Oferta de DiDi táctil DEBE detectarse aunque no tenga botón Aceptar", offer)
         assertEquals(PlatformType.DIDI, offer?.platform)
-        assertEquals(8200.0, offer?.offeredFare ?: 0.0, 0.01)
-        assertEquals(3.8, offer?.tripDistanceKm ?: 0.0, 0.01)
-        assertEquals(10, offer?.estimatedMinutes)
+        assertEquals(12494.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(1.5, offer?.pickupDistanceKm ?: 0.0, 0.01)
+        assertEquals(4.2, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(32, offer?.estimatedMinutes)
     }
 
     @Test
