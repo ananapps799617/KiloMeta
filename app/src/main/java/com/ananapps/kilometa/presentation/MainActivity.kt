@@ -97,8 +97,7 @@ private fun MainAppHost(
             onSignInWithGoogleToken = { viewModel.signInWithGoogle(it) },
             onGoogleSignInError = { viewModel.setAuthError(it) },
             onSignInWithEmail = { email, pass -> viewModel.signInWithEmail(email, pass) },
-            authError = authError,
-            isLoading = isAuthLoading
+            authError = authError, isLoading = isAuthLoading
         )
         return
     }
@@ -107,32 +106,35 @@ private fun MainAppHost(
 
     // 2. Onboarding Obligatorio para Conductor Nuevo
     if (!driverProfile.isReadyForCabina) {
-        DriverProfileScreen(
-            isOnboardingMode = true,
-            userEmail = userSession?.email ?: "",
-            onNavigateBack = { /* Desbloqueo reactivo hacia cabina */ }
-        )
+        DriverProfileScreen(isOnboardingMode = true, userEmail = userSession?.email ?: "", onNavigateBack = {})
         return
     }
 
     var currentNavTab by rememberSaveable { mutableStateOf(KiloMetaNavTab.ROUTE) }
     var activeSubDestination by rememberSaveable { mutableStateOf<AppDestination?>(null) }
     var showQuickActionSheet by rememberSaveable { mutableStateOf(false) }
-    var triggerQuickTrip by rememberSaveable { mutableStateOf(false) }
-    var triggerQuickFueling by rememberSaveable { mutableStateOf(false) }
-    var triggerQuickExpense by rememberSaveable { mutableStateOf(false) }
-    var triggerQuickMaintenance by rememberSaveable { mutableStateOf(false) }
+    var triggerQuickTrip by rememberSaveable { mutableStateOf(false) }; var triggerQuickFueling by rememberSaveable { mutableStateOf(false) }
+    var triggerQuickExpense by rememberSaveable { mutableStateOf(false) }; var triggerQuickMaintenance by rememberSaveable { mutableStateOf(false) }
+    val hostContext = androidx.compose.ui.platform.LocalContext.current
 
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { viewModel.scanReceipt(it) }
     }
     val scannedReceipt by viewModel.scannedReceipt.collectAsState()
+    val scanReceiptError by viewModel.scanReceiptError.collectAsState()
+    val isScanningReceipt by viewModel.isScanningReceipt.collectAsState()
+
     LaunchedEffect(scannedReceipt) {
-        if (scannedReceipt != null) {
-            currentNavTab = KiloMetaNavTab.ROUTE
-            activeSubDestination = null
-            triggerQuickTrip = true
+        if (scannedReceipt != null) { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickTrip = true }
+    }
+    LaunchedEffect(scanReceiptError) {
+        scanReceiptError?.let {
+            android.widget.Toast.makeText(hostContext, "⚠️ $it", android.widget.Toast.LENGTH_LONG).show()
+            viewModel.clearScannedReceipt()
         }
+    }
+    LaunchedEffect(isScanningReceipt) {
+        if (isScanningReceipt) android.widget.Toast.makeText(hostContext, "📸 Procesando pantallazo con OCR...", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     LaunchedEffect(pendingQuickAction.value) {

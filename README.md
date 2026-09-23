@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Plataforma-Android_Nativa_(Kotlin)-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Plataforma" />
   <img src="https://img.shields.io/badge/Arquitectura-Clean_%2B_Room_%2B_OSMDroid-purple?style=for-the-badge&logo=sqlite" alt="Arquitectura" />
   <img src="https://img.shields.io/badge/Seguridad-Zero_Trust-red?style=for-the-badge&logo=firebase" alt="Seguridad" />
-  <img src="https://img.shields.io/badge/Versi%C3%B3n-v2.9.0_alpha.27-00C853?style=for-the-badge" alt="Versión" />
+  <img src="https://img.shields.io/badge/Versi%C3%B3n-v2.9.1_alpha.1-00C853?style=for-the-badge" alt="Versión" />
 </p>
 
 > **KiloMeta** es una plataforma móvil nativa de alto rendimiento desarrollada bajo el **Ecosistema AnAnApps 2.0 (División de Movilidad y Finanzas Operativas)**. Creada a la medida de la realidad operativa de los socios conductores de plataformas (Uber, DiDi, inDrive, Cabify, Particular) y vehículos bi-combustibles o de alquiler semanal en Colombia.

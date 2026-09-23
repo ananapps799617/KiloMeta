@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/RegisterTripDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Diálogo modal flotante unificado para Registro y Edición simétrica de Carreras (Orden #041).
-// Utiliza CockpitFloatingScaffold y subcomponentes modulares garantizando paridad total y < 280 LOC.
+// Diálogo modal flotante unificado para Registro y Edición simétrica de Carreras (Orden #041/#050).
+// Integra telemetría completa (distancia y duración) para cálculo del semáforo de rentabilidad (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -60,11 +60,20 @@ fun RegisterTripDialog(
         ?: ""
     val initialPayment = existingTrip?.paymentMethod ?: scannedReceipt?.paymentMethod ?: PaymentMethod.CASH
 
+    val initialDistance = existingTrip?.distanceKm?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }
+        ?: scannedReceipt?.distanceKm?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }
+        ?: ""
+    val initialDuration = existingTrip?.durationMinutes?.toString()
+        ?: scannedReceipt?.durationMinutes?.toString()
+        ?: ""
+
     var selectedPlatform by remember(existingTrip, scannedReceipt) { mutableStateOf(initialPlatform) }
     var selectedDateTimeMillis by remember(existingTrip, scannedReceipt, initialTimestamp) { mutableStateOf(initialTime) }
     var grossAmountText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialGross) }
     var commissionAmountText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialComm) }
     var selectedPaymentMethod by remember(existingTrip, scannedReceipt) { mutableStateOf(initialPayment) }
+    var distanceKmText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialDistance) }
+    var durationMinutesText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialDuration) }
 
     fun updateSuggestedCommission(grossStr: String, platform: PlatformType) {
         val g = grossStr.toDoubleOrNull() ?: 0.0
@@ -78,14 +87,18 @@ fun RegisterTripDialog(
     val gross = grossAmountText.toDoubleOrNull() ?: 0.0
     val commission = commissionAmountText.toDoubleOrNull() ?: 0.0
     val net = (gross - commission).coerceAtLeast(0.0)
+    val parsedDist = distanceKmText.replace(',', '.').toDoubleOrNull()
+    val parsedDur = durationMinutesText.toIntOrNull()
 
     val hasDirtyData = if (isEditing) {
         gross != existingTrip.grossAmount ||
                 commission != existingTrip.commissionAmount ||
                 selectedPlatform != existingTrip.platformType ||
-                selectedPaymentMethod != existingTrip.paymentMethod
+                selectedPaymentMethod != existingTrip.paymentMethod ||
+                distanceKmText != initialDistance ||
+                durationMinutesText != initialDuration
     } else {
-        grossAmountText.isNotBlank() || commissionAmountText.isNotBlank()
+        grossAmountText.isNotBlank() || commissionAmountText.isNotBlank() || distanceKmText.isNotBlank()
     }
     val isFormValid = gross > 0.0 && commission <= gross
 
@@ -122,8 +135,8 @@ fun RegisterTripDialog(
                             paymentMethod = selectedPaymentMethod,
                             paymentDestination = dest,
                             timestamp = selectedDateTimeMillis,
-                            distanceKm = existingTrip.distanceKm ?: scannedReceipt?.distanceKm,
-                            durationMinutes = existingTrip.durationMinutes ?: scannedReceipt?.durationMinutes,
+                            distanceKm = parsedDist ?: existingTrip.distanceKm,
+                            durationMinutes = parsedDur ?: existingTrip.durationMinutes,
                             platformPromoDiscount = if (existingTrip.platformPromoDiscount > 0) existingTrip.platformPromoDiscount else (scannedReceipt?.platformPromoDiscount ?: 0.0)
                         )
                     )
@@ -137,8 +150,8 @@ fun RegisterTripDialog(
                         selectedDateTimeMillis,
                         null,
                         null,
-                        scannedReceipt?.distanceKm,
-                        scannedReceipt?.durationMinutes,
+                        parsedDist ?: scannedReceipt?.distanceKm,
+                        parsedDur ?: scannedReceipt?.durationMinutes,
                         scannedReceipt?.platformPromoDiscount ?: 0.0
                     )
                 }
@@ -175,7 +188,11 @@ fun RegisterTripDialog(
         TripTelemetrySection(
             vehicleProfile = vehicleProfile,
             selectedDateTimeMillis = selectedDateTimeMillis,
-            onDateTimeSelected = { selectedDateTimeMillis = it }
+            onDateTimeSelected = { selectedDateTimeMillis = it },
+            distanceKmText = distanceKmText,
+            onDistanceKmChange = { distanceKmText = it },
+            durationMinutesText = durationMinutesText,
+            onDurationMinutesChange = { durationMinutesText = it }
         )
 
         TripFinancialSection(
