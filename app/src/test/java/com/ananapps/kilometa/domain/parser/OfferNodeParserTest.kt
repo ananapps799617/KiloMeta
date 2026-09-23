@@ -221,4 +221,45 @@ class OfferNodeParserTest {
         assertEquals(16.5, offer?.tripDistanceKm ?: 0.0, 0.01)
         assertEquals(38, offer?.estimatedMinutes)
     }
+
+    @Test
+    fun testParseDirectStandardUberTripWithoutWhitelistWords() {
+        // Viaje directo de Uber sin palabras de whitelist (sin 'aceptar', 'recogida', 'parada')
+        val texts = listOf("UberX", "COP12,500", "Calle 10 # 5-20", "4.5 km", "15 min")
+        val offer = parser.parse("com.ubercab.driver", texts)
+
+        assertNotNull(offer)
+        assertEquals(PlatformType.UBER, offer?.platform)
+        assertEquals(12500.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(4.5, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(15, offer?.estimatedMinutes)
+    }
+
+    @Test
+    fun testParseStandardDidiTripWithoutWhitelistWords() {
+        // Viaje de DiDi sin '1 punto' ni 'arrendamientos' ni 'en tu precio'
+        val texts = listOf("DiDi Express", "$ 8.200", "Carrera 7 # 12-40", "3.8 km", "10 min")
+        val offer = parser.parse("com.didiglobal.driver", texts)
+
+        assertNotNull(offer)
+        assertEquals(PlatformType.DIDI, offer?.platform)
+        assertEquals(8200.0, offer?.offeredFare ?: 0.0, 0.01)
+        assertEquals(3.8, offer?.tripDistanceKm ?: 0.0, 0.01)
+        assertEquals(10, offer?.estimatedMinutes)
+    }
+
+    @Test
+    fun testBlacklistRejectionForInternalMenus() {
+        val earningsScreen = listOf("Uber", "Ganancias de la semana", "$ 219.205", "38.6 km")
+        assertNull(parser.parse("com.ubercab.driver", earningsScreen))
+
+        val walletScreen = listOf("DiDi", "Billetera", "Balance disponible", "$ 50.000", "10 km")
+        assertNull(parser.parse("com.didiglobal.driver", walletScreen))
+    }
+
+    @Test
+    fun testRejectionWhenNoDistancePresent() {
+        val texts = listOf("UberX", "COP12,500", "Centro Comercial Plaza")
+        assertNull(parser.parse("com.ubercab.driver", texts))
+    }
 }

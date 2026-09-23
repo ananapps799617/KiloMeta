@@ -41,7 +41,7 @@ class OfferNodeParser @Inject constructor() {
 
         val platform = resolvePlatform(packageName, texts) ?: return null
         val fare = extractFare(texts) ?: return null
-        val (pickupDist, tripDist) = extractDistances(texts)
+        val (pickupDist, tripDist) = extractDistances(texts) ?: return null
         val minutes = extractDurationMinutes(texts)
 
         return TripOffer(
@@ -54,26 +54,21 @@ class OfferNodeParser @Inject constructor() {
     }
 
     fun isRealTripOffer(texts: List<String>): Boolean {
-        var hasAcceptance = false
-        var hasTripKeyword = false
-
         for (text in texts) {
             val lower = text.lowercase()
-            if (lower.startsWith("aceptar") || lower.contains("aceptar") ||
-                lower.contains("contraoferta") || lower.contains("oferta de pasajero")
+            if (lower.contains("ganancias") || lower.contains("billetera") ||
+                lower.contains("balance") || lower.contains("configuración") ||
+                lower.contains("configuracion") || lower.contains("cuenta") ||
+                lower.contains("ayuda") || lower.contains("soporte") ||
+                lower.contains("historial") || lower.contains("documentos") ||
+                lower.contains("calificaciones") || lower.contains("referir a amigos") ||
+                lower.contains("invita a tus amigos") || lower.contains("resumen semanal") ||
+                lower.contains("ingresos")
             ) {
-                hasAcceptance = true
-            }
-            if (lower.contains("parada") || lower.contains("recogida") ||
-                lower.contains("arrendamiento") || lower.contains("en tu precio") ||
-                lower.contains("pon tu precio") || lower.contains("viaje de") ||
-                lower.contains("viaje:") || lower.contains("1 punto") ||
-                lower.contains("punto(s)") || lower.contains("reserve")
-            ) {
-                hasTripKeyword = true
+                return false
             }
         }
-        return hasAcceptance || hasTripKeyword
+        return true
     }
 
     private fun resolvePlatform(pkg: String, texts: List<String>): PlatformType? {
@@ -126,7 +121,7 @@ class OfferNodeParser @Inject constructor() {
         return generalCandidates.firstOrNull() ?: generalCandidates.maxOrNull()
     }
 
-    private fun extractDistances(texts: List<String>): Pair<Double, Double> {
+    private fun extractDistances(texts: List<String>): Pair<Double, Double>? {
         val distances = mutableListOf<Double>()
         for (text in texts) {
             val lower = text.lowercase()
@@ -145,7 +140,7 @@ class OfferNodeParser @Inject constructor() {
         return when {
             distances.size >= 2 -> Pair(distances[0], distances[1])
             distances.size == 1 -> Pair(0.5, distances[0])
-            else -> Pair(0.5, 3.0)
+            else -> null
         }
     }
 
