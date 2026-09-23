@@ -47,6 +47,8 @@ data class TripDto(
     val startOdometer: Int? = null,
     val endOdometer: Int? = null,
     val platformPromoDiscount: Double = 0.0,
+    val distanceKm: Double? = null,
+    val durationMinutes: Int? = null,
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false
 )

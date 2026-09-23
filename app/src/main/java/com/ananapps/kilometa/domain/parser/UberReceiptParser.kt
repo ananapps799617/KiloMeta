@@ -3,8 +3,8 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/parser/UberReceiptParser.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Analizador heurístico especializado para pantallazos de la aplicación Uber Driver.
-// Extrae de forma determinista la tarifa, ganancias netas, pagos en efectivo,
-// comisiones retenidas, distancia en kilómetros y fecha/hora del viaje (Orden #044).
+// Extrae de forma determinista la tarifa, ganancias netas ajustadas con incrementos, pagos en efectivo,
+// comisiones retenidas, distancia en kilómetros y duración en minutos (Orden #044).
 // ==============================================================================
 
 package com.ananapps.kilometa.domain.parser
@@ -13,7 +13,6 @@ import com.ananapps.kilometa.domain.model.PaymentDestination
 import com.ananapps.kilometa.domain.model.PaymentMethod
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.ScannedTripReceipt
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
@@ -62,8 +61,9 @@ object UberReceiptParser {
         // 2. Extracción de Distancia en km
         val distanceKm = extractDistance(rawText)
 
-        // 3. Extracción de Duración
+        // 3. Extracción de Duración y Minutos
         val durationText = extractDuration(rawText)
+        val durationMinutes = extractDurationMinutes(durationText)
 
         // 4. Extracción de Fecha y Hora
         val timestamp = extractTimestamp(rawText)
@@ -78,6 +78,7 @@ object UberReceiptParser {
             timestamp = timestamp,
             distanceKm = distanceKm,
             durationText = durationText,
+            durationMinutes = durationMinutes,
             confidenceSummary = if (isCashTrip) "Uber · Efectivo en mano con descuento" else "Uber · Pago Digital con tarjeta",
             rawText = rawText
         )
@@ -93,15 +94,14 @@ object UberReceiptParser {
     }
 
     private fun extractEarnings(rawText: String, lines: List<String>): Double? {
-        // Opción A: Buscar "Tarifa por adelantado: 16.074 COP"
-        val upfrontPattern = Pattern.compile("tarifa por adelantado[:\\s]*([0-9.,]+)", Pattern.CASE_INSENSITIVE)
-        val upfrontMatcher = upfrontPattern.matcher(rawText)
-        if (upfrontMatcher.find()) {
-            val amount = cleanNumber(upfrontMatcher.group(1))
+        // Prioridad 1: Buscar "Tus ganancias: 8.493 COP" o línea bajo "Tus ganancias"
+        val earningsPattern = Pattern.compile("tus ganancias[:\\s]*([0-9.,]+)\\s*COP", Pattern.CASE_INSENSITIVE)
+        val earningsMatcher = earningsPattern.matcher(rawText)
+        if (earningsMatcher.find()) {
+            val amount = cleanNumber(earningsMatcher.group(1))
             if (amount != null && amount > 0.0) return amount
         }
 
-        // Opción B: Buscar línea bajo "Tus ganancias"
         for (i in lines.indices) {
             if (lines[i].equals("tus ganancias", ignoreCase = true) && i + 1 < lines.size) {
                 val next = lines[i + 1]
@@ -110,11 +110,30 @@ object UberReceiptParser {
             }
         }
 
-        // Opción C: Buscar primer valor monetario grande seguido de COP (ej: "16.074 COP")
-        val copPattern = Pattern.compile("([0-9]{1,3}(?:[.,][0-9]{3})+)\\s*COP", Pattern.CASE_INSENSITIVE)
-        val copMatcher = copPattern.matcher(rawText)
-        if (copMatcher.find()) {
-            return cleanNumber(copMatcher.group(1))
+        // Prioridad 2: Cabecera superior con monto real (ej: "8.493 COP >")
+        for (i in 0 until minOf(lines.size, 8)) {
+            val line = lines[i]
+            val copMatcher = Pattern.compile("([0-9]{1,3}(?:[.,][0-9]{3})+)\\s*COP", Pattern.CASE_INSENSITIVE).matcher(line)
+            if (copMatcher.find()) {
+                val amount = cleanNumber(copMatcher.group(1))
+                if (amount != null && amount > 1000.0) return amount
+            }
+        }
+
+        // Prioridad 3: Buscar "Tu pago: 8.493 COP"
+        val paymentPattern = Pattern.compile("tu pago[:\\s]*([0-9.,]+)\\s*COP", Pattern.CASE_INSENSITIVE)
+        val paymentMatcher = paymentPattern.matcher(rawText)
+        if (paymentMatcher.find()) {
+            val amount = cleanNumber(paymentMatcher.group(1))
+            if (amount != null && amount > 0.0) return amount
+        }
+
+        // Prioridad 4 (Fallback base): Buscar "Tarifa por adelantado: 8.475 COP"
+        val upfrontPattern = Pattern.compile("tarifa por adelantado[:\\s]*([0-9.,]+)", Pattern.CASE_INSENSITIVE)
+        val upfrontMatcher = upfrontPattern.matcher(rawText)
+        if (upfrontMatcher.find()) {
+            val amount = cleanNumber(upfrontMatcher.group(1))
+            if (amount != null && amount > 0.0) return amount
         }
 
         return null
@@ -139,8 +158,17 @@ object UberReceiptParser {
         return null
     }
 
+    private fun extractDurationMinutes(durationText: String?): Int? {
+        if (durationText.isNullOrBlank()) return null
+        val pattern = Pattern.compile("([0-9]+)\\s*min", Pattern.CASE_INSENSITIVE)
+        val matcher = pattern.matcher(durationText)
+        if (matcher.find()) {
+            return matcher.group(1)?.toIntOrNull()
+        }
+        return null
+    }
+
     private fun extractTimestamp(rawText: String): Long {
-        // Ej: "Comfort - 21 sept 2026 · 07:10" o "Prioridad - 21 sept 2026 · 15:44"
         val pattern = Pattern.compile("(\\d{1,2})\\s+([a-zA-Z]{3,4})\\s+(\\d{4})\\s*·?\\s*(\\d{1,2}):(\\d{2})", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(rawText)
         if (matcher.find()) {
@@ -151,7 +179,7 @@ object UberReceiptParser {
             val minute = matcher.group(5)?.toIntOrNull() ?: 0
 
             val monthIndex = parseMonth(monthStr)
-            val cal = Calendar.getInstance().apply {
+            return Calendar.getInstance().apply {
                 set(Calendar.YEAR, year)
                 set(Calendar.MONTH, monthIndex)
                 set(Calendar.DAY_OF_MONTH, day)
@@ -159,8 +187,7 @@ object UberReceiptParser {
                 set(Calendar.MINUTE, minute)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
-            }
-            return cal.timeInMillis
+            }.timeInMillis
         }
         return System.currentTimeMillis()
     }

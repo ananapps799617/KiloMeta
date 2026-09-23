@@ -68,7 +68,14 @@ fun TripItemRow(
                 }
                 Column {
                     Text("${trip.platformType.displayName} · $timeStr", style = MaterialTheme.typography.labelMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
-                    Text("Bruto: $ %,.0f  |  Comisión: -$ %,.0f".format(Locale.US, trip.grossAmount, trip.commissionAmount), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    val metricsStr = buildString {
+                        append("Bruto: $ %,.0f".format(Locale.US, trip.grossAmount))
+                        if (trip.commissionAmount > 0) append(" | Com: -$ %,.0f".format(Locale.US, trip.commissionAmount))
+                        if (trip.platformPromoDiscount > 0) append(" | Promo: +$ %,.0f".format(Locale.US, trip.platformPromoDiscount))
+                        trip.tripDistanceKm?.let { d -> append(" | ${if (d % 1.0 == 0.0) d.toInt() else "%.1f".format(d)} km") }
+                        trip.profitabilityTier?.let { tier -> append(" | ${tier.emoji} ${tier.displayName}") }
+                    }
+                    Text(metricsStr, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {

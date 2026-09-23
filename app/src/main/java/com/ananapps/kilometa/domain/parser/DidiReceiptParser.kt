@@ -3,8 +3,8 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/parser/DidiReceiptParser.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Analizador heurístico especializado para pantallazos de la aplicación DiDi Conductor.
-// Extrae de forma determinista la tarifa, ganancias netas, pagos en efectivo,
-// pagos con tarjeta, subsidios/cupones de DiDi, distancia y fecha/hora (Orden #044).
+// Extrae deterministamente ganancias netas, pagos cobrados, subsidios/promociones a favor
+// del conductor, comisiones, distancia (km) y duración (minutos) (Orden #044).
 // ==============================================================================
 
 package com.ananapps.kilometa.domain.parser
@@ -13,7 +13,6 @@ import com.ananapps.kilometa.domain.model.PaymentDestination
 import com.ananapps.kilometa.domain.model.PaymentMethod
 import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.ScannedTripReceipt
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
@@ -26,7 +25,8 @@ object DidiReceiptParser {
                 lower.contains("recibido por didi") ||
                 lower.contains("pagado por el arrendatario") ||
                 lower.contains("didi confort") ||
-                (lower.contains("tus ganancias") && (lower.contains("más rápido") || lower.contains("mas rapido")))
+                lower.contains("tarifa por distancia") ||
+                (lower.contains("tus ganancias") && (lower.contains("más rápido") || lower.contains("duración") || lower.contains("duracion")))
     }
 
     fun parse(rawText: String): ScannedTripReceipt? {
@@ -37,34 +37,39 @@ object DidiReceiptParser {
         // 1. Ganancia Neta del Conductor
         val netEarnings = extractNetEarnings(rawText, lines) ?: 0.0
 
-        // 2. Método de Pago (Efectivo vs Tarjeta)
+        // 2. Cobros y Liquidación (Efectivo vs Billetera vs Subsidio Promo)
         val isCashTrip = rawText.contains("en efectivo", ignoreCase = true) ||
-                rawText.contains("efectivo recibido", ignoreCase = true)
+                rawText.contains("efectivo recibido", ignoreCase = true) ||
+                rawText.contains("bancolombia", ignoreCase = true)
 
         val cashReceived = extractCashReceived(rawText)
         val paidByRenter = extractPaidByRenter(rawText)
+        val collectedInHand = cashReceived ?: paidByRenter ?: netEarnings
 
         val effectiveGross: Double
         val effectiveNet = netEarnings
         val effectiveCommission: Double
+        val platformPromoDiscount: Double
         val paymentMethod: PaymentMethod
         val paymentDestination: PaymentDestination
         val confidenceSummary: String
 
         if (isCashTrip) {
-            paymentMethod = PaymentMethod.CASH
+            paymentMethod = if (rawText.contains("bancolombia", ignoreCase = true)) PaymentMethod.NEQUI else PaymentMethod.CASH
             paymentDestination = PaymentDestination.CASH_IN_HAND
-            val cashInHand = cashReceived ?: paidByRenter ?: netEarnings
-            effectiveGross = cashInHand
 
-            if (cashInHand >= netEarnings) {
-                effectiveCommission = (cashInHand - netEarnings).coerceAtLeast(0.0)
-                confidenceSummary = "DiDi · Efectivo cobrado en mano (-$${effectiveCommission.toInt()} comisión)"
+            if (collectedInHand >= netEarnings) {
+                effectiveGross = collectedInHand
+                effectiveCommission = (collectedInHand - netEarnings).coerceAtLeast(0.0)
+                platformPromoDiscount = 0.0
+                confidenceSummary = "DiDi · Cobrado en mano (-$${effectiveCommission.toInt()} comisión app)"
             } else {
-                // Caso Cupón / Subsidio de DiDi (Imagen 5): Pasajero pagó menos y DiDi subsidia
-                val subsidy = netEarnings - cashInHand
+                // Caso Promoción / Subsidio DiDi (Daniela): Pasajero pagó menos y DiDi abona la diferencia
+                val subsidy = (netEarnings - collectedInHand).coerceAtLeast(0.0)
+                effectiveGross = netEarnings
                 effectiveCommission = 0.0
-                confidenceSummary = "DiDi · Efectivo con cupón (+$${subsidy.toInt()} abonado por DiDi)"
+                platformPromoDiscount = subsidy
+                confidenceSummary = "DiDi · Tarifa con subsidio/promo (+$${subsidy.toInt()} a favor en cartera DiDi)"
             }
         } else {
             paymentMethod = PaymentMethod.APP_WALLET
@@ -72,14 +77,16 @@ object DidiReceiptParser {
             val renterTotal = paidByRenter ?: netEarnings
             effectiveGross = renterTotal
             effectiveCommission = (renterTotal - netEarnings).coerceAtLeast(0.0)
+            platformPromoDiscount = 0.0
             confidenceSummary = "DiDi · Pago Digital con tarjeta (Directo a Billetera)"
         }
 
         // 3. Extracción de Distancia en km
-        val distanceKm = extractDistance(rawText)
+        val distanceKm = extractDistance(rawText, lines)
 
-        // 4. Extracción de Duración
-        val durationText = extractDuration(rawText)
+        // 4. Extracción de Duración y Minutos
+        val durationText = extractDuration(rawText, lines)
+        val durationMinutes = extractDurationMinutes(durationText)
 
         // 5. Extracción de Fecha y Hora
         val timestamp = extractTimestamp(rawText)
@@ -97,27 +104,39 @@ object DidiReceiptParser {
             timestamp = timestamp,
             distanceKm = distanceKm,
             durationText = durationText,
+            durationMinutes = durationMinutes,
             passengerName = passengerName,
+            platformPromoDiscount = platformPromoDiscount,
             confidenceSummary = confidenceSummary,
             rawText = rawText
         )
     }
 
     private fun extractNetEarnings(rawText: String, lines: List<String>): Double? {
-        // En DiDi el titular superior dice: "Tus ganancias \n $6.020"
+        // Prioridad 1: Monto grande superior de cabecera bajo "Tus solicitudes" / "Tus ganancias"
+        for (i in 0 until minOf(lines.size, 10)) {
+            val line = lines[i]
+            if (line.matches(Regex("^\\$?([0-9]{1,3}(?:[.,][0-9]{3})+)$"))) {
+                val amount = cleanNumber(line)
+                if (amount != null && amount > 1000.0) return amount
+            }
+        }
+
+        // Prioridad 2: Sección "Tus ganancias" -> Total
+        val pattern = Pattern.compile("tus ganancias[\\s\\S]*?total[:\\s]*\\$?([0-9.,]+)", Pattern.CASE_INSENSITIVE)
+        val matcher = pattern.matcher(rawText)
+        if (matcher.find()) {
+            val amount = cleanNumber(matcher.group(1))
+            if (amount != null && amount > 0.0) return amount
+        }
+
+        // Prioridad 3: Línea directa tras "Tus ganancias"
         for (i in lines.indices) {
             if (lines[i].equals("tus ganancias", ignoreCase = true) && i + 1 < lines.size) {
                 val next = lines[i + 1]
                 val amount = cleanNumber(next)
                 if (amount != null && amount > 0.0) return amount
             }
-        }
-
-        val pattern = Pattern.compile("tus ganancias[:\\s]*\\$?([0-9.,]+)", Pattern.CASE_INSENSITIVE)
-        val matcher = pattern.matcher(rawText)
-        if (matcher.find()) {
-            val amount = cleanNumber(matcher.group(1))
-            if (amount != null && amount > 0.0) return amount
         }
 
         return null
@@ -133,7 +152,6 @@ object DidiReceiptParser {
     }
 
     private fun extractPaidByRenter(rawText: String): Double? {
-        // Busca "Total \n $6.700" o "Total \n $24.000" bajo "Pagado por el arrendatario"
         val pattern = Pattern.compile("pagado por el arrendatario[\\s\\S]*?total[:\\s]*\\$?([0-9.,]+)", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(rawText)
         if (matcher.find()) {
@@ -149,29 +167,49 @@ object DidiReceiptParser {
         return null
     }
 
-    private fun extractDistance(rawText: String): Double? {
-        // Ej: "Distancia \n 1,4 km" o "10,1 km" o "12,3 km"
+    private fun extractDistance(rawText: String, lines: List<String>): Double? {
         val pattern = Pattern.compile("distancia[:\\s]*([0-9]+[.,][0-9]+)\\s*km", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(rawText)
         if (matcher.find()) {
             val rawDist = matcher.group(1)?.replace(",", ".")
             return rawDist?.toDoubleOrNull()
         }
+
+        val distIndex = lines.indexOfFirst { it.equals("distancia", ignoreCase = true) }
+        if (distIndex in 0 until lines.size - 1) {
+            val candidate = lines[distIndex + 1].replace("km", "").replace(",", ".").trim()
+            candidate.toDoubleOrNull()?.let { return it }
+        }
+
         return null
     }
 
-    private fun extractDuration(rawText: String): String? {
-        // Ej: "5m24s", "28m50s", "30m55s"
+    private fun extractDuration(rawText: String, lines: List<String>): String? {
         val pattern = Pattern.compile("duración[:\\s]*([0-9]+m\\s*[0-9]+s|[0-9]+\\s*min)", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(rawText)
         if (matcher.find()) {
             return matcher.group(1)?.trim()
         }
+
+        val durIndex = lines.indexOfFirst { it.equals("duración", ignoreCase = true) || it.equals("duracion", ignoreCase = true) }
+        if (durIndex in 0 until lines.size - 1) {
+            return lines[durIndex + 1].trim()
+        }
+
+        return null
+    }
+
+    private fun extractDurationMinutes(durationText: String?): Int? {
+        if (durationText.isNullOrBlank()) return null
+        val pattern = Pattern.compile("([0-9]+)\\s*m", Pattern.CASE_INSENSITIVE)
+        val matcher = pattern.matcher(durationText)
+        if (matcher.find()) {
+            return matcher.group(1)?.toIntOrNull()
+        }
         return null
     }
 
     private fun extractTimestamp(rawText: String): Long {
-        // Ej: "21/09/2026, 12:32:56 pm" o "21/09/2026, 1:34:09 pm" o "21/09/2026, 2:41:10 pm"
         val pattern = Pattern.compile("(\\d{1,2})/(\\d{1,2})/(\\d{4}),?\\s*(\\d{1,2}):(\\d{2})(?::(\\d{2}))?\\s*(am|pm|a\\.m\\.|p\\.m\\.)?", Pattern.CASE_INSENSITIVE)
         val matcher = pattern.matcher(rawText)
         if (matcher.find()) {
@@ -189,7 +227,7 @@ object DidiReceiptParser {
                 hour = 0
             }
 
-            val cal = Calendar.getInstance().apply {
+            return Calendar.getInstance().apply {
                 set(Calendar.YEAR, year)
                 set(Calendar.MONTH, month)
                 set(Calendar.DAY_OF_MONTH, day)
@@ -197,8 +235,7 @@ object DidiReceiptParser {
                 set(Calendar.MINUTE, minute)
                 set(Calendar.SECOND, second)
                 set(Calendar.MILLISECOND, 0)
-            }
-            return cal.timeInMillis
+            }.timeInMillis
         }
         return System.currentTimeMillis()
     }

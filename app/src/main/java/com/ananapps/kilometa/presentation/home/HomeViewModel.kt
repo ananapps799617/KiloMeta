@@ -123,33 +123,23 @@ class HomeViewModel @Inject constructor(
 
     fun registerTrip(
         platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod,
-        dest: PaymentDestination = PaymentDestination.CASH_IN_HAND,
-        timestamp: Long = System.currentTimeMillis(),
-        startOdometer: Int? = null,
-        endOdometer: Int? = null,
-        isSporadic: Boolean = false
+        dest: PaymentDestination = PaymentDestination.CASH_IN_HAND, timestamp: Long = System.currentTimeMillis(),
+        startOdometer: Int? = null, endOdometer: Int? = null,
+        distanceKm: Double? = null, durationMinutes: Int? = null,
+        platformPromoDiscount: Double = 0.0, isSporadic: Boolean = false
     ) {
         viewModelScope.launch {
             val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-                manageShiftUseCase.getOrCreateShiftForDay(
-                    timestamp = timestamp,
-                    startOdometer = startOdometer,
-                    endOdometer = endOdometer,
-                    notes = "Jornada diaria"
-                ).id
+                manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, startOdometer = startOdometer, endOdometer = endOdometer, notes = "Jornada diaria").id
             } else {
                 (uiState.value as HomeUiState.ActiveShift).summary.shiftId
             }
             registerTripUseCase(
-                shiftId = shiftId,
-                platformType = platform,
-                grossAmount = gross,
-                commissionAmount = commission,
-                paymentMethod = payment,
-                paymentDestination = dest,
-                timestamp = timestamp,
-                startOdometer = startOdometer,
-                endOdometer = endOdometer
+                shiftId = shiftId, platformType = platform, grossAmount = gross, commissionAmount = commission,
+                paymentMethod = payment, paymentDestination = dest, timestamp = timestamp,
+                startOdometer = startOdometer, endOdometer = endOdometer,
+                distanceKm = distanceKm, durationMinutes = durationMinutes,
+                platformPromoDiscount = platformPromoDiscount
             )
             autoProvisionDailyQuotaUseCase()
         }

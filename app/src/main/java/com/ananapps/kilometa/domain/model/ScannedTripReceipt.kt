@@ -22,7 +22,9 @@ data class ScannedTripReceipt(
     val timestamp: Long,
     val distanceKm: Double? = null,
     val durationText: String? = null,
+    val durationMinutes: Int? = null,
     val passengerName: String? = null,
+    val platformPromoDiscount: Double = 0.0,
     val confidenceSummary: String? = null,
     val rawText: String = ""
 )

@@ -68,7 +68,7 @@ fun HomeCockpitModals(
                 viewModel.clearScannedReceipt()
                 onDismissTripDialog()
             },
-            onConfirmTrip = { platform, gross, commission, payment, destination, timestamp, startOdo, endOdo ->
+            onConfirmTrip = { platform, gross, commission, payment, destination, timestamp, startOdo, endOdo, distKm, durMin, promo ->
                 viewModel.clearScannedReceipt()
                 viewModel.registerTrip(
                     platform = platform,
@@ -79,6 +79,9 @@ fun HomeCockpitModals(
                     timestamp = timestamp,
                     startOdometer = startOdo,
                     endOdometer = endOdo,
+                    distanceKm = distKm,
+                    durationMinutes = durMin,
+                    platformPromoDiscount = promo,
                     isSporadic = isSporadic
                 )
             }

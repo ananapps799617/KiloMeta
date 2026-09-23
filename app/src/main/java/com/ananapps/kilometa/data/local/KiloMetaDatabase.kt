@@ -40,7 +40,7 @@ import com.ananapps.kilometa.data.local.entity.TripEntity
         com.ananapps.kilometa.data.local.entity.PendingDeletionEntity::class,
         com.ananapps.kilometa.data.local.entity.WalletTransferEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

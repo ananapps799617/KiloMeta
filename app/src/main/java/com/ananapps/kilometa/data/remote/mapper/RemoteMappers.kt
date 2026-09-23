@@ -73,6 +73,8 @@ fun TripEntity.toDto(
     startOdometer = this.startOdometer,
     endOdometer = this.endOdometer,
     platformPromoDiscount = this.platformPromoDiscount,
+    distanceKm = this.distanceKm,
+    durationMinutes = this.durationMinutes,
     updatedAt = updatedAt,
     deleted = deleted
 )
@@ -89,7 +91,9 @@ fun TripDto.toEntity(): TripEntity = TripEntity(
     timestamp = this.timestamp,
     startOdometer = this.startOdometer,
     endOdometer = this.endOdometer,
-    platformPromoDiscount = this.platformPromoDiscount
+    platformPromoDiscount = this.platformPromoDiscount,
+    distanceKm = this.distanceKm,
+    durationMinutes = this.durationMinutes
 )
 
 fun List<TripEntity>.toTripDtoList(): List<TripDto> = map { it.toDto() }

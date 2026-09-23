@@ -47,7 +47,10 @@ class RegisterTripUseCase @Inject constructor(
         paymentDestination: com.ananapps.kilometa.domain.model.PaymentDestination = com.ananapps.kilometa.domain.model.PaymentDestination.CASH_IN_HAND,
         timestamp: Long = System.currentTimeMillis(),
         startOdometer: Int? = null,
-        endOdometer: Int? = null
+        endOdometer: Int? = null,
+        distanceKm: Double? = null,
+        durationMinutes: Int? = null,
+        platformPromoDiscount: Double = 0.0
     ): Trip {
         // Domain Guards: Validaciones de consistencia contable y telemetría
         require(shiftId.isNotBlank()) { "El identificador del turno no puede estar vacío" }
@@ -75,7 +78,10 @@ class RegisterTripUseCase @Inject constructor(
             paymentDestination = paymentDestination,
             timestamp = timestamp,
             startOdometer = startOdometer,
-            endOdometer = endOdometer
+            endOdometer = endOdometer,
+            platformPromoDiscount = platformPromoDiscount,
+            distanceKm = distanceKm,
+            durationMinutes = durationMinutes
         )
 
         tripRepository.addTrip(trip)

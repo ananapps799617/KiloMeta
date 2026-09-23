@@ -84,7 +84,7 @@ fun HistoryDialogsHost(
             lastKnownOdometer = lastKnownOdometer,
             onDismiss = onDismissRegisterTrip,
             initialTimestamp = timestamp,
-            onConfirmTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo ->
+            onConfirmTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo, _, _, _ ->
                 onConfirmAddTrip(plat, gross, comm, pay, dest, time, sOdo, eOdo)
             }
         )

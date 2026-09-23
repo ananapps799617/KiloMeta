@@ -116,8 +116,16 @@ fun DayActivityItemRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val subText = if (event is DayActivityEvent.TripItem && event.trip.profitabilityTier != null) {
+                val tier = event.trip.profitabilityTier!!
+                val d = event.trip.tripDistanceKm
+                val dStr = if (d != null && d > 0) "${if (d % 1.0 == 0.0) d.toInt() else "%.1f".format(d)} km · " else ""
+                "${event.subtitle} · $dStr${tier.emoji} ${tier.displayName}"
+            } else {
+                event.subtitle
+            }
             Text(
-                text = event.subtitle,
+                text = subText,
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 maxLines = 1,
@@ -144,8 +152,27 @@ fun DayActivityItemRow(
                 is DayActivityEvent.TripItem -> {
                     val trip = event.trip
                     DetailRow("TARIFA BRUTA", "$ ${String.format(Locale.US, "%,.0f", trip.grossAmount)}")
-                    DetailRow("COMISIÓN DESCONTADA", "- $ ${String.format(Locale.US, "%,.0f", trip.commissionAmount)}")
+                    if (trip.commissionAmount > 0) {
+                        DetailRow("COMISIÓN DESCONTADA", "- $ ${String.format(Locale.US, "%,.0f", trip.commissionAmount)}")
+                    }
+                    if (trip.platformPromoDiscount > 0) {
+                        DetailRow("ABONO / SUBSIDIO APP", "+ $ ${String.format(Locale.US, "%,.0f", trip.platformPromoDiscount)}", isHighlight = true)
+                    }
                     DetailRow("GANANCIA LIMPIA", "$ ${String.format(Locale.US, "%,.0f", trip.netAmount)}", isHighlight = true)
+                    trip.tripDistanceKm?.let { dist ->
+                        val distStr = if (dist % 1.0 == 0.0) "${dist.toInt()} km" else "%.1f km".format(dist)
+                        val durStr = trip.durationMinutes?.let { " · ${it}m" } ?: ""
+                        DetailRow("TELEMETRÍA", "$distStr$durStr")
+                    }
+                    trip.ratePerKm?.let { rKm ->
+                        DetailRow("TARIFA POR KM", "$ ${String.format(Locale.US, "%,.0f", rKm)} / km")
+                    }
+                    trip.ratePerHour?.let { rH ->
+                        DetailRow("PROYECCIÓN / HORA", "$ ${String.format(Locale.US, "%,.0f", rH)} / h")
+                    }
+                    trip.profitabilityTier?.let { tier ->
+                        DetailRow("RENTABILIDAD", "${tier.emoji} ${tier.displayName.uppercase()}", isHighlight = tier == com.ananapps.kilometa.domain.model.TripProfitabilityTier.HIGH)
+                    }
                     DetailRow("MEDIO DE PAGO", trip.paymentMethod.displayName)
                     DetailRow("HORA REGISTRO", timeFormatted)
                 }

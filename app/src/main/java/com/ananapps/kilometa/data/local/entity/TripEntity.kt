@@ -64,5 +64,11 @@ data class TripEntity(
     val endOdometer: Int? = null,
 
     @ColumnInfo(name = "platform_promo_discount", defaultValue = "0.0")
-    val platformPromoDiscount: Double = 0.0
+    val platformPromoDiscount: Double = 0.0,
+
+    @ColumnInfo(name = "distance_km", defaultValue = "NULL")
+    val distanceKm: Double? = null,
+
+    @ColumnInfo(name = "duration_minutes", defaultValue = "NULL")
+    val durationMinutes: Int? = null
 )

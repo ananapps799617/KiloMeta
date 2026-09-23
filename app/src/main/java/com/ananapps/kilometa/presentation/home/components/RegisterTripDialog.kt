@@ -40,8 +40,11 @@ fun RegisterTripDialog(
         destination: PaymentDestination,
         timestamp: Long,
         startOdometer: Int?,
-        endOdometer: Int?
-    ) -> Unit = { _, _, _, _, _, _, _, _ -> },
+        endOdometer: Int?,
+        distanceKm: Double?,
+        durationMinutes: Int?,
+        platformPromoDiscount: Double
+    ) -> Unit = { _, _, _, _, _, _, _, _, _, _, _ -> },
     onConfirmUpdate: (Trip) -> Unit = {},
     initialTimestamp: Long? = null,
     modifier: Modifier = Modifier
@@ -118,7 +121,10 @@ fun RegisterTripDialog(
                             netAmount = net,
                             paymentMethod = selectedPaymentMethod,
                             paymentDestination = dest,
-                            timestamp = selectedDateTimeMillis
+                            timestamp = selectedDateTimeMillis,
+                            distanceKm = existingTrip.distanceKm ?: scannedReceipt?.distanceKm,
+                            durationMinutes = existingTrip.durationMinutes ?: scannedReceipt?.durationMinutes,
+                            platformPromoDiscount = if (existingTrip.platformPromoDiscount > 0) existingTrip.platformPromoDiscount else (scannedReceipt?.platformPromoDiscount ?: 0.0)
                         )
                     )
                 } else {
@@ -130,7 +136,10 @@ fun RegisterTripDialog(
                         dest,
                         selectedDateTimeMillis,
                         null,
-                        null
+                        null,
+                        scannedReceipt?.distanceKm,
+                        scannedReceipt?.durationMinutes,
+                        scannedReceipt?.platformPromoDiscount ?: 0.0
                     )
                 }
                 onDismiss()

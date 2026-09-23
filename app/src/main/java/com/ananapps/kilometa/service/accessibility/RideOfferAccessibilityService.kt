@@ -72,41 +72,9 @@ class RideOfferAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null) return
-
-        // 1. Obtener el paquete de transporte y la raíz visual activa de forma determinista
-        val (targetPkg, rootNode) = getTargetRootNode(event) ?: return
-        val texts = try {
-            parser.extractAllTexts(rootNode)
-        } catch (e: Exception) {
-            emptyList()
-        }
-        if (texts.isEmpty()) return
-
-        // 2. Procesar matemáticamente la oferta en segundo plano
-        serviceScope.launch {
-            try {
-                val offer = parser.parse(targetPkg, texts) ?: return@launch
-                val signature = "${offer.platform}_${offer.offeredFare}_${offer.pickupDistanceKm}_${offer.tripDistanceKm}"
-
-                // Debounce para evitar recalcular la misma oferta en eventos continuos
-                val now = System.currentTimeMillis()
-                if (signature == lastOfferSignature && (now - lastOfferTime) < 4_000) {
-                    return@launch
-                }
-
-                lastOfferSignature = signature
-                lastOfferTime = now
-
-                val evaluation = evaluateTripOfferUseCase(offer, currentConfig)
-                android.util.Log.i("KiloMetaHUD", "Oferta detectada: ${offer.platform} Fare: ${offer.offeredFare} - Semáforo: ${evaluation.semaphoreTier}")
-                withContext(Dispatchers.Main) {
-                    overlayManager.showOfferEvaluation(evaluation)
-                }
-            } catch (e: Exception) {
-                android.util.Log.w("KiloMetaHUD", "Error procesando evento de accesibilidad: ${e.message}")
-            }
-        }
+        // Lectura de pantalla en vivo desactivada por mandato de Gerencia.
+        // Cero consumo de CPU en eventos de ventana y cero popups invasivos.
+        return
     }
 
     private fun getTargetRootNode(event: AccessibilityEvent): Pair<String, android.view.accessibility.AccessibilityNodeInfo>? {
