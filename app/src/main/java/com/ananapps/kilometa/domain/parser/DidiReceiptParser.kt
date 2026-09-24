@@ -38,7 +38,7 @@ object DidiReceiptParser {
         val netEarnings = extractNetEarnings(text, lines) ?: 0.0
         val paidByRenter = extractPaidByRenter(text)
         val directCommission = extractDirectCommission(text)
-        val cashReceived = extractCashReceived(text)
+        val cashReceived = extractCashReceived(text, lines)
 
         val lower = text.lowercase(Locale.ROOT)
         val isCardTrip = lower.contains("pago con tarjeta") || lower.contains("con tarjeta") || lower.contains("tarjeta")
@@ -112,24 +112,24 @@ object DidiReceiptParser {
     }
 
     private fun extractNetEarnings(text: String, lines: List<String>): Double? {
-        val distanceRegex = Regex("[0-9]\\s*km\\b", RegexOption.IGNORE_CASE)
-        val durationRegex = Regex("[0-9]\\s*(?:min|m\\b)", RegexOption.IGNORE_CASE)
-        for (i in 0 until minOf(lines.size, 18)) {
-            val line = lines[i]
-            if (line.contains(distanceRegex) || line.contains(durationRegex) ||
-                line.contains(":") || line.contains("/") ||
-                line.contains("estimad", ignoreCase = true) ||
-                line.contains("ajustad", ignoreCase = true)
-            ) continue
-            val matcher = AMOUNT_PATTERN.matcher(line)
-            if (matcher.find()) {
-                val amount = cleanNumber(matcher.group(1))
-                if (amount != null && amount >= 1000.0) return amount
+        val headerIdx = lines.indexOfFirst { it.trim().equals("tus ganancias", ignoreCase = true) }
+        if (headerIdx >= 0) {
+            for (i in (headerIdx + 1)..minOf(headerIdx + 4, lines.size - 1)) {
+                val candidate = lines[i]
+                if (candidate.contains("ajustad", ignoreCase = true) ||
+                    candidate.contains("estimad", ignoreCase = true) ||
+                    candidate.contains("han ajustado", ignoreCase = true)
+                ) break
+                val matcher = AMOUNT_PATTERN.matcher(candidate)
+                if (matcher.find()) {
+                    val amount = cleanNumber(matcher.group(1))
+                    if (amount != null && amount >= 1000.0) return amount
+                }
             }
         }
         val earningsSection = extractSection(text, "tus ganancias", listOf("pagado por el arrendatario", "detalles", "recibido por didi"))
         if (earningsSection != null) {
-            val totalPattern = Pattern.compile("total[^\\d]{0,80}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+            val totalPattern = Pattern.compile("total[^\\d]{0,400}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val matcher = totalPattern.matcher(earningsSection)
             if (matcher.find()) {
                 val amount = cleanNumber(matcher.group(1))
@@ -142,15 +142,15 @@ object DidiReceiptParser {
     private fun extractPaidByRenter(text: String): Double? {
         val renterSection = extractSection(text, "pagado por el arrendatario", listOf("recibido por didi", "detalles", "tus solicitudes"))
         if (renterSection != null) {
-            val pSePago = Pattern.compile("se\\s*pag[oó][^\\d]{0,80}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+            val pSePago = Pattern.compile("se\\s*pag[oó][^\\d]{0,400}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val mSePago = pSePago.matcher(renterSection)
             if (mSePago.find()) return cleanNumber(mSePago.group(1))
 
-            val pTotal = Pattern.compile("total[^\\d]{0,80}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+            val pTotal = Pattern.compile("total[^\\d]{0,400}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val mTotal = pTotal.matcher(renterSection)
             if (mTotal.find()) return cleanNumber(mTotal.group(1))
 
-            val pTarifa = Pattern.compile("tarifa\\s*(?:de\\s*la\\s*solic\\.?)?[^\\d]{0,80}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+            val pTarifa = Pattern.compile("tarifa\\s*(?:de\\s*la\\s*solic\\.?)?[^\\d]{0,400}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val mTarifa = pTarifa.matcher(renterSection)
             if (mTarifa.find()) return cleanNumber(mTarifa.group(1))
         }
@@ -160,11 +160,11 @@ object DidiReceiptParser {
     private fun extractDirectCommission(text: String): Double? {
         val didiSection = extractSection(text, "recibido por didi", listOf("detalles", "tus solicitudes", "tus ganancias"))
         if (didiSection != null) {
-            val pServ = Pattern.compile("tarifa\\s*servicio[^\\d]{0,80}[-]?([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+            val pServ = Pattern.compile("tarifa\\s*servicio[^\\d]{0,400}[-]?([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val mServ = pServ.matcher(didiSection)
             if (mServ.find()) return cleanNumber(mServ.group(1))
 
-            val pTotal = Pattern.compile("total[^\\d]{0,80}[-]?([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+            val pTotal = Pattern.compile("total[^\\d]{0,400}[-]?([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
             val mTotal = pTotal.matcher(didiSection)
             if (mTotal.find()) return cleanNumber(mTotal.group(1))
         }
@@ -172,13 +172,23 @@ object DidiReceiptParser {
     }
 
     private fun extractDirectSubsidy(text: String): Double? {
-        val pattern = Pattern.compile("recarga\\s*de\\s*didi[^\\d]{0,80}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+        val pattern = Pattern.compile("recarga\\s*de\\s*didi[^\\d]{0,400}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
         val matcher = pattern.matcher(text)
         return if (matcher.find()) cleanNumber(matcher.group(1)) else null
     }
 
-    private fun extractCashReceived(text: String): Double? {
-        val pattern = Pattern.compile("efectivo\\s*recibido[^\\d]{0,80}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE)
+    private fun extractCashReceived(text: String, lines: List<String>): Double? {
+        val labelIdx = lines.indexOfFirst { it.contains("efectivo recibido", ignoreCase = true) }
+        if (labelIdx >= 0) {
+            for (j in labelIdx..minOf(labelIdx + 6, lines.size - 1)) {
+                val matcher = AMOUNT_PATTERN.matcher(lines[j])
+                while (matcher.find()) {
+                    val amount = cleanNumber(matcher.group(1))
+                    if (amount != null && amount >= 1000.0) return amount
+                }
+            }
+        }
+        val pattern = Pattern.compile("efectivo\\s*recibido[^\\d]{0,400}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})", Pattern.CASE_INSENSITIVE or Pattern.DOTALL)
         val matcher = pattern.matcher(text)
         return if (matcher.find()) cleanNumber(matcher.group(1)) else null
     }
