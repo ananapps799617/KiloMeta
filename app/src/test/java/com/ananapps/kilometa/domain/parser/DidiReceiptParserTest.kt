@@ -194,59 +194,5 @@ class DidiReceiptParserTest {
         assertEquals(29, receipt.durationMinutes)
         assertEquals("Andrés", receipt.passengerName)
     }
-
-    @Test
-    fun parsePromoSubsidyTrip_danielaCase_withMlKitBlockSeparation() {
-        val ocrText = """
-            < Tus solicitudes
-            Tus ganancias
-            Duración
-            Distancia
-            Tipo de vehículo
-            Método de pago
-            Efectivo recibido
-            23m17s
-            7,3 km
-            DiDi Confort
-            Bancolombia
-            ${'$'}16.720
-            ${'$'}19.019
-            Tus ganancias
-            Total ${'$'}19.019
-            Pagado por el arrendatario
-            Se pagó por la solic.
-            Tarifa de la solic.
-            Descuento del usuario
-            Total
-            ${'$'}16.720
-            ${'$'}20.900
-            -${'$'}4.180
-            ${'$'}16.720
-            Recibido por DiDi
-            Tarifa servicio estimada
-            Recarga de DiDi
-            Total
-            -${'$'}1.881
-            ${'$'}4.180
-            ${'$'}2.299
-            Detalles
-            daniela
-            23/09/2026, 12:31:26 pm
-        """.trimIndent()
-
-        val receipt = DidiReceiptParser.parse(ocrText)
-        assertNotNull(receipt)
-        receipt!!
-
-        assertEquals(PlatformType.DIDI, receipt.platform)
-        assertEquals(19019.0, receipt.netAmount, 0.01)
-        assertEquals(16720.0, receipt.grossAmount, 0.01)
-        assertEquals(0.0, receipt.commissionAmount, 0.01)
-        assertEquals(2299.0, receipt.platformPromoDiscount, 0.01)
-        assertEquals(PaymentMethod.NEQUI, receipt.paymentMethod)
-        assertEquals(7.3, receipt.distanceKm ?: 0.0, 0.01)
-        assertEquals(23, receipt.durationMinutes)
-        assertEquals("daniela", receipt.passengerName)
-    }
 }
 

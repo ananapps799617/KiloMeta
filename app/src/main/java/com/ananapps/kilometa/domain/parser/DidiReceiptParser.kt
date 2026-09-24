@@ -74,7 +74,8 @@ object DidiReceiptParser {
             paymentMethod = if (lower.contains("bancolombia")) PaymentMethod.NEQUI else PaymentMethod.CASH
             paymentDestination = PaymentDestination.CASH_IN_HAND
             val directSub = extractDirectSubsidy(text) ?: 0.0
-            val collectedInHand = cashReceived ?: paidByRenter ?: (if (netEarnings > directSub) netEarnings - directSub else netEarnings)
+            val fallbackCash = findFallbackCash(text, netEarnings) ?: (if (netEarnings > directSub) netEarnings - directSub else netEarnings)
+            val collectedInHand = cashReceived ?: paidByRenter ?: fallbackCash
             val subsidy = if (netEarnings > collectedInHand) netEarnings - collectedInHand else directSub
             effectiveGross = collectedInHand
             effectiveCommission = 0.0
@@ -193,14 +194,26 @@ object DidiReceiptParser {
         return if (matcher.find()) cleanNumber(matcher.group(1)) else null
     }
 
+    private fun findFallbackCash(text: String, netEarnings: Double): Double? {
+        var maxCand: Double? = null
+        val m = AMOUNT_PATTERN.matcher(text)
+        while (m.find()) {
+            val amt = cleanNumber(m.group(1)) ?: continue
+            if (amt in (netEarnings * 0.5)..netEarnings) maxCand = maxOf(maxCand ?: 0.0, amt)
+        }
+        return maxCand
+    }
+
     private fun extractSection(text: String, startHeader: String, stopHeaders: List<String>): String? {
         val lower = text.lowercase(Locale.ROOT)
-        val startIndex = lower.indexOf(startHeader.lowercase(Locale.ROOT))
-        if (startIndex == -1) return null
+        fun String.toFlexRegex() = lowercase(Locale.ROOT).replace(" ", "\\s+").toRegex()
+        
+        val startMatch = startHeader.toFlexRegex().find(lower) ?: return null
+        val startIndex = startMatch.range.first
         var endIndex = text.length
         for (stop in stopHeaders) {
-            val idx = lower.indexOf(stop.lowercase(Locale.ROOT), startIndex + startHeader.length)
-            if (idx != -1 && idx < endIndex) endIndex = idx
+            val stopMatch = stop.toFlexRegex().find(lower, startIndex + startMatch.value.length)
+            if (stopMatch != null && stopMatch.range.first < endIndex) endIndex = stopMatch.range.first
         }
         return text.substring(startIndex, endIndex)
     }
@@ -218,8 +231,8 @@ object DidiReceiptParser {
             val minutes = mComp.group(1)?.toIntOrNull() ?: 0
             val seconds = mComp.group(2)?.toIntOrNull() ?: 0
             val total = if (seconds >= 30) minutes + 1 else minutes
-            val text = if (seconds > 0) "${minutes}m ${seconds}s" else "${minutes}m"
-            return Pair(text, total.coerceAtLeast(1))
+            val formattedDuration = if (seconds > 0) "${minutes}m ${seconds}s" else "${minutes}m"
+            return Pair(formattedDuration, total.coerceAtLeast(1))
         }
         val pMin = Pattern.compile("([0-9]+)\\s*(?:min|minutos)\\b", Pattern.CASE_INSENSITIVE)
         val mMin = pMin.matcher(text)
@@ -260,8 +273,5 @@ object DidiReceiptParser {
         return null
     }
 
-    private fun cleanNumber(str: String?): Double? {
-        if (str.isNullOrBlank()) return null
-        return str.filter { it.isDigit() }.toDoubleOrNull()
-    }
+    private fun cleanNumber(str: String?): Double? = str?.filter { it.isDigit() }?.toDoubleOrNull()
 }
