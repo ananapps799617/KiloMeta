@@ -158,7 +158,8 @@ fun DriverProfileScreen(
                                     onNavigateBack()
                                 }
                             }
-                        }
+                        },
+                        isOnboardingMode = isOnboardingMode
                     )
                 }
 

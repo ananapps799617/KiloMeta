@@ -3,8 +3,8 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/profile/components/OnboardingPersonalStep.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Paso 1 del Onboarding / Edición: Identidad humana del conductor (PII protegida).
-// Integra nombre, correo de solo lectura, teléfono numérico, selector ergonómico
-// de género sin truncamiento de texto y botón seguro de reseteo de contraseña.
+// Integra banner de bienvenida institucional en modo onboarding, nombre, correo
+// de solo lectura, teléfono numérico, selector ergonómico de género y reset de clave.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.profile.components
@@ -43,12 +43,18 @@ fun OnboardingPersonalStep(
     gender: Gender,
     onGenderChange: (Gender) -> Unit,
     onRequestPasswordReset: () -> Unit,
+    isOnboardingMode: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Banner de Bienvenida Institucional (Solo en Onboarding)
+        if (isOnboardingMode) {
+            OnboardingWelcomeBanner()
+        }
+
         // Título del Paso
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(

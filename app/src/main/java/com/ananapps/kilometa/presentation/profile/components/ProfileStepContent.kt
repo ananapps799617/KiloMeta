@@ -26,6 +26,7 @@ fun ProfileStepContent(
     email: String,
     onRequestPasswordReset: () -> Unit,
     onResetData: () -> Unit,
+    isOnboardingMode: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -43,7 +44,8 @@ fun ProfileStepContent(
                     onPhoneChange = { state.phone = it },
                     gender = state.gender,
                     onGenderChange = { state.gender = it },
-                    onRequestPasswordReset = onRequestPasswordReset
+                    onRequestPasswordReset = onRequestPasswordReset,
+                    isOnboardingMode = isOnboardingMode
                 )
                 1 -> OnboardingVehicleStep(
                     vehiclePlate = state.vehiclePlate,
