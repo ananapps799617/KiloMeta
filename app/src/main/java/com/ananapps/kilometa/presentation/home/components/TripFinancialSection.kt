@@ -70,19 +70,28 @@ fun TripFinancialSection(
             OutlinedTextField(
                 value = commissionAmountText,
                 onValueChange = onCommissionAmountChange,
-                label = { Text("¿Te descuentan?") },
-                placeholder = { Text("Comisión $") },
-                prefix = { Text("$ ", fontWeight = FontWeight.Bold, color = StatusRed) },
+                label = { Text("Parte de la App") },
+                placeholder = { Text("Comisión / Bono $") },
+                prefix = {
+                    // Verde con "+" si hay bono DiDi, rojo con "-" si es comisión
+                    val isBono = platformPromoDiscount > 0.0
+                    Text(
+                        text = if (isBono) "+$ " else "-$ ",
+                        fontWeight = FontWeight.Bold,
+                        color = if (isBono) StatusGreen else StatusRed
+                    )
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = StatusAmber,
+                    focusedBorderColor = if (platformPromoDiscount > 0.0) StatusGreen else StatusAmber,
                     unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary
                 ),
                 modifier = Modifier.weight(1f)
             )
+
         }
 
         // 2. Card Hero de Ganancia Neta Real

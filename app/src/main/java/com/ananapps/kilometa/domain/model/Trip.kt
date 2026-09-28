@@ -55,13 +55,14 @@ data class Trip(
     val profitabilityTier: TripProfitabilityTier?
         get() {
             val rKm = ratePerKm ?: return null
-            val rH = ratePerHour
+            val rH  = ratePerHour
             return when {
-                rKm >= 1800.0 || (rH != null && rH >= 25000.0 && rKm >= 1400.0) -> TripProfitabilityTier.HIGH
-                rKm < 1300.0 || (rH != null && rH < 16000.0) -> TripProfitabilityTier.LOW
-                else -> TripProfitabilityTier.MEDIUM
+                rKm >= 1700.0 && (rH == null || rH >= 25000.0) -> TripProfitabilityTier.HIGH
+                rKm < 1400.0  || (rH != null && rH < 15000.0)  -> TripProfitabilityTier.LOW
+                else                                            -> TripProfitabilityTier.MEDIUM
             }
         }
+
 
     val commissionRatePercentage: Double
         get() = if (grossAmount > 0.0) {
