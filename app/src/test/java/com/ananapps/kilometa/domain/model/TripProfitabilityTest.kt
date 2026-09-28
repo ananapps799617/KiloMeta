@@ -37,24 +37,24 @@ class TripProfitabilityTest {
 
     @Test
     fun mediumProfitabilityTrip_classifiesAsMediumTier() {
-        // Viaje DiDi: $7.966 netos en 6.1 km y 25 min
-        // Rate per km = 7966 / 6.1 = 1305.9 $/km (entre 1300 y 1800)
-        // Rate per hour = (7966 / 25) * 60 = 19118 $/h (entre 16000 y 25000)
+        // Viaje: $9.000 netos en 6.0 km y 30 min
+        // Rate per km = 9000 / 6.0 = 1500.0 $/km (entre 1400 y 1700)
+        // Rate per hour = (9000 / 30) * 60 = 18000 $/h (entre 15000 y 25000)
         val trip = Trip(
             id = "2",
             shiftId = "s1",
             platformType = PlatformType.DIDI,
-            grossAmount = 11000.0,
-            commissionAmount = 3034.0,
-            netAmount = 7966.0,
+            grossAmount = 12000.0,
+            commissionAmount = 3000.0,
+            netAmount = 9000.0,
             paymentMethod = PaymentMethod.CASH,
             timestamp = System.currentTimeMillis(),
-            distanceKm = 6.1,
-            durationMinutes = 25
+            distanceKm = 6.0,
+            durationMinutes = 30
         )
 
-        assertEquals(1305.9, trip.ratePerKm ?: 0.0, 0.1)
-        assertEquals(19118.4, trip.ratePerHour ?: 0.0, 0.1)
+        assertEquals(1500.0, trip.ratePerKm ?: 0.0, 0.1)
+        assertEquals(18000.0, trip.ratePerHour ?: 0.0, 0.1)
         assertEquals(TripProfitabilityTier.MEDIUM, trip.profitabilityTier)
     }
 

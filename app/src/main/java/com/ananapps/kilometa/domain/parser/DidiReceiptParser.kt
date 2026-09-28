@@ -2,14 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/domain/parser/DidiReceiptParser.kt
 // DESCRIPCIÓN: Parser determinista de recibos DiDi Conductor (Orden #050 / #051).
-// ALGORITMO UNIFICADO (basado en contratos de negocio validados con el Gerente General):
-//   1. Extraer Duración y Distancia (primera fila del recibo)
-//   2. Detectar Método de pago → determina destino del dinero
-//   3. Sección "Pagado por el arrendatario" → buscar ÚLTIMO "Total" → GROSS
-//   4. Sección "Recibido por DiDi"          → buscar ÚLTIMO "Total" → DIDI_TOTAL (con signo)
-//   5. FÓRMULA: net = gross + didiTotal
-//      Si didiTotal < 0 → comisión (Parte de la App en rojo)
-//      Si didiTotal > 0 → bono DiDi (Parte de la App en verde)
+// Algoritmo unificado: Gross (Pagado por arrendatario/efectivo), DiDi Total (con signo).
+// Fórmula: net = gross + didiTotal (didiTotal < 0: comisión, didiTotal > 0: bono).
 // ==============================================================================
 
 package com.ananapps.kilometa.domain.parser
@@ -24,16 +18,6 @@ import java.util.regex.Pattern
 
 object DidiReceiptParser {
 
-    // -----------------------------------------------------------------------
-    // PATRÓN BASE: captura montos con separador de miles (ej: 11.000, 3.034)
-    // -----------------------------------------------------------------------
-    private val AMOUNT_PATTERN = Pattern.compile(
-        "([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})"
-    )
-
-    // -----------------------------------------------------------------------
-    // DETECCIÓN: ¿Este texto es un recibo de DiDi Conductor?
-    // -----------------------------------------------------------------------
     fun canParse(rawText: String): Boolean {
         val lower = rawText.lowercase(Locale.ROOT)
         return lower.contains("tus solicitudes") ||
@@ -85,7 +69,7 @@ object DidiReceiptParser {
             header  = "pagado por el arrendatario",
             stopAt  = listOf("recibido por didi", "detalles", "tus solicitudes"),
             signed  = false
-        ) ?: 0.0
+        ) ?: extractFallbackGross(text) ?: 0.0
 
         // PASO 4 — "Recibido por DiDi" → ÚLTIMO Total (CON SIGNO) → DIDI_TOTAL
         val didiTotal = extractSectionLastTotal(
@@ -106,6 +90,7 @@ object DidiReceiptParser {
 
         val confidenceSummary = buildString {
             append("DiDi · ")
+            if (isCard) append("Tarjeta · ")
             when {
                 didiTotal < 0.0 -> append("Parte de la App: -\$${effectiveCommission.toInt()}")
                 didiTotal > 0.0 -> append("Bono DiDi: +\$${platformPromo.toInt()}")
@@ -132,9 +117,8 @@ object DidiReceiptParser {
     }
 
     // -----------------------------------------------------------------------
-    // EXTRACTOR CLAVE: busca el ÚLTIMO "Total" dentro de una sección.
-    // "signed=true"  → captura el signo negativo si existe (para DiDi Total)
-    // "signed=false" → siempre devuelve positivo (para Pagado por arrendatario)
+    // EXTRACTOR CLAVE: busca el monto consolidado al final de la sección.
+    // En DiDi, el último valor monetario de la sección es siempre el Total.
     // -----------------------------------------------------------------------
     private fun extractSectionLastTotal(
         text: String,
@@ -144,21 +128,40 @@ object DidiReceiptParser {
     ): Double? {
         val section = extractSection(text, header, stopAt) ?: return null
 
-        // Patrón: "Total" seguido de signo opcional y un monto
         val pattern = Pattern.compile(
-            "total\\s*([-+]?)\\s*\\$?\\s*([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})",
-            Pattern.CASE_INSENSITIVE or Pattern.DOTALL
+            "([-+]?)\\s*\\$?\\s*([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})"
         )
         val matcher = pattern.matcher(section)
-        var lastSign   = ""
+        var lastSign = ""
         var lastAmount: Double? = null
-        // Iterar hasta el ÚLTIMO match (el Total de sección, no subtotales)
         while (matcher.find()) {
-            lastSign   = matcher.group(1) ?: ""
+            lastSign = matcher.group(1) ?: ""
             lastAmount = cleanNumber(matcher.group(2))
         }
-        return lastAmount?.let { if (signed && lastSign == "-") -it else it }
+        return lastAmount?.let {
+            if (signed && lastSign == "-") -it else it
+        }
     }
+
+    // Fallback para recibos de efectivo donde no dice "Pagado por el arrendatario"
+    private fun extractFallbackGross(text: String): Double? {
+        val lower = text.lowercase(Locale.ROOT)
+        val stopIdx = listOf(
+            lower.lastIndexOf("tus ganancias"),
+            lower.indexOf("recibido por didi")
+        ).filter { it >= 0 }.minOrNull() ?: text.length
+        val headerSection = text.substring(0, stopIdx)
+        val m = Pattern.compile(
+            "(?:efectivo recibido|total)[^\\d]{0,50}([0-9]{1,3}(?:[.,][0-9]{3})+|[0-9]{4,6})",
+            Pattern.CASE_INSENSITIVE
+        ).matcher(headerSection)
+        var lastAmount: Double? = null
+        while (m.find()) {
+            lastAmount = cleanNumber(m.group(1))
+        }
+        return lastAmount
+    }
+
 
     // -----------------------------------------------------------------------
     // EXTRACTOR DE SECCIÓN: tolerante a saltos de línea en encabezados
