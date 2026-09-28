@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/test/java/com/ananapps/kilometa/domain/parser/DidiReceiptParserAdvancedTest.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pruebas unitarias avanzadas para DidiReceiptParser bajo fragmentación de bloques
-// y saltos de línea de Google ML Kit (< 280 LOC).
+// Pruebas unitarias avanzadas para DidiReceiptParser bajo fragmentación de bloques,
+// saltos de línea y separación de columnas de Google ML Kit (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.domain.parser
@@ -108,5 +108,41 @@ class DidiReceiptParserAdvancedTest {
         assertEquals(0.0, receipt.platformPromoDiscount, 0.01)
         assertEquals(PaymentMethod.CASH, receipt.paymentMethod)
         assertEquals(PaymentDestination.CASH_IN_HAND, receipt.paymentDestination)
+    }
+
+    @Test
+    fun parseCardTrip_andresCase_withMlKitSeparatedColumnsAndEmojis() {
+        // Simula la evidencia de pantalla media_1790624606227.png donde ML Kit
+        // parte los encabezados y separa columnas de texto de valores
+        val ocrText = """
+            3:45 ...
+            < Tus solicitudes
+            Duración 28m50s
+            Distancia 10,1 km
+            Método de pago 💳 Pago con tarjeta
+            Tus ganancias
+            Total $18.000
+            Pagado por el arrendatario
+            Recibido por DiDi
+            Detalles
+            Total 💳 $24.000
+            Total -$6.000
+            Andrés
+            21/09/2026, 1:34:09 pm
+        """.trimIndent()
+
+        val receipt = DidiReceiptParser.parse(ocrText)
+        assertNotNull(receipt)
+        receipt!!
+
+        assertEquals(PlatformType.DIDI, receipt.platform)
+        assertEquals(24000.0, receipt.grossAmount, 0.01)
+        assertEquals(6000.0, receipt.commissionAmount, 0.01)
+        assertEquals(18000.0, receipt.netAmount, 0.01)
+        assertEquals(PaymentMethod.APP_WALLET, receipt.paymentMethod)
+        assertEquals(PaymentDestination.APP_RETAINED, receipt.paymentDestination)
+        assertEquals(10.1, receipt.distanceKm ?: 0.0, 0.01)
+        assertEquals(29, receipt.durationMinutes)
+        assertEquals("Andrés", receipt.passengerName)
     }
 }
