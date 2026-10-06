@@ -15,10 +15,14 @@ import com.ananapps.kilometa.domain.model.AppUpdateInfo
 import com.ananapps.kilometa.domain.usecase.CheckAppUpdateUseCase
 import com.ananapps.kilometa.domain.repository.DriverProfileRepository
 import com.ananapps.kilometa.domain.repository.SyncRepository
+import com.ananapps.kilometa.domain.model.HudConfig
+import com.ananapps.kilometa.domain.repository.HudConfigRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,8 +38,18 @@ sealed interface UpdateCheckUiState {
 class MoreViewModel @Inject constructor(
     private val checkAppUpdateUseCase: CheckAppUpdateUseCase,
     private val syncRepository: SyncRepository,
-    private val profileRepository: DriverProfileRepository
+    private val profileRepository: DriverProfileRepository,
+    private val hudConfigRepository: HudConfigRepository
 ) : ViewModel() {
+
+    val hudConfig: StateFlow<HudConfig> = hudConfigRepository.getHudConfig()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), HudConfig())
+
+    fun toggleFloatingBubble(enabled: Boolean) {
+        viewModelScope.launch {
+            hudConfigRepository.saveHudConfig(hudConfig.value.copy(isFloatingBubbleEnabled = enabled))
+        }
+    }
 
     private val _updateState = MutableStateFlow<UpdateCheckUiState>(UpdateCheckUiState.Idle)
     val updateState: StateFlow<UpdateCheckUiState> = _updateState.asStateFlow()

@@ -32,7 +32,6 @@ fun RegisterTripDialog(
     lastKnownOdometer: Int = 0,
     onDismiss: () -> Unit,
     existingTrip: Trip? = null,
-    scannedReceipt: ScannedTripReceipt? = null,
     onConfirmTrip: (
         platform: PlatformType,
         gross: Double,
@@ -51,30 +50,30 @@ fun RegisterTripDialog(
     modifier: Modifier = Modifier
 ) {
     val isEditing = existingTrip != null
-    val initialPlatform = existingTrip?.platformType ?: scannedReceipt?.platform ?: PlatformType.UBER
-    val initialTime = existingTrip?.timestamp ?: scannedReceipt?.timestamp ?: initialTimestamp ?: System.currentTimeMillis()
-    val initialGross = existingTrip?.grossAmount?.toLong()?.toString()
-        ?: scannedReceipt?.grossAmount?.takeIf { it > 0.0 }?.toLong()?.toString()
-        ?: ""
-    val initialComm = existingTrip?.commissionAmount?.toLong()?.toString()
-        ?: scannedReceipt?.commissionAmount?.toLong()?.toString()
-        ?: ""
-    val initialPayment = existingTrip?.paymentMethod ?: scannedReceipt?.paymentMethod ?: PaymentMethod.CASH
+    val initialPlatform = existingTrip?.platformType ?: PlatformType.UBER
+    val initialTime = existingTrip?.timestamp ?: initialTimestamp ?: System.currentTimeMillis()
+    val initialGross = existingTrip?.grossAmount?.toLong()?.toString() ?: ""
+    val initialIsBonus = existingTrip?.platformPromoDiscount?.let { it > 0.0 } ?: false
+    val initialComm = existingTrip?.let {
+        if (it.platformPromoDiscount > 0.0) {
+            it.platformPromoDiscount.toLong().toString()
+        } else {
+            it.commissionAmount.takeIf { c -> c > 0.0 }?.toLong()?.toString() ?: ""
+        }
+    } ?: ""
+    val initialPayment = existingTrip?.paymentMethod ?: PaymentMethod.CASH
 
-    val initialDistance = existingTrip?.distanceKm?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }
-        ?: scannedReceipt?.distanceKm?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() }
-        ?: ""
-    val initialDuration = existingTrip?.durationMinutes?.toString()
-        ?: scannedReceipt?.durationMinutes?.toString()
-        ?: ""
+    val initialDistance = existingTrip?.distanceKm?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() } ?: ""
+    val initialDuration = existingTrip?.durationMinutes?.toString() ?: ""
 
-    var selectedPlatform by remember(existingTrip, scannedReceipt) { mutableStateOf(initialPlatform) }
-    var selectedDateTimeMillis by remember(existingTrip, scannedReceipt, initialTimestamp) { mutableStateOf(initialTime) }
-    var grossAmountText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialGross) }
-    var commissionAmountText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialComm) }
-    var selectedPaymentMethod by remember(existingTrip, scannedReceipt) { mutableStateOf(initialPayment) }
-    var distanceKmText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialDistance) }
-    var durationMinutesText by remember(existingTrip, scannedReceipt) { mutableStateOf(initialDuration) }
+    var selectedPlatform by remember(existingTrip) { mutableStateOf(initialPlatform) }
+    var selectedDateTimeMillis by remember(existingTrip, initialTimestamp) { mutableStateOf(initialTime) }
+    var grossAmountText by remember(existingTrip) { mutableStateOf(initialGross) }
+    var commissionAmountText by remember(existingTrip) { mutableStateOf(initialComm) }
+    var isBonus by remember(existingTrip) { mutableStateOf(initialIsBonus) }
+    var selectedPaymentMethod by remember(existingTrip) { mutableStateOf(initialPayment) }
+    var distanceKmText by remember(existingTrip) { mutableStateOf(initialDistance) }
+    var durationMinutesText by remember(existingTrip) { mutableStateOf(initialDuration) }
 
     fun updateSuggestedCommission(grossStr: String, platform: PlatformType) {
         val g = grossStr.toDoubleOrNull() ?: 0.0
@@ -86,15 +85,17 @@ fun RegisterTripDialog(
     }
 
     val gross = grossAmountText.toDoubleOrNull() ?: 0.0
-    val commission = commissionAmountText.toDoubleOrNull() ?: 0.0
-    val promoDiscount = if (isEditing) existingTrip.platformPromoDiscount else (scannedReceipt?.platformPromoDiscount ?: 0.0)
-    val net = (gross - commission + promoDiscount).coerceAtLeast(0.0)
+    val appPart = commissionAmountText.toDoubleOrNull() ?: 0.0
+    val net = if (isBonus) (gross + appPart) else (gross - appPart).coerceAtLeast(0.0)
+    val commission = if (isBonus) 0.0 else appPart
+    val promoDiscount = if (isBonus) appPart else 0.0
     val parsedDist = distanceKmText.replace(',', '.').toDoubleOrNull()
     val parsedDur = durationMinutesText.toIntOrNull()
 
     val hasDirtyData = if (isEditing) {
         gross != existingTrip.grossAmount ||
                 commission != existingTrip.commissionAmount ||
+                promoDiscount != existingTrip.platformPromoDiscount ||
                 selectedPlatform != existingTrip.platformType ||
                 selectedPaymentMethod != existingTrip.paymentMethod ||
                 distanceKmText != initialDistance ||
@@ -102,7 +103,7 @@ fun RegisterTripDialog(
     } else {
         grossAmountText.isNotBlank() || commissionAmountText.isNotBlank() || distanceKmText.isNotBlank()
     }
-    val isFormValid = gross > 0.0 && commission <= gross
+    val isFormValid = gross > 0.0 && (isBonus || appPart <= gross)
 
     val dialogTitle = if (isEditing) "🏁 Editar Carrera" else "🏁 Nueva Carrera"
     val buttonText = if (isEditing) {
@@ -139,7 +140,7 @@ fun RegisterTripDialog(
                             timestamp = selectedDateTimeMillis,
                             distanceKm = parsedDist ?: existingTrip.distanceKm,
                             durationMinutes = parsedDur ?: existingTrip.durationMinutes,
-                            platformPromoDiscount = if (existingTrip.platformPromoDiscount > 0) existingTrip.platformPromoDiscount else (scannedReceipt?.platformPromoDiscount ?: 0.0)
+                            platformPromoDiscount = promoDiscount
                         )
                     )
                 } else {
@@ -152,9 +153,9 @@ fun RegisterTripDialog(
                         selectedDateTimeMillis,
                         null,
                         null,
-                        parsedDist ?: scannedReceipt?.distanceKm,
-                        parsedDur ?: scannedReceipt?.durationMinutes,
-                        scannedReceipt?.platformPromoDiscount ?: 0.0
+                        parsedDist,
+                        parsedDur,
+                        promoDiscount
                     )
                 }
                 onDismiss()
@@ -163,23 +164,6 @@ fun RegisterTripDialog(
         hasDirtyData = hasDirtyData,
         modifier = modifier
     ) {
-        if (scannedReceipt != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(StatusGreenContainer)
-                    .border(1.dp, StatusGreen.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = "📸 OCR: ${scannedReceipt.confidenceSummary ?: scannedReceipt.platform.displayName}",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
-                )
-            }
-        }
-
         TripPlatformSelector(
             selectedPlatform = selectedPlatform,
             onPlatformSelected = { newPlatform ->
@@ -202,18 +186,20 @@ fun RegisterTripDialog(
             grossAmountText = grossAmountText,
             onGrossAmountChange = {
                 grossAmountText = it
-                updateSuggestedCommission(it, selectedPlatform)
+                if (!isBonus) updateSuggestedCommission(it, selectedPlatform)
             },
             commissionAmountText = commissionAmountText,
             onCommissionAmountChange = { commissionAmountText = it },
             selectedPaymentMethod = selectedPaymentMethod,
             onPaymentMethodSelected = {
                 selectedPaymentMethod = it
-                if (commissionAmountText.isBlank() && grossAmountText.isNotBlank()) {
+                if (!isBonus && commissionAmountText.isBlank() && grossAmountText.isNotBlank()) {
                     updateSuggestedCommission(grossAmountText, selectedPlatform)
                 }
             },
-            platformPromoDiscount = promoDiscount
+            platformPromoDiscount = promoDiscount,
+            isBonus = isBonus,
+            onIsBonusToggle = { isBonus = !isBonus }
         )
     }
 }

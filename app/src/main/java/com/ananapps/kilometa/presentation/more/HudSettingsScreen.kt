@@ -163,6 +163,21 @@ fun HudSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
+                            Text("Activar burbuja flotante", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Muestra el botón flotante sobre otras apps", color = TextSecondary, fontSize = 11.sp)
+                        }
+                        Switch(
+                            checked = config.isFloatingBubbleEnabled,
+                            onCheckedChange = { viewModel.updateConfig { c -> c.copy(isFloatingBubbleEnabled = it) } }
+                        )
+                    }
+                    HorizontalDivider(color = TextSecondary.copy(alpha = 0.2f))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text("Auto-abrir al iniciar turno", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             Text("Aparece automáticamente al arrancar jornada", color = TextSecondary, fontSize = 11.sp)
                         }

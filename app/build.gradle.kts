@@ -23,8 +23,8 @@ android {
         applicationId = "com.ananapps.kilometa"
         minSdk = 26
         targetSdk = 34
-        versionCode = 252
-        versionName = "3.0.0-alpha.6"
+        versionCode = 263
+        versionName = "3.0.0-alpha.17"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -107,9 +107,6 @@ dependencies {
 
     // Mapa Nativo OpenStreetMap (Cero API Key, Cero WebViews)
     implementation(libs.osmdroid.android)
-
-    // Reconocimiento Óptico de Caracteres (OCR 100% Offline Local)
-    implementation(libs.play.services.mlkit.text.recognition)
 
     // Pruebas Unitarias
     testImplementation(libs.junit)

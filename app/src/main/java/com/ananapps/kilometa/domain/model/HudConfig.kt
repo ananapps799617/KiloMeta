@@ -19,5 +19,6 @@ data class HudConfig(
     val didiCommissionPercent: Double = 20.0,
     val indriveCommissionPercent: Double = 10.0,
     val hudDismissSeconds: Int = 15,
-    val autoStartWithShift: Boolean = true
+    val autoStartWithShift: Boolean = true,
+    val isFloatingBubbleEnabled: Boolean = false
 )

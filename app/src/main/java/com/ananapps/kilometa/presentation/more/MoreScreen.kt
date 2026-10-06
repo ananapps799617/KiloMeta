@@ -29,6 +29,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ananapps.kilometa.BuildConfig
 import com.ananapps.kilometa.presentation.common.AppUpdateDialog
 import com.ananapps.kilometa.presentation.more.components.MoreOptionItem
+import com.ananapps.kilometa.presentation.more.components.MoreOptionSwitchItem
 import com.ananapps.kilometa.presentation.more.components.PurgeAccountDataDialog
 import com.ananapps.kilometa.presentation.theme.*
 
@@ -49,6 +50,7 @@ fun MoreScreen(
 ) {
     val updateState by viewModel.updateState.collectAsState()
     val isPurging by viewModel.isPurging.collectAsState()
+    val hudConfig by viewModel.hudConfig.collectAsState()
     var showUpToDateDialog by remember { mutableStateOf(false) }
     var showPurgeConfirmDialog by remember { mutableStateOf(false) }
     var purgeError by remember { mutableStateOf<String?>(null) }
@@ -141,11 +143,22 @@ fun MoreScreen(
         }
 
         item {
-            MoreOptionItem(
+            MoreOptionSwitchItem(
                 icon = Icons.Default.PlayArrow,
-                title = "Copiloto & Burbuja Flotante",
-                subtitle = "HUD de ofertas y Speed Dial sobre Uber, DiDi y Waze",
-                tint = StatusGreen,
+                title = "Burbuja Flotante en Pantalla",
+                subtitle = if (hudConfig.isFloatingBubbleEnabled) "Visible sobre Uber, DiDi y mapas" else "Desactivada (no invade tu pantalla)",
+                checked = hudConfig.isFloatingBubbleEnabled,
+                onCheckedChange = { viewModel.toggleFloatingBubble(it) },
+                tint = if (hudConfig.isFloatingBubbleEnabled) StatusGreen else TextSecondary
+            )
+        }
+
+        item {
+            MoreOptionItem(
+                icon = Icons.Default.Settings,
+                title = "Copiloto & Calibración HUD",
+                subtitle = "Semáforo de rentabilidad, combustible y comisiones",
+                tint = ElectricBluePrimary,
                 onClick = onNavigateToHudSettings
             )
         }

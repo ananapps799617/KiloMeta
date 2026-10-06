@@ -40,6 +40,7 @@ class HudConfigRepositoryImpl @Inject constructor(
             .putFloat("indrive_commission", config.indriveCommissionPercent.toFloat())
             .putInt("hud_dismiss_sec", config.hudDismissSeconds)
             .putBoolean("auto_start_shift", config.autoStartWithShift)
+            .putBoolean("is_floating_bubble_enabled", config.isFloatingBubbleEnabled)
             .apply()
 
         _configFlow.value = config
@@ -57,7 +58,8 @@ class HudConfigRepositoryImpl @Inject constructor(
             didiCommissionPercent = prefs.getFloat("didi_commission", 20f).toDouble(),
             indriveCommissionPercent = prefs.getFloat("indrive_commission", 10f).toDouble(),
             hudDismissSeconds = prefs.getInt("hud_dismiss_sec", 15),
-            autoStartWithShift = prefs.getBoolean("auto_start_shift", true)
+            autoStartWithShift = prefs.getBoolean("auto_start_shift", true),
+            isFloatingBubbleEnabled = prefs.getBoolean("is_floating_bubble_enabled", false)
         )
     }
 }

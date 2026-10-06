@@ -37,6 +37,8 @@ fun TripFinancialSection(
     selectedPaymentMethod: PaymentMethod,
     onPaymentMethodSelected: (PaymentMethod) -> Unit,
     platformPromoDiscount: Double = 0.0,
+    isBonus: Boolean = false,
+    onIsBonusToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
@@ -44,11 +46,12 @@ fun TripFinancialSection(
     }
 
     val gross = grossAmountText.toDoubleOrNull() ?: 0.0
-    val commission = commissionAmountText.toDoubleOrNull() ?: 0.0
-    val net = (gross - commission + platformPromoDiscount).coerceAtLeast(0.0)
+    val appPart = commissionAmountText.toDoubleOrNull() ?: 0.0
+    val effectiveBonus = isBonus || platformPromoDiscount > 0.0
+    val net = if (effectiveBonus) (gross + appPart) else (gross - appPart).coerceAtLeast(0.0)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // 1. Campos de Monto Recibido y Descuento de App
+        // 1. Campos de Monto Recibido y Descuento/Bono de App
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(
                 value = grossAmountText,
@@ -69,29 +72,42 @@ fun TripFinancialSection(
 
             OutlinedTextField(
                 value = commissionAmountText,
-                onValueChange = onCommissionAmountChange,
-                label = { Text("Parte de la App") },
+                onValueChange = { input ->
+                    if (input.contains("+")) {
+                        if (!isBonus) onIsBonusToggle()
+                    } else if (input.contains("-")) {
+                        if (isBonus) onIsBonusToggle()
+                    }
+                    val cleanDigits = input.filter { it.isDigit() }
+                    onCommissionAmountChange(cleanDigits)
+                },
+                label = { Text(if (effectiveBonus) "Bono App (+)" else "Parte de la App (-)") },
                 placeholder = { Text("Comisión / Bono $") },
                 prefix = {
-                    // Verde con "+" si hay bono DiDi, rojo con "-" si es comisión
-                    val isBono = platformPromoDiscount > 0.0
-                    Text(
-                        text = if (isBono) "+$ " else "-$ ",
-                        fontWeight = FontWeight.Bold,
-                        color = if (isBono) StatusGreen else StatusRed
-                    )
+                    Surface(
+                        onClick = onIsBonusToggle,
+                        shape = RoundedCornerShape(4.dp),
+                        color = if (effectiveBonus) StatusGreen.copy(alpha = 0.2f) else StatusAmber.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = if (effectiveBonus) "+$ " else "-$ ",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp,
+                            color = if (effectiveBonus) StatusGreen else StatusRed,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (platformPromoDiscount > 0.0) StatusGreen else StatusAmber,
+                    focusedBorderColor = if (effectiveBonus) StatusGreen else StatusAmber,
                     unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
                     focusedTextColor = TextPrimary,
                     unfocusedTextColor = TextPrimary
                 ),
                 modifier = Modifier.weight(1f)
             )
-
         }
 
         // 2. Card Hero de Ganancia Neta Real
@@ -119,7 +135,7 @@ fun TripFinancialSection(
                     )
                 }
 
-                if (platformPromoDiscount > 0.0) {
+                if (effectiveBonus && appPart > 0.0) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = "Abono App",
@@ -127,12 +143,12 @@ fun TripFinancialSection(
                             color = TextSecondary
                         )
                         Text(
-                            text = "+${currencyFormatter.format(platformPromoDiscount)}",
+                            text = "+${currencyFormatter.format(appPart)}",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = ElectricBluePrimary
+                            color = StatusGreen
                         )
                     }
-                } else if (commission > 0.0) {
+                } else if (!effectiveBonus && appPart > 0.0) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
                             text = "Descuento",
@@ -140,7 +156,7 @@ fun TripFinancialSection(
                             color = TextSecondary
                         )
                         Text(
-                            text = "-${currencyFormatter.format(commission)}",
+                            text = "-${currencyFormatter.format(appPart)}",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = StatusAmber
                         )
@@ -162,84 +178,36 @@ fun TripFinancialSection(
             )
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Opción 1: Efectivo
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(
-                            width = if (isCash) 2.dp else 1.dp,
-                            color = if (isCash) StatusGreen else TextSecondary.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clickable { onPaymentMethodSelected(PaymentMethod.CASH) },
-                    color = if (isCash) StatusGreen.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "💵 Efectivo",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = if (isCash) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isCash) StatusGreen else TextSecondary,
-                                fontSize = 12.sp
+                listOf(
+                    Triple(PaymentMethod.CASH, "💵 Efectivo", isCash to StatusGreen),
+                    Triple(PaymentMethod.NEQUI, "🟣 Nequi / Davi", isNequi to PlatformPrivate),
+                    Triple(PaymentMethod.APP_WALLET, "📱 Saldo App", isAppWallet to ElectricBluePrimary)
+                ).forEach { (method, label, state) ->
+                    val (selected, activeColor) = state
+                    Surface(
+                        modifier = Modifier
+                            .weight(if (method == PaymentMethod.NEQUI) 1.15f else 1f)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(
+                                width = if (selected) 2.dp else 1.dp,
+                                color = if (selected) activeColor else TextSecondary.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(10.dp)
                             )
-                        )
-                    }
-                }
-
-                // Opción 2: Nequi / Daviplata
-                Surface(
-                    modifier = Modifier
-                        .weight(1.15f)
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(
-                            width = if (isNequi) 2.dp else 1.dp,
-                            color = if (isNequi) PlatformPrivate else TextSecondary.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clickable { onPaymentMethodSelected(PaymentMethod.NEQUI) },
-                    color = if (isNequi) PlatformPrivate.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "🟣 Nequi / Davi",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = if (isNequi) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isNequi) PlatformPrivate else TextSecondary,
-                                fontSize = 12.sp
+                            .clickable { onPaymentMethodSelected(method) },
+                        color = if (selected) activeColor.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (selected) activeColor else TextSecondary,
+                                    fontSize = 12.sp
+                                )
                             )
-                        )
-                    }
-                }
-
-                // Opción 3: Saldo en App
-                Surface(
-                    modifier = Modifier
-                        .weight(1.05f)
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(
-                            width = if (isAppWallet) 2.dp else 1.dp,
-                            color = if (isAppWallet) ElectricBluePrimary else TextSecondary.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clickable { onPaymentMethodSelected(PaymentMethod.APP_WALLET) },
-                    color = if (isAppWallet) ElectricBluePrimary.copy(alpha = 0.15f) else DeepObsidianSurfaceVariant,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "📱 Saldo App",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = if (isAppWallet) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isAppWallet) ElectricBluePrimary else TextSecondary,
-                                fontSize = 12.sp
-                            )
-                        )
+                        }
                     }
                 }
             }
@@ -250,13 +218,13 @@ fun TripFinancialSection(
                     style = MaterialTheme.typography.labelSmall,
                     color = ElectricBluePrimary
                 )
-            } else if ((isCash || isNequi) && commission > 0.0) {
+            } else if ((isCash || isNequi) && appPart > 0.0) {
                 Text(
-                    text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(commission)} queda como deuda pendiente con la app.",
+                    text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(appPart)} queda como deuda pendiente con la app.",
                     style = MaterialTheme.typography.labelSmall,
                     color = StatusAmber
                 )
-            } else if (isAppWallet && commission > 0.0) {
+            } else if (isAppWallet && appPart > 0.0) {
                 Text(
                     text = "ℹ️ La app descuenta su comisión en la fuente. ${currencyFormatter.format(net)} netos ingresan a tu saldo en la app.",
                     style = MaterialTheme.typography.labelSmall,

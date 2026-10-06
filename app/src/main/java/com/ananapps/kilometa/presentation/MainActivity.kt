@@ -37,14 +37,16 @@ import com.ananapps.kilometa.presentation.profile.DriverProfileScreen
 import com.ananapps.kilometa.presentation.reports.ReportsScreen
 import com.ananapps.kilometa.presentation.sync.CloudSyncStatusSheet
 import com.ananapps.kilometa.presentation.sync.HydrationRecoveryScreen
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import com.ananapps.kilometa.presentation.common.extractSharedImageUri
+import androidx.lifecycle.lifecycleScope
+import com.ananapps.kilometa.domain.model.HudConfig
+import com.ananapps.kilometa.domain.repository.HudConfigRepository
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
 import com.ananapps.kilometa.presentation.overlay.RideOfferOverlayManager
 import com.ananapps.kilometa.presentation.theme.KiloMetaTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -52,30 +54,39 @@ class MainActivity : ComponentActivity() {
     private val viewModel: HomeViewModel by viewModels()
     private val pendingQuickAction = mutableStateOf<String?>(null)
     @Inject lateinit var overlayManager: RideOfferOverlayManager
+    @Inject lateinit var hudConfigRepository: HudConfigRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        extractSharedImageUri(intent)?.let { viewModel.scanReceipt(it) }
         pendingQuickAction.value = intent.getStringExtra("EXTRA_QUICK_ACTION")
         setContent {
             KiloMetaTheme {
-                MainAppHost(viewModel = viewModel, pendingQuickAction = pendingQuickAction, overlayManager = overlayManager)
+                MainAppHost(
+                    viewModel = viewModel,
+                    pendingQuickAction = pendingQuickAction,
+                    overlayManager = overlayManager,
+                    hudConfigRepository = hudConfigRepository
+                )
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (viewModel.dayContinuousTimeline.value.hasActiveShift && overlayManager.canDrawOverlays()) {
-            overlayManager.showBubble()
+        lifecycleScope.launch {
+            val config = hudConfigRepository.getHudConfig().first()
+            if (config.isFloatingBubbleEnabled && viewModel.dayContinuousTimeline.value.hasActiveShift && overlayManager.canDrawOverlays()) {
+                overlayManager.showBubble()
+            } else if (!config.isFloatingBubbleEnabled) {
+                overlayManager.hideBubble()
+            }
         }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        extractSharedImageUri(intent)?.let { viewModel.scanReceipt(it) }
         pendingQuickAction.value = intent.getStringExtra("EXTRA_QUICK_ACTION")
     }
 }
@@ -85,7 +96,8 @@ class MainActivity : ComponentActivity() {
 private fun MainAppHost(
     viewModel: HomeViewModel = viewModel(),
     pendingQuickAction: MutableState<String?> = remember { mutableStateOf(null) },
-    overlayManager: RideOfferOverlayManager? = null
+    overlayManager: RideOfferOverlayManager? = null,
+    hudConfigRepository: HudConfigRepository? = null
 ) {
     val userSession by viewModel.userSession.collectAsState()
     val authError by viewModel.authError.collectAsState()
@@ -115,27 +127,6 @@ private fun MainAppHost(
     var showQuickActionSheet by rememberSaveable { mutableStateOf(false) }
     var triggerQuickTrip by rememberSaveable { mutableStateOf(false) }; var triggerQuickFueling by rememberSaveable { mutableStateOf(false) }
     var triggerQuickExpense by rememberSaveable { mutableStateOf(false) }; var triggerQuickMaintenance by rememberSaveable { mutableStateOf(false) }
-    val hostContext = androidx.compose.ui.platform.LocalContext.current
-
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { viewModel.scanReceipt(it) }
-    }
-    val scannedReceipt by viewModel.scannedReceipt.collectAsState()
-    val scanReceiptError by viewModel.scanReceiptError.collectAsState()
-    val isScanningReceipt by viewModel.isScanningReceipt.collectAsState()
-
-    LaunchedEffect(scannedReceipt) {
-        if (scannedReceipt != null) { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickTrip = true }
-    }
-    LaunchedEffect(scanReceiptError) {
-        scanReceiptError?.let {
-            android.widget.Toast.makeText(hostContext, "⚠️ $it", android.widget.Toast.LENGTH_LONG).show()
-            viewModel.clearScannedReceipt()
-        }
-    }
-    LaunchedEffect(isScanningReceipt) {
-        if (isScanningReceipt) android.widget.Toast.makeText(hostContext, "📸 Procesando pantallazo con OCR...", android.widget.Toast.LENGTH_SHORT).show()
-    }
 
     LaunchedEffect(pendingQuickAction.value) {
         when (pendingQuickAction.value) {
@@ -147,11 +138,12 @@ private fun MainAppHost(
         pendingQuickAction.value = null
     }
 
+    val hudConfig by (hudConfigRepository?.getHudConfig() ?: kotlinx.coroutines.flow.emptyFlow()).collectAsState(initial = HudConfig())
     val dayContinuousTimeline by viewModel.dayContinuousTimeline.collectAsState()
-    LaunchedEffect(dayContinuousTimeline.hasActiveShift) {
-        if (dayContinuousTimeline.hasActiveShift && overlayManager?.canDrawOverlays() == true) {
+    LaunchedEffect(dayContinuousTimeline.hasActiveShift, hudConfig.isFloatingBubbleEnabled) {
+        if (hudConfig.isFloatingBubbleEnabled && dayContinuousTimeline.hasActiveShift && overlayManager?.canDrawOverlays() == true) {
             overlayManager.showBubble()
-        } else if (!dayContinuousTimeline.hasActiveShift) {
+        } else {
             overlayManager?.hideBubble()
         }
     }
@@ -253,8 +245,7 @@ private fun MainAppHost(
             onSelectTrip = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickTrip = true },
             onSelectFueling = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickFueling = true },
             onSelectExpense = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickExpense = true },
-            onSelectMaintenance = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickMaintenance = true },
-            onSelectScanReceipt = { showQuickActionSheet = false; photoPicker.launch("image/*") }
+            onSelectMaintenance = { currentNavTab = KiloMetaNavTab.ROUTE; activeSubDestination = null; triggerQuickMaintenance = true }
         )
     }
 

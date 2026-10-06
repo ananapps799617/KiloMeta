@@ -64,22 +64,10 @@ fun QuickActionSheet(
             )
 
             QuickActionOption(
-                icon = Icons.Default.Add,
-                iconBg = ElectricBluePrimary,
-                iconTint = Color.Black,
-                title = "📸 Auto-Captura Pantallazo",
-                subtitle = "Escanear recibo de Uber o DiDi desde foto",
-                onClick = {
-                    onDismiss()
-                    onSelectScanReceipt()
-                }
-            )
-
-            QuickActionOption(
                 icon = Icons.Default.LocationOn,
                 iconBg = StatusGreen,
                 iconTint = Color.Black,
-                title = "Registrar Carrera Manual",
+                title = "Registrar Carrera",
                 subtitle = "Uber, DiDi, inDrive o Particular",
                 onClick = {
                     onDismiss()
