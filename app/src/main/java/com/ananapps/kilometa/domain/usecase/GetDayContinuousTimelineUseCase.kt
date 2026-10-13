@@ -98,7 +98,13 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             val totalGrossProduced = todayTrips.sumOf { it.grossAmount }
             val totalFuelSpent = todayFuelings.sumOf { it.amountPaid }
             val totalExpenses = todayExpenses.sumOf { it.amount } + todayMaintenances.sumOf { it.costCop }
-            val pocketNet = totalNetIncome - totalFuelSpent - totalExpenses
+            val dailyQuotaTarget = if (vehicle.workDaysWeek > 0 && vehicle.quotaAmount > 0.0) {
+                vehicle.quotaAmount / vehicle.workDaysWeek
+            } else {
+                0.0
+            }
+            val netOperationalMargin = totalNetIncome - totalFuelSpent - totalExpenses
+            val pocketNet = netOperationalMargin - dailyQuotaTarget
 
             // Horario de actividad del día
             val firstEventTime = events.minByOrNull { it.timestamp }?.timestamp
@@ -189,6 +195,8 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
                 totalGrossProduced = totalGrossProduced,
                 totalFuelSpent = totalFuelSpent,
                 totalExpenses = totalExpenses,
+                netOperationalMargin = netOperationalMargin,
+                dailyQuotaTarget = dailyQuotaTarget,
                 pocketNet = pocketNet,
                 totalTripsCount = todayTrips.size,
                 firstEventTimestamp = firstEventTime,

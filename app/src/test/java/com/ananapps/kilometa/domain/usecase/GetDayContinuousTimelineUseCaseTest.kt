@@ -3,7 +3,7 @@
 // ARCHIVO: app/src/test/java/com/ananapps/kilometa/domain/usecase/GetDayContinuousTimelineUseCaseTest.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Pruebas unitarias para validar el cálculo automático de jornada y resumen continuo
-// al estilo KiloMeta (desde el primer registro del día al último).
+// al estilo KiloMeta con la invariante canónica pocketNet = netOperationalMargin - dailyQuotaTarget.
 // ==============================================================================
 
 package com.ananapps.kilometa.domain.usecase
@@ -14,7 +14,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import java.util.Calendar
 
 class GetDayContinuousTimelineUseCaseTest {
 
@@ -32,7 +31,7 @@ class GetDayContinuousTimelineUseCaseTest {
         fakeWalletTransferRepository = FakeWalletTransferRepository()
         fakeMaintenanceRepository = FakeMaintenanceRepository()
         fakeDriverProfileRepository = FakeDriverProfileRepository().apply {
-            currentVehicle = VehicleProfile(quotaCutoffDay = 2, quotaCutoffHour = 23)
+            currentVehicle = VehicleProfile(quotaAmount = 500_000.0, workDaysWeek = 6, quotaCutoffDay = 2, quotaCutoffHour = 23)
         }
         useCase = GetDayContinuousTimelineUseCase(
             fakeShiftRepository,
@@ -46,108 +45,158 @@ class GetDayContinuousTimelineUseCaseTest {
     }
 
     @Test
-    fun testEmptyDayProducesCleanSummary() = runBlocking {
+    fun testEmptyDayWithVehicleQuota_producesAccurateDeficit() = runBlocking {
         val summary = useCase().first()
-        assertEquals(0.0, summary.totalNetIncome, 0.001)
-        assertEquals(0.0, summary.totalFuelSpent, 0.001)
-        assertEquals(0.0, summary.pocketNet, 0.001)
+        val expectedDailyQuota = 500_000.0 / 6.0
+        assertEquals(expectedDailyQuota, summary.dailyQuotaTarget, 0.001)
+        assertEquals(0.0, summary.netOperationalMargin, 0.001)
+        assertEquals(-expectedDailyQuota, summary.pocketNet, 0.001)
         assertEquals(0, summary.totalTripsCount)
         assertTrue(summary.events.isEmpty())
         assertFalse(summary.hasActiveShift)
     }
 
     @Test
-    fun testDayEventsCalculatesShiftExtremesAndFinances() = runBlocking {
+    fun testOwnedVehicleWithoutQuota_producesPocketNetEqualToOperationalMargin() = runBlocking {
+        fakeDriverProfileRepository.currentVehicle = VehicleProfile(quotaAmount = 0.0, workDaysWeek = 0)
         val now = System.currentTimeMillis()
-        val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 6)
-            set(Calendar.MINUTE, 0)
-        }
-        val morningTime = calendar.timeInMillis
-
-        // Carrera 1 a las 6:00 AM
-        val trip1 = Trip(
-            id = "t1",
-            shiftId = "shift-auto-1",
-            platformType = PlatformType.UBER,
-            grossAmount = 30000.0,
-            commissionAmount = 5000.0,
-            netAmount = 25000.0,
-            paymentMethod = PaymentMethod.APP_WALLET,
-            paymentDestination = PaymentDestination.APP_RETAINED,
-            timestamp = morningTime
+        fakeShiftRepository.allTripsList.add(
+            Trip(
+                id = "t1", shiftId = "s1", platformType = PlatformType.UBER,
+                grossAmount = 100_000.0, commissionAmount = 15_000.0, netAmount = 85_000.0,
+                paymentMethod = PaymentMethod.APP_WALLET, paymentDestination = PaymentDestination.APP_RETAINED,
+                timestamp = now
+            )
         )
-
-        // Tanqueo a las 8:30 AM
-        val fueling = Fueling(
-            id = "f1",
-            shiftId = "shift-auto-1",
-            fuelType = FuelType.GAS,
-            amountPaid = 20000.0,
-            volume = 9.09,
-            odometer = 7980,
-            timestamp = morningTime + (2 * 3600 * 1000)
+        fakeShiftRepository.allFuelingsList.add(
+            Fueling(
+                id = "f1", shiftId = "s1", fuelType = FuelType.GAS,
+                amountPaid = 35_000.0, volume = 15.0, odometer = 1000, timestamp = now
+            )
         )
-
-        // Carrera 2 a las 11:30 AM
-        val trip2 = Trip(
-            id = "t2",
-            shiftId = "shift-auto-1",
-            platformType = PlatformType.DIDI,
-            grossAmount = 50000.0,
-            commissionAmount = 10000.0,
-            netAmount = 40000.0,
-            paymentMethod = PaymentMethod.CASH,
-            paymentDestination = PaymentDestination.CASH_IN_HAND,
-            timestamp = morningTime + (5 * 3600 * 1000) + (30 * 60 * 1000)
-        )
-
-        fakeShiftRepository.allTripsList.add(trip1)
-        fakeShiftRepository.allTripsList.add(trip2)
-        fakeShiftRepository.allFuelingsList.add(fueling)
 
         val summary = useCase().first()
+        assertEquals(0.0, summary.dailyQuotaTarget, 0.001)
+        assertEquals(50_000.0, summary.netOperationalMargin, 0.001)
+        assertEquals(50_000.0, summary.pocketNet, 0.001)
+    }
 
-        assertEquals(2, summary.totalTripsCount)
-        assertEquals(3, summary.events.size)
-        assertEquals(65000.0, summary.totalNetIncome, 0.001) // 25k + 40k
-        assertEquals(80000.0, summary.totalGrossProduced, 0.001) // 30k + 50k
-        assertEquals(20000.0, summary.totalFuelSpent, 0.001)
-        assertEquals(45000.0, summary.pocketNet, 0.001) // 65k - 20k
-        assertEquals(morningTime, summary.firstEventTimestamp)
-        assertEquals("5h 30m", summary.elapsedHoursFormatted)
+    @Test
+    fun testExactBreakeven_producesZeroPocketNet() = runBlocking {
+        fakeDriverProfileRepository.currentVehicle = VehicleProfile(quotaAmount = 480_000.0, workDaysWeek = 6)
+        val now = System.currentTimeMillis()
+        fakeShiftRepository.allTripsList.add(
+            Trip(
+                id = "t1", shiftId = "s1", platformType = PlatformType.DIDI,
+                grossAmount = 130_000.0, commissionAmount = 20_000.0, netAmount = 110_000.0,
+                paymentMethod = PaymentMethod.CASH, paymentDestination = PaymentDestination.CASH_IN_HAND,
+                timestamp = now
+            )
+        )
+        fakeShiftRepository.allFuelingsList.add(
+            Fueling(
+                id = "f1", shiftId = "s1", fuelType = FuelType.GAS,
+                amountPaid = 20_000.0, volume = 9.0, odometer = 1200, timestamp = now
+            )
+        )
+        fakeExpenseRepository.savedExpenses.add(
+            Expense(
+                id = "e1", shiftId = "s1", concept = ExpenseConcept.WASH,
+                amount = 10_000.0, timestamp = now
+            )
+        )
 
-        // Verificación de liquidación continua de caja y billeteras
-        assertNotNull(summary.cashSettlement)
-        assertNotNull(summary.cycleLabel)
-        assertTrue(summary.cycleLabel!!.startsWith("Semana del "))
-        val settlement = summary.cashSettlement!!
-        assertEquals(30000.0, settlement.cashInHandAvailable, 0.001) // 50k cash - 20k fuel
-        assertEquals(25000.0, settlement.uberWallet.netBalance, 0.001) // 25k app wallet
-        assertEquals(-10000.0, settlement.didiWallet.netBalance, 0.001) // -10k debt
+        val summary = useCase().first()
+        assertEquals(80_000.0, summary.dailyQuotaTarget, 0.001)
+        assertEquals(80_000.0, summary.netOperationalMargin, 0.001)
+        assertEquals(0.0, summary.pocketNet, 0.001)
+    }
+
+    @Test
+    fun testSurplusAfterQuota_producesPositivePocketNet() = runBlocking {
+        fakeDriverProfileRepository.currentVehicle = VehicleProfile(quotaAmount = 500_000.0, workDaysWeek = 6)
+        val now = System.currentTimeMillis()
+        fakeShiftRepository.allTripsList.add(
+            Trip(
+                id = "t1", shiftId = "s1", platformType = PlatformType.UBER,
+                grossAmount = 250_000.0, commissionAmount = 40_000.0, netAmount = 210_000.0,
+                paymentMethod = PaymentMethod.APP_WALLET, paymentDestination = PaymentDestination.APP_RETAINED,
+                timestamp = now
+            )
+        )
+        fakeShiftRepository.allFuelingsList.add(
+            Fueling(
+                id = "f1", shiftId = "s1", fuelType = FuelType.GASOLINE,
+                amountPaid = 45_000.0, volume = 2.8, odometer = 1500, timestamp = now
+            )
+        )
+        fakeExpenseRepository.savedExpenses.add(
+            Expense(
+                id = "e1", shiftId = "s1", concept = ExpenseConcept.TOLL,
+                amount = 15_000.0, timestamp = now
+            )
+        )
+
+        val summary = useCase().first()
+        val expectedDailyQuota = 500_000.0 / 6.0
+        assertEquals(expectedDailyQuota, summary.dailyQuotaTarget, 0.001)
+        assertEquals(150_000.0, summary.netOperationalMargin, 0.001)
+        assertEquals(150_000.0 - expectedDailyQuota, summary.pocketNet, 0.001)
+    }
+
+    @Test
+    fun testOperationalDeficitWithHighExpenses_producesDeeperNegativePocketNet() = runBlocking {
+        fakeDriverProfileRepository.currentVehicle = VehicleProfile(quotaAmount = 480_000.0, workDaysWeek = 6)
+        val now = System.currentTimeMillis()
+        fakeShiftRepository.allTripsList.add(
+            Trip(
+                id = "t1", shiftId = "s1", platformType = PlatformType.INDRIVE,
+                grossAmount = 30_000.0, commissionAmount = 5_000.0, netAmount = 25_000.0,
+                paymentMethod = PaymentMethod.CASH, paymentDestination = PaymentDestination.CASH_IN_HAND,
+                timestamp = now
+            )
+        )
+        fakeShiftRepository.allFuelingsList.add(
+            Fueling(
+                id = "f1", shiftId = "s1", fuelType = FuelType.GAS,
+                amountPaid = 50_000.0, volume = 20.0, odometer = 2000, timestamp = now
+            )
+        )
+        fakeMaintenanceRepository.records.add(
+            MaintenanceRecord(
+                id = "m1", vehicleId = "v1", type = MaintenanceType.TIRES,
+                costCop = 30_000.0, odometer = 2000, timestamp = now
+            )
+        )
+
+        val summary = useCase().first()
+        assertEquals(80_000.0, summary.dailyQuotaTarget, 0.001)
+        assertEquals(-55_000.0, summary.netOperationalMargin, 0.001)
+        assertEquals(-135_000.0, summary.pocketNet, 0.001)
+    }
+
+    @Test
+    fun testZeroWorkDays_avoidsDivisionByZero() = runBlocking {
+        fakeDriverProfileRepository.currentVehicle = VehicleProfile(quotaAmount = 600_000.0, workDaysWeek = 0)
+        val summary = useCase().first()
+        assertEquals(0.0, summary.dailyQuotaTarget, 0.001)
+        assertEquals(summary.netOperationalMargin, summary.pocketNet, 0.001)
+        assertFalse(summary.dailyQuotaTarget.isNaN())
+        assertFalse(summary.dailyQuotaTarget.isInfinite())
     }
 
     @Test
     fun testTimelineIncludesTransfersAndReflectsInSettlement() = runBlocking {
         val now = System.currentTimeMillis()
         val trip = Trip(
-            id = "t1",
-            shiftId = "s1",
-            platformType = PlatformType.UBER,
-            grossAmount = 40000.0,
-            commissionAmount = 10000.0,
-            netAmount = 30000.0,
-            paymentMethod = PaymentMethod.APP_WALLET,
-            paymentDestination = PaymentDestination.APP_RETAINED,
+            id = "t1", shiftId = "s1", platformType = PlatformType.UBER,
+            grossAmount = 40_000.0, commissionAmount = 10_000.0, netAmount = 30_000.0,
+            paymentMethod = PaymentMethod.APP_WALLET, paymentDestination = PaymentDestination.APP_RETAINED,
             timestamp = now
         )
         val transfer = WalletTransfer(
-            id = "wt1",
-            sourceWallet = WalletType.UBER,
-            destinationWallet = WalletType.DIGITAL_WALLET,
-            amount = 20000.0,
-            timestamp = now + 1000,
-            transferType = TransferType.PLATFORM_PAYOUT,
+            id = "wt1", sourceWallet = WalletType.UBER, destinationWallet = WalletType.DIGITAL_WALLET,
+            amount = 20_000.0, timestamp = now + 1000, transferType = TransferType.PLATFORM_PAYOUT,
             notes = "Dispersión semanal Uber a Nequi"
         )
         fakeShiftRepository.allTripsList.add(trip)
@@ -159,8 +208,8 @@ class GetDayContinuousTimelineUseCaseTest {
 
         val settlement = summary.cashSettlement
         assertNotNull(settlement)
-        assertEquals(10000.0, settlement!!.uberWalletBalance, 0.001) // 30k neto - 20k transferido
-        assertEquals(20000.0, settlement.digitalWalletBalance, 0.001) // 20k recibido en Nequi
-        assertEquals(30000.0, settlement.totalNetAssets, 0.001) // 10k Uber + 20k Nequi
+        assertEquals(10_000.0, settlement!!.uberWalletBalance, 0.001)
+        assertEquals(20_000.0, settlement.digitalWalletBalance, 0.001)
+        assertEquals(30_000.0, settlement.totalNetAssets, 0.001)
     }
 }

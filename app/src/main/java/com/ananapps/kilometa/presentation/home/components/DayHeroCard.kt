@@ -35,10 +35,31 @@ fun DayHeroCard(
     vehicle: VehicleProfile,
     modifier: Modifier = Modifier
 ) {
-    val dailyTarget = if (vehicle.workDaysWeek > 0) vehicle.quotaAmount / vehicle.workDaysWeek else 0.0
-    val isDailyQuotaMet = summary.pocketNet >= dailyTarget && dailyTarget > 0.0
-    val quotaProgress = if (dailyTarget > 0.0) (summary.pocketNet / dailyTarget).toFloat().coerceIn(0f, 1f) else 0f
-    val remainingDaily = if (dailyTarget > summary.pocketNet) dailyTarget - summary.pocketNet else 0.0
+    val dailyTarget = if (summary.dailyQuotaTarget > 0.0) {
+        summary.dailyQuotaTarget
+    } else if (vehicle.workDaysWeek > 0 && vehicle.quotaAmount > 0.0) {
+        vehicle.quotaAmount / vehicle.workDaysWeek
+    } else {
+        0.0
+    }
+
+    // Breakeven canónico: la cuota se cumple cuando pocketNet deja de ser negativo o dailyTarget es 0
+    val isDailyQuotaMet = summary.pocketNet >= 0.0 || dailyTarget == 0.0
+
+    // Progreso real cubierto de la cuota: utiliza netOperationalMargin o (pocketNet + dailyTarget)
+    val operatingCovered = if (summary.netOperationalMargin > 0.0) {
+        summary.netOperationalMargin
+    } else {
+        maxOf(0.0, summary.pocketNet + dailyTarget)
+    }
+
+    val quotaProgress = if (dailyTarget > 0.0) {
+        (operatingCovered / dailyTarget).toFloat().coerceIn(0f, 1f)
+    } else {
+        1f
+    }
+
+    val remainingDaily = if (summary.pocketNet < 0.0) -summary.pocketNet else 0.0
 
     val hoursDecimal = if (summary.firstEventTimestamp != null && summary.lastEventTimestamp != null && summary.lastEventTimestamp >= summary.firstEventTimestamp) {
         val diffMs = summary.lastEventTimestamp - summary.firstEventTimestamp
@@ -46,8 +67,24 @@ fun DayHeroCard(
     } else {
         0.0
     }
+
+    val hasActivity = summary.distanceTraversedKm > 0 || hoursDecimal > 0.0
+    val isProfitable = summary.pocketNet >= 0.0
+
     val ratePerKm = if (summary.distanceTraversedKm > 0) summary.pocketNet / summary.distanceTraversedKm else 0.0
     val ratePerHour = if (hoursDecimal > 0.0) summary.pocketNet / hoursDecimal else 0.0
+
+    val rateColor = when {
+        !hasActivity -> TextSecondary
+        isProfitable -> StatusGreen
+        else -> StatusAmber
+    }
+
+    val rateIcon = when {
+        !hasActivity -> "📊"
+        isProfitable -> "📈"
+        else -> "📉"
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -91,11 +128,15 @@ fun DayHeroCard(
 
             // Métrica Principal: Neto Libre en Bolsillo (34sp)
             Text(
-                text = "$ ${String.format(Locale.US, "%,.0f", summary.pocketNet)}",
+                text = if (summary.pocketNet < 0.0) {
+                    "-$ ${String.format(Locale.US, "%,.0f", -summary.pocketNet)}"
+                } else {
+                    "$ ${String.format(Locale.US, "%,.0f", summary.pocketNet)}"
+                },
                 fontSize = 34.sp,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = FontFamily.Monospace,
-                color = if (summary.pocketNet >= 0) StatusGreen else StatusRed
+                color = if (summary.pocketNet >= 0.0) StatusGreen else StatusRed
             )
 
             // Fila de Meta de Hoy (Sin Colisiones)
@@ -137,10 +178,15 @@ fun DayHeroCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
+                val rateText = if (!hasActivity) {
+                    "📊 --/km  ·  --/h"
+                } else {
+                    "$rateIcon $ ${String.format(Locale.US, "%,.0f", ratePerKm)}/km  ·  $ ${String.format(Locale.US, "%,.0f", ratePerHour)}/h"
+                }
                 Text(
-                    text = "📈 $ ${String.format(Locale.US, "%,.0f", ratePerKm)}/km  ·  $ ${String.format(Locale.US, "%,.0f", ratePerHour)}/h",
+                    text = rateText,
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                    color = StatusGreen
+                    color = rateColor
                 )
             }
 

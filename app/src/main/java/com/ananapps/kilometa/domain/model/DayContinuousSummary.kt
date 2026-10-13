@@ -82,6 +82,8 @@ data class DayContinuousSummary(
     val totalGrossProduced: Double = 0.0,
     val totalFuelSpent: Double = 0.0,
     val totalExpenses: Double = 0.0,
+    val netOperationalMargin: Double = 0.0,
+    val dailyQuotaTarget: Double = 0.0,
     val pocketNet: Double = 0.0,
     val totalTripsCount: Int = 0,
     val firstEventTimestamp: Long? = null,
