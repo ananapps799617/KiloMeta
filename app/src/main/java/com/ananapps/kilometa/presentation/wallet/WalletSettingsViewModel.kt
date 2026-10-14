@@ -36,6 +36,30 @@ class WalletSettingsViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _editingWallet = MutableStateFlow<Wallet?>(null)
+    val editingWallet: StateFlow<Wallet?> = _editingWallet.asStateFlow()
+
+    private val _isSheetOpen = MutableStateFlow(false)
+    val isSheetOpen: StateFlow<Boolean> = _isSheetOpen.asStateFlow()
+
+    fun openCreateWallet() {
+        _editingWallet.value = null
+        _errorMessage.value = null
+        _isSheetOpen.value = true
+    }
+
+    fun openEditWallet(wallet: Wallet) {
+        _editingWallet.value = wallet
+        _errorMessage.value = null
+        _isSheetOpen.value = true
+    }
+
+    fun closeSheet() {
+        _editingWallet.value = null
+        _errorMessage.value = null
+        _isSheetOpen.value = false
+    }
+
     fun toggleWalletActive(id: String, isActive: Boolean) {
         viewModelScope.launch {
             toggleWalletStatusUseCase(id, isActive).onFailure { error ->

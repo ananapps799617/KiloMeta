@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ananapps.kilometa.presentation.platform.PlatformCatalogViewModel
 import com.ananapps.kilometa.presentation.theme.*
@@ -29,7 +30,7 @@ import com.ananapps.kilometa.presentation.theme.*
  */
 @Composable
 fun PlatformCatalogDialog(
-    viewModel: PlatformCatalogViewModel,
+    viewModel: PlatformCatalogViewModel = hiltViewModel(),
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {

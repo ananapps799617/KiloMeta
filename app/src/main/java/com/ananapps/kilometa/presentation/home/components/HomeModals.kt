@@ -59,9 +59,11 @@ fun HomeCockpitModals(
 
     if (showTripDialog) {
         val vehicleProfile by viewModel.vehicleProfile.collectAsState()
+        val activePlatforms by viewModel.activePlatforms.collectAsState()
         RegisterTripDialog(
             vehicleProfile = vehicleProfile,
             lastKnownOdometer = resolvedOdo,
+            availablePlatforms = activePlatforms,
             onDismiss = {
                 onDismissTripDialog()
             },

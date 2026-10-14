@@ -32,6 +32,7 @@ fun RegisterTripDialog(
     lastKnownOdometer: Int = 0,
     onDismiss: () -> Unit,
     existingTrip: Trip? = null,
+    availablePlatforms: List<Platform> = emptyList(),
     onConfirmTrip: (
         platform: PlatformType,
         gross: Double,
@@ -164,13 +165,30 @@ fun RegisterTripDialog(
         hasDirtyData = hasDirtyData,
         modifier = modifier
     ) {
-        TripPlatformSelector(
-            selectedPlatform = selectedPlatform,
-            onPlatformSelected = { newPlatform ->
-                selectedPlatform = newPlatform
-                updateSuggestedCommission(grossAmountText, newPlatform)
-            }
-        )
+        if (availablePlatforms.isNotEmpty()) {
+            DynamicTripPlatformSelector(
+                platforms = availablePlatforms,
+                selectedPlatformId = selectedPlatform.name.lowercase(),
+                onPlatformSelected = { platform ->
+                    val resolved = when (platform.id.lowercase()) {
+                        "uber" -> PlatformType.UBER
+                        "didi" -> PlatformType.DIDI
+                        "indrive" -> PlatformType.INDRIVE
+                        else -> PlatformType.PRIVATE
+                    }
+                    selectedPlatform = resolved
+                    updateSuggestedCommission(grossAmountText, resolved)
+                }
+            )
+        } else {
+            TripPlatformSelector(
+                selectedPlatform = selectedPlatform,
+                onPlatformSelected = { newPlatform ->
+                    selectedPlatform = newPlatform
+                    updateSuggestedCommission(grossAmountText, newPlatform)
+                }
+            )
+        }
 
         TripTelemetrySection(
             vehicleProfile = vehicleProfile,

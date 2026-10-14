@@ -40,7 +40,8 @@ class HomeViewModel @Inject constructor(
     private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase, private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
     private val executeWalletTransferUseCase: ExecuteWalletTransferUseCase, private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository,
     private val maintenanceRepository: com.ananapps.kilometa.domain.repository.MaintenanceRepository,
-    private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository
+    private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository,
+    private val platformRepository: com.ananapps.kilometa.domain.repository.PlatformRepository
 ) : ViewModel() {
 
     private val _syncPreferences = MutableStateFlow(SyncPreferences())
@@ -51,6 +52,7 @@ class HomeViewModel @Inject constructor(
     val lastKnownOdometer: StateFlow<Int> = getLastKnownOdometerUseCase().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), 0)
     val dayContinuousTimeline: StateFlow<DayContinuousSummary> = getDayContinuousTimelineUseCase().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DayContinuousSummary())
     val savedPlaces: StateFlow<List<Place>> = placeRepository.getAllPlaces().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+    val activePlatforms: StateFlow<List<Platform>> = platformRepository.observeActivePlatforms().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     fun updateStationPrice(placeId: String, fuelType: FuelType, newPrice: Double) = viewModelScope.launch {
         placeRepository.updateStationPrice(placeId, fuelType, newPrice)

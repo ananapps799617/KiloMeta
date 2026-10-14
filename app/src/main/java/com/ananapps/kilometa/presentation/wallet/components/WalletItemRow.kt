@@ -19,6 +19,8 @@ import com.ananapps.kilometa.core.util.ColorUtils
 import com.ananapps.kilometa.domain.model.Wallet
 import com.ananapps.kilometa.presentation.theme.*
 
+import androidx.compose.foundation.clickable
+
 /**
  * Renglón desacoplado para representar un bolsillo o billetera (Orden #054).
  * Maneja diferenciación visual inmutable para billeteras del sistema (MND-04).
@@ -27,6 +29,7 @@ import com.ananapps.kilometa.presentation.theme.*
 fun WalletItemRow(
     wallet: Wallet,
     onToggleActive: (Boolean) -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val indicatorColor = ColorUtils.parseHexColor(wallet.colorHex)
@@ -35,7 +38,8 @@ fun WalletItemRow(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(rowAlpha),
+            .alpha(rowAlpha)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         color = DeepObsidianSurface,
         shape = RoundedCornerShape(12.dp)
     ) {

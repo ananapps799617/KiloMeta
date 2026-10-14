@@ -1,12 +1,3 @@
-// ==============================================================================
-// PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
-// ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/more/MoreScreen.kt
-// DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla de configuración secundaria (Pestaña "Más") inspirada en KiloMeta.
-// Reemplaza por completo el menú hamburguesa, centralizando Perfil, Vehículo,
-// Mantenimientos, Gastos, Sincronización y Sesión en una lista táctil ergonómica.
-// ==============================================================================
-
 package com.ananapps.kilometa.presentation.more
 
 import androidx.compose.foundation.clickable
@@ -31,11 +22,10 @@ import com.ananapps.kilometa.presentation.common.AppUpdateDialog
 import com.ananapps.kilometa.presentation.more.components.MoreOptionItem
 import com.ananapps.kilometa.presentation.more.components.MoreOptionSwitchItem
 import com.ananapps.kilometa.presentation.more.components.PurgeAccountDataDialog
+import com.ananapps.kilometa.presentation.platform.components.PlatformCatalogDialog
 import com.ananapps.kilometa.presentation.theme.*
+import com.ananapps.kilometa.presentation.wallet.components.WalletSettingsDialog
 
-// ------------------------------------------------------------------------------
-// BLOQUE 1: PANTALLA PRINCIPAL DE MÁS OPCIONES
-// ------------------------------------------------------------------------------
 @Composable
 fun MoreScreen(
     onNavigateToProfile: () -> Unit,
@@ -54,6 +44,8 @@ fun MoreScreen(
     var showUpToDateDialog by remember { mutableStateOf(false) }
     var showPurgeConfirmDialog by remember { mutableStateOf(false) }
     var purgeError by remember { mutableStateOf<String?>(null) }
+    var showPlatformCatalogDialog by remember { mutableStateOf(false) }
+    var showWalletSettingsDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(updateState) {
         if (updateState is UpdateCheckUiState.UpToDate) {
@@ -83,6 +75,24 @@ fun MoreScreen(
                 title = "Mi Perfil & Vehículo",
                 subtitle = "Nombre, placa, cuota y horario de corte",
                 onClick = onNavigateToProfile
+            )
+        }
+
+        item {
+            MoreOptionItem(
+                icon = Icons.Default.List,
+                title = "Catálogo de Plataformas",
+                subtitle = "Activar, crear o editar Uber, DiDi, inDrive y más",
+                onClick = { showPlatformCatalogDialog = true }
+            )
+        }
+
+        item {
+            MoreOptionItem(
+                icon = Icons.Default.Star,
+                title = "Mis Bolsillos & Billeteras",
+                subtitle = "Efectivo, saldo digital, ahorros y cuentas",
+                onClick = { showWalletSettingsDialog = true }
             )
         }
 
@@ -244,5 +254,13 @@ fun MoreScreen(
             titleContentColor = TextPrimary,
             textContentColor = TextSecondary
         )
+    }
+
+    if (showPlatformCatalogDialog) {
+        PlatformCatalogDialog(onDismiss = { showPlatformCatalogDialog = false })
+    }
+
+    if (showWalletSettingsDialog) {
+        WalletSettingsDialog(onDismiss = { showWalletSettingsDialog = false })
     }
 }
