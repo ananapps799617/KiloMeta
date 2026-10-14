@@ -18,8 +18,9 @@ import com.ananapps.kilometa.domain.model.Trip
 // BLOQUE 1: MAPEO ENTIDAD <-> DOMINIO DE CARRERAS
 // ------------------------------------------------------------------------------
 fun TripEntity.toDomain(): Trip {
+    val rawName = this.platformName.trim()
     val platform = try {
-        PlatformType.valueOf(this.platformName)
+        PlatformType.valueOf(rawName.uppercase())
     } catch (_: IllegalArgumentException) {
         PlatformType.PRIVATE
     }
@@ -50,15 +51,17 @@ fun TripEntity.toDomain(): Trip {
         endOdometer = this.endOdometer,
         platformPromoDiscount = this.platformPromoDiscount,
         distanceKm = this.distanceKm,
-        durationMinutes = this.durationMinutes
+        durationMinutes = this.durationMinutes,
+        platformId = rawName.lowercase()
     )
 }
 
 fun Trip.toEntity(): TripEntity {
+    val pName = if (this.platformId.isNotBlank()) this.platformId.lowercase() else this.platformType.name.lowercase()
     return TripEntity(
         id = this.id,
         shiftId = this.shiftId,
-        platformName = this.platformType.name,
+        platformName = pName,
         grossAmount = this.grossAmount,
         commissionAmount = this.commissionAmount,
         netAmount = this.netAmount,

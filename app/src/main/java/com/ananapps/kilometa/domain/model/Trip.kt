@@ -34,7 +34,8 @@ data class Trip(
     val endOdometer: Int? = null,
     val platformPromoDiscount: Double = 0.0,
     val distanceKm: Double? = null,
-    val durationMinutes: Int? = null
+    val durationMinutes: Int? = null,
+    val platformId: String = platformType.name.lowercase()
 ) {
     // --------------------------------------------------------------------------
     // BLOQUE 3: TELEMETRÍA Y MÉTRICAS DE RENTABILIDAD

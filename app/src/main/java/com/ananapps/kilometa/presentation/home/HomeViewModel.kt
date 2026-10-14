@@ -39,7 +39,7 @@ class HomeViewModel @Inject constructor(
     private val notifyQuotaMilestoneUseCase: NotifyQuotaMilestoneUseCase, private val driverProfileRepository: DriverProfileRepository,
     private val getLastKnownOdometerUseCase: GetLastKnownOdometerUseCase, private val getDayContinuousTimelineUseCase: GetDayContinuousTimelineUseCase,
     private val executeWalletTransferUseCase: ExecuteWalletTransferUseCase, private val walletTransferRepository: com.ananapps.kilometa.domain.repository.WalletTransferRepository,
-    private val maintenanceRepository: com.ananapps.kilometa.domain.repository.MaintenanceRepository, private val autoProvisionDailyQuotaUseCase: AutoProvisionDailyQuotaUseCase,
+    private val maintenanceRepository: com.ananapps.kilometa.domain.repository.MaintenanceRepository,
     private val placeRepository: com.ananapps.kilometa.domain.repository.PlaceRepository
 ) : ViewModel() {
 
@@ -59,7 +59,7 @@ class HomeViewModel @Inject constructor(
     init {
         schedulePeriodicSyncUseCase(_syncPreferences.value)
         scheduleWeeklyCutoffNotificationsUseCase()
-        viewModelScope.launch { autoProvisionDailyQuotaUseCase(); syncDataUseCase() }
+        viewModelScope.launch { syncDataUseCase() }
     }
 
     val syncStatus: StateFlow<SyncStatus> = syncRepository.observeSyncStatus()
@@ -140,11 +140,9 @@ class HomeViewModel @Inject constructor(
                 distanceKm = distanceKm, durationMinutes = durationMinutes,
                 platformPromoDiscount = platformPromoDiscount
             )
-            autoProvisionDailyQuotaUseCase()
         }
     }
 
-    fun triggerAutoProvision() = viewModelScope.launch { autoProvisionDailyQuotaUseCase() }
     fun deleteTrip(tripId: String) = viewModelScope.launch { deleteTripUseCase(tripId) }
     fun deleteExpense(expenseId: String) = viewModelScope.launch { deleteExpenseUseCase(expenseId) }
     fun deleteFueling(fuelingId: String) = viewModelScope.launch { deleteFuelingUseCase(fuelingId) }
