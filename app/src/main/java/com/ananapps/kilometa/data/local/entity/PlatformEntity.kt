@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * Entidad relacional SQLite para el catálogo multi-país de plataformas de transporte (Orden #054).
+ * Entidad relacional SQLite para el catálogo multi-país de plataformas de transporte (Orden #054 / #055).
  * Regla inquebrantable: Inmutabilidad profunda y tipado estricto.
  */
 @Entity(tableName = "platforms")
@@ -19,6 +19,9 @@ data class PlatformEntity(
 
     @ColumnInfo(name = "monogram")
     val monogram: String,
+
+    @ColumnInfo(name = "icon_name", defaultValue = "🚘")
+    val iconName: String = "🚘",
 
     @ColumnInfo(name = "brand_color_hex")
     val brandColorHex: String,

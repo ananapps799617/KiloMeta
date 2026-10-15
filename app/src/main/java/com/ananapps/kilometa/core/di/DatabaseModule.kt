@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/core/di/DatabaseModule.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Módulo de inyección de dependencias para persistencia local Room SQLite v10.
-// Migraciones desacopladas en DatabaseMigrations.kt y remoción de fallback destructivo (DEV-02).
+// Módulo de inyección de dependencias para persistencia local Room SQLite v11.
+// Migraciones desacopladas en DatabaseMigrations.kt y semillas idempotentes con DatabaseSeeds.kt.
 // Regla inquebrantable: Modularidad estricta < 280 líneas de código.
 // ==============================================================================
 
@@ -23,6 +23,7 @@ import com.ananapps.kilometa.data.local.dao.TripDao
 import com.ananapps.kilometa.data.local.dao.WalletDao
 import com.ananapps.kilometa.data.local.dao.WalletTransferDao
 import com.ananapps.kilometa.data.local.migration.DatabaseMigrations
+import com.ananapps.kilometa.data.local.seed.DatabaseSeeds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -48,6 +49,7 @@ object DatabaseModule {
             KiloMetaDatabase.DATABASE_NAME
         )
             .addMigrations(*DatabaseMigrations.ALL_MIGRATIONS)
+            .addCallback(DatabaseSeeds.getRoomCallback())
             .build()
     }
 

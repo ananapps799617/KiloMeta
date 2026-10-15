@@ -184,6 +184,27 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Agregar columna icon_name a platforms y wallets (MND-DG-03)
+            db.execSQL("ALTER TABLE `platforms` ADD COLUMN `icon_name` TEXT NOT NULL DEFAULT '🚘'")
+            db.execSQL("ALTER TABLE `wallets` ADD COLUMN `icon_name` TEXT NOT NULL DEFAULT '💵'")
+
+            // 2. Normalización de marcas y paleta vehicular oficial (MND-DG-03 / MND-UI-01)
+            db.execSQL("UPDATE `platforms` SET `brand_color_hex` = '#1C1C1E', `icon_name` = '🚘' WHERE `id` = 'uber'")
+            db.execSQL("UPDATE `platforms` SET `brand_color_hex` = '#FF7A00', `icon_name` = '🚘' WHERE `id` = 'didi'")
+            db.execSQL("UPDATE `platforms` SET `brand_color_hex` = '#B4F309', `icon_name` = '🚘' WHERE `id` = 'indrive'")
+            db.execSQL("UPDATE `platforms` SET `brand_color_hex` = '#7B1FA2', `icon_name` = '🚘' WHERE `id` = 'private'")
+
+            // 3. Normalización de bolsillos base
+            db.execSQL("UPDATE `wallets` SET `color_hex` = '#00E676', `icon_name` = '💵' WHERE `id` = 'cash_physical'")
+            db.execSQL("UPDATE `wallets` SET `color_hex` = '#2979FF', `icon_name` = '🟣' WHERE `id` = 'digital_wallet'")
+            db.execSQL("UPDATE `wallets` SET `color_hex` = '#1C1C1E', `icon_name` = '🚘' WHERE `id` = 'uber'")
+            db.execSQL("UPDATE `wallets` SET `color_hex` = '#FF7A00', `icon_name` = '🚘' WHERE `id` = 'didi'")
+            db.execSQL("UPDATE `wallets` SET `color_hex` = '#2979FF', `icon_name` = '🚘' WHERE `id` = 'car_quota'")
+        }
+    }
+
     val ALL_MIGRATIONS: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -193,6 +214,7 @@ object DatabaseMigrations {
         MIGRATION_6_7,
         MIGRATION_7_8,
         MIGRATION_8_9,
-        MIGRATION_9_10
+        MIGRATION_9_10,
+        MIGRATION_10_11
     )
 }

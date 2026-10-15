@@ -2,14 +2,15 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/CockpitWalletsCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Tarjeta noble e independiente de cabina para los 4 Bolsillos Soberanos (Micro-Orden #038.2).
-// Desacoplada de DayHeroCard para dar aire, espacio negativo y acceso vehicular a transferencias.
+// Tarjeta noble e independiente de cabina para los Bolsillos Soberanos (Orden #038 / #055).
+// Dinámica: se alimenta de la lista viva de Wallet con fallback a CashSettlementSummary.
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -23,23 +24,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ananapps.kilometa.core.util.ColorUtils
 import com.ananapps.kilometa.domain.model.CashSettlementSummary
+import com.ananapps.kilometa.domain.model.PocketType
+import com.ananapps.kilometa.domain.model.Wallet
 import com.ananapps.kilometa.presentation.theme.*
 import java.util.Locale
-
-import androidx.compose.foundation.clickable
-import com.ananapps.kilometa.domain.model.PocketType
 
 @Composable
 fun CockpitWalletsCard(
     settlement: CashSettlementSummary?,
+    wallets: List<Wallet> = emptyList(),
     cycleLabel: String? = null,
     onTransferClick: () -> Unit,
     onPocketClick: ((PocketType) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val effective = settlement ?: CashSettlementSummary()
-
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -54,24 +54,14 @@ fun CockpitWalletsCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier.weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "💼 TUS 5 BOLSILLOS SOBERANOS",
+                        text = if (wallets.isNotEmpty()) "💼 TUS BOLSILLOS SOBERANOS" else "💼 TUS 5 BOLSILLOS SOBERANOS",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = ElectricBluePrimary
                     )
                     if (!cycleLabel.isNullOrBlank()) {
-                        Text(
-                            text = cycleLabel,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 11.sp
-                            ),
-                            color = TextSecondary
-                        )
+                        Text(text = cycleLabel, style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp), color = TextSecondary)
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -86,82 +76,125 @@ fun CockpitWalletsCard(
                 )
             }
 
-            // Bolsillo 5: Cuota Carro (Apartado Semanal Sagrado)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(DeepObsidianSurfaceVariant)
-                    .border(1.dp, ElectricBluePrimary.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-                    .clickable(enabled = onPocketClick != null) { onPocketClick?.invoke(PocketType.CAR_QUOTA) }
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            if (wallets.isNotEmpty()) {
+                val heroWallet = wallets.find { it.id == "car_quota" } ?: wallets.find { it.category == "SAVINGS" } ?: wallets.first()
+                val otherWallets = wallets.filter { it.id != heroWallet.id }
+                val heroColor = ColorUtils.parseHexColor(heroWallet.colorHex)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(DeepObsidianSurfaceVariant)
+                        .border(1.dp, heroColor.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                        .clickable(enabled = onPocketClick != null) {
+                            mapWalletIdToPocketType(heroWallet.id)?.let { onPocketClick?.invoke(it) }
+                        }
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "🚘", fontSize = 18.sp)
-                        Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = heroWallet.iconName.ifBlank { "🚘" }, fontSize = 18.sp)
+                            Column {
+                                Text(text = heroWallet.name, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Text(
+                                    text = "$ ${String.format(Locale.US, "%,.0f", heroWallet.balance)}",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                                    color = if (heroWallet.balance >= 0) heroColor else StatusRed
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(heroColor.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
                             Text(
-                                text = "Cuota Carro (Apartado)",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextSecondary
-                            )
-                            Text(
-                                text = "$ ${String.format(Locale.US, "%,.0f", effective.carQuotaWalletBalance)}",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace
-                                ),
-                                color = if (effective.carQuotaWalletBalance >= 0) ElectricBluePrimary else StatusRed
+                                text = if (heroWallet.category == "SAVINGS") "Ahorro" else "Principal",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = heroColor
                             )
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(ElectricBluePrimary.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "Semanal",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = ElectricBluePrimary
-                        )
+                }
+
+                otherWallets.chunked(2).forEach { rowPair ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rowPair.forEach { w ->
+                            val chipColor = ColorUtils.parseHexColor(w.colorHex)
+                            WalletMiniChip(
+                                label = "${w.iconName.ifBlank { "💵" }} ${w.name}",
+                                balance = w.balance,
+                                accentColor = chipColor,
+                                modifier = Modifier.weight(1f)
+                            ) { mapWalletIdToPocketType(w.id)?.let { onPocketClick?.invoke(it) } }
+                        }
+                        if (rowPair.size == 1) Spacer(modifier = Modifier.weight(1f))
                     }
                 }
-            }
-
-            // Cuadrícula 2x2 para Efectivo, Digital, Uber y DiDi
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                WalletMiniChip("💵 Efectivo Físico", effective.cashPhysicalBalance, StatusGreen, Modifier.weight(1f)) {
-                    onPocketClick?.invoke(PocketType.CASH_PHYSICAL)
+            } else {
+                val effective = settlement ?: CashSettlementSummary()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(DeepObsidianSurfaceVariant)
+                        .border(1.dp, ElectricBluePrimary.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                        .clickable(enabled = onPocketClick != null) { onPocketClick?.invoke(PocketType.CAR_QUOTA) }
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = "🚘", fontSize = 18.sp)
+                            Column {
+                                Text(text = "Cuota Carro (Apartado)", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Text(
+                                    text = "$ ${String.format(Locale.US, "%,.0f", effective.carQuotaWalletBalance)}",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
+                                    color = if (effective.carQuotaWalletBalance >= 0) ElectricBluePrimary else StatusRed
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(ElectricBluePrimary.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(text = "Semanal", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = ElectricBluePrimary)
+                        }
+                    }
                 }
-                WalletMiniChip("🟣 Nequi / Davi", effective.digitalWalletBalance, PlatformPrivate, Modifier.weight(1f)) {
-                    onPocketClick?.invoke(PocketType.DIGITAL_WALLET)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    WalletMiniChip("💵 Efectivo Físico", effective.cashPhysicalBalance, StatusGreen, Modifier.weight(1f)) { onPocketClick?.invoke(PocketType.CASH_PHYSICAL) }
+                    WalletMiniChip("🟣 Nequi / Davi", effective.digitalWalletBalance, PlatformPrivate, Modifier.weight(1f)) { onPocketClick?.invoke(PocketType.DIGITAL_WALLET) }
                 }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                WalletMiniChip("🖤 Billetera Uber", effective.uberWalletBalance, TextPrimary, Modifier.weight(1f)) {
-                    onPocketClick?.invoke(PocketType.UBER)
-                }
-                WalletMiniChip("🧡 Billetera DiDi", effective.didiWalletBalance, StatusAmber, Modifier.weight(1f)) {
-                    onPocketClick?.invoke(PocketType.DIDI)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    WalletMiniChip("🖤 Billetera Uber", effective.uberWalletBalance, TextPrimary, Modifier.weight(1f)) { onPocketClick?.invoke(PocketType.UBER) }
+                    WalletMiniChip("🧡 Billetera DiDi", effective.didiWalletBalance, StatusAmber, Modifier.weight(1f)) { onPocketClick?.invoke(PocketType.DIDI) }
                 }
             }
         }
     }
+}
+
+private fun mapWalletIdToPocketType(id: String): PocketType? = when (id) {
+    "cash_physical" -> PocketType.CASH_PHYSICAL
+    "digital_wallet" -> PocketType.DIGITAL_WALLET
+    "uber" -> PocketType.UBER
+    "didi" -> PocketType.DIDI
+    "car_quota" -> PocketType.CAR_QUOTA
+    else -> null
 }
 
 @Composable
@@ -174,6 +207,7 @@ private fun WalletMiniChip(
 ) {
     Box(
         modifier = modifier
+            .defaultMinSize(minHeight = 48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(DeepObsidianSurfaceVariant)
             .border(1.dp, DeepObsidianBorder.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
@@ -181,19 +215,10 @@ private fun WalletMiniChip(
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = TextSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 text = "$ ${String.format(Locale.US, "%,.0f", balance)}",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace
-                ),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace),
                 color = if (balance >= 0) accentColor else StatusRed,
                 maxLines = 1
             )

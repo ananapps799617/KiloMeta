@@ -2,6 +2,7 @@ package com.ananapps.kilometa.presentation.wallet.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,11 +20,9 @@ import com.ananapps.kilometa.core.util.ColorUtils
 import com.ananapps.kilometa.domain.model.Wallet
 import com.ananapps.kilometa.presentation.theme.*
 
-import androidx.compose.foundation.clickable
-
 /**
- * Renglón desacoplado para representar un bolsillo o billetera (Orden #054).
- * Maneja diferenciación visual inmutable para billeteras del sistema (MND-04).
+ * Renglón desacoplado para representar un bolsillo o billetera (Orden #054 / #055).
+ * Maneja diferenciación visual inmutable para billeteras del sistema (MND-04) e iconografía vehicular.
  */
 @Composable
 fun WalletItemRow(
@@ -49,7 +48,7 @@ fun WalletItemRow(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Indicador cromático del bolsillo
+            // Indicador cromático del bolsillo con glifo vehicular (36dp)
             Box(
                 modifier = Modifier
                     .size(36.dp)
@@ -57,10 +56,9 @@ fun WalletItemRow(
                     .border(2.dp, indicatorColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .background(indicatorColor, CircleShape)
+                Text(
+                    text = wallet.iconName.ifBlank { "💵" },
+                    fontSize = 18.sp
                 )
             }
 

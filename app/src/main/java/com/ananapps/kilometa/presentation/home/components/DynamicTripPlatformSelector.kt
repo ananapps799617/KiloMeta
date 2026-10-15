@@ -13,9 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.core.util.ColorUtils
@@ -23,8 +23,8 @@ import com.ananapps.kilometa.domain.model.Platform
 import com.ananapps.kilometa.presentation.theme.*
 
 /**
- * Selector vehicular dinámico multi-país para registro de carreras (Orden #054).
- * Touch target vehicular de 48dp y adaptación fluida según cantidad de plataformas activas.
+ * Selector vehicular dinámico multi-país para registro de carreras (Orden #054 / #055).
+ * Touch target vehicular de 48dp, iconografía y adaptación ergonómica a luz solar.
  */
 @Composable
 fun DynamicTripPlatformSelector(
@@ -67,7 +67,7 @@ fun DynamicTripPlatformSelector(
                         platform = platform,
                         isSelected = platform.id.equals(selectedPlatformId, ignoreCase = true),
                         onClick = { onPlatformSelected(platform) },
-                        modifier = Modifier.width(96.dp)
+                        modifier = Modifier.width(104.dp)
                     )
                 }
             }
@@ -108,6 +108,11 @@ private fun DynamicPlatformChip(
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
                 Text(
+                    text = platform.iconName.ifBlank { "🚘" },
+                    fontSize = 13.sp
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
                     text = platform.monogram.take(2).uppercase(),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
@@ -116,15 +121,16 @@ private fun DynamicPlatformChip(
                     ),
                     color = if (isSelected) contentColor else TextPrimary
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(3.dp))
                 Text(
                     text = platform.name,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     ),
                     color = if (isSelected) contentColor else TextSecondary,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

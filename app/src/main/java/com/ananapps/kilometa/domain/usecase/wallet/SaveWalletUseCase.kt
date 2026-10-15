@@ -1,11 +1,12 @@
 package com.ananapps.kilometa.domain.usecase.wallet
 
+import com.ananapps.kilometa.core.util.IconCatalog
 import com.ananapps.kilometa.domain.model.Wallet
 import com.ananapps.kilometa.domain.repository.WalletRepository
 import javax.inject.Inject
 
 /**
- * Caso de uso para crear o modificar un bolsillo con validaciones de negocio (Orden #054).
+ * Caso de uso para crear o modificar un bolsillo con validaciones de negocio (Orden #054 / #055).
  */
 class SaveWalletUseCase @Inject constructor(
     private val walletRepository: WalletRepository
@@ -17,9 +18,11 @@ class SaveWalletUseCase @Inject constructor(
         val normalizedId = wallet.id.ifBlank {
             wallet.name.lowercase().trim().replace("\\s+".toRegex(), "_")
         }
+        val sanitizedIcon = IconCatalog.sanitizeIcon(wallet.iconName, default = IconCatalog.DEFAULT_WALLET_ICON)
         val normalized = wallet.copy(
             id = normalizedId,
-            name = wallet.name.trim()
+            name = wallet.name.trim(),
+            iconName = sanitizedIcon
         )
         return walletRepository.saveWallet(normalized)
     }

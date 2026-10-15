@@ -10,6 +10,23 @@ import androidx.compose.ui.graphics.luminance
  */
 object ColorUtils {
 
+    /**
+     * Paleta oficial de 10 colores vehiculares certificados para plataformas y bolsillos (Orden #055).
+     * Incluye Negro Asfalto (#1C1C1E) para Uber y tonos estándar del transporte en Colombia.
+     */
+    val OFFICIAL_VEHICULAR_PALETTE: List<String> = listOf(
+        "#1C1C1E", // Negro Asfalto / Deep Obsidian (Uber)
+        "#FF7A00", // Naranja DiDi
+        "#B4F309", // Lima inDrive
+        "#7B1FA2", // Púrpura Particular
+        "#FFD600", // Amarillo Taxi
+        "#FF441F", // Rojo Domicilio
+        "#00E676", // Verde Efectivo
+        "#2979FF", // Azul Banco / Nequi
+        "#FFFFFF", // Blanco Puro
+        "#78909C"  // Grafito Reserva
+    )
+
     private val DefaultFallbackColor: Color = Color(0xFF2979FF)
 
     /**

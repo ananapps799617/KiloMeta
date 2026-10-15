@@ -1,32 +1,25 @@
 package com.ananapps.kilometa.presentation.wallet.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ananapps.kilometa.core.util.ColorUtils
+import com.ananapps.kilometa.core.util.IconCatalog
 import com.ananapps.kilometa.domain.model.Wallet
+import com.ananapps.kilometa.presentation.common.components.VehicularColorSelector
+import com.ananapps.kilometa.presentation.common.components.VehicularIconSelector
 import com.ananapps.kilometa.presentation.theme.*
 import java.util.UUID
-
-private val WALLET_PALETTE = listOf(
-    "#00E676", "#00B0FF", "#FFB800", "#7145D6",
-    "#FF5252", "#E040FB", "#00E5FF", "#78909C"
-)
 
 private val WALLET_CATEGORIES = listOf(
     "SAVINGS" to "Ahorro",
@@ -37,8 +30,8 @@ private val WALLET_CATEGORIES = listOf(
 )
 
 /**
- * Hoja modal inferior para crear o editar bolsillos/billeteras personalizadas (Orden #054).
- * Regla inquebrantable: Modularidad estricta < 280 líneas de código.
+ * Hoja modal inferior para crear o editar bolsillos/billeteras personalizadas (Orden #054 / #055).
+ * Modularidad estricta con selectores vehiculares desacoplados (< 200 LOC).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +43,7 @@ fun WalletEditSheet(
 ) {
     var name by remember(wallet) { mutableStateOf(wallet?.name.orEmpty()) }
     var category by remember(wallet) { mutableStateOf(wallet?.category ?: "SAVINGS") }
+    var iconName by remember(wallet) { mutableStateOf(wallet?.iconName ?: IconCatalog.DEFAULT_WALLET_ICON) }
     var colorHex by remember(wallet) { mutableStateOf(wallet?.colorHex ?: "#00E676") }
 
     ModalBottomSheet(
@@ -128,6 +122,21 @@ fun WalletEditSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Selector de Icono
+            Text(
+                text = "Icono Distintivo",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            VehicularIconSelector(
+                selectedIcon = iconName,
+                onIconSelected = { iconName = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Selector de Color
             Text(
                 text = "Color Distintivo",
@@ -136,26 +145,10 @@ fun WalletEditSheet(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(WALLET_PALETTE) { hex ->
-                    val color = ColorUtils.parseHexColor(hex)
-                    val isSelected = colorHex.equals(hex, ignoreCase = true)
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(color, CircleShape)
-                            .border(
-                                width = if (isSelected) 3.dp else 1.dp,
-                                color = if (isSelected) Color.White else ObsidianBorder,
-                                shape = CircleShape
-                            )
-                            .clickable { colorHex = hex }
-                    )
-                }
-            }
+            VehicularColorSelector(
+                selectedColorHex = colorHex,
+                onColorSelected = { colorHex = it }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -169,6 +162,7 @@ fun WalletEditSheet(
                                 id = generatedId,
                                 name = name.trim(),
                                 category = category,
+                                iconName = iconName,
                                 colorHex = colorHex,
                                 isSystemProtected = wallet?.isSystemProtected ?: false,
                                 isActive = wallet?.isActive ?: true,

@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/local/KiloMetaDatabase.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Base de datos relacional local Room SQLite para KiloMeta v10.
-// Incorpora plataformas de transporte y bolsillos/billeteras dinámicas (Orden #054).
+// Base de datos relacional local Room SQLite para KiloMeta v11.
+// Incorpora plataformas de transporte, bolsillos dinámicos e iconografía vehicular (Orden #055).
 // ==============================================================================
 
 package com.ananapps.kilometa.data.local
@@ -47,7 +47,7 @@ import com.ananapps.kilometa.data.local.entity.WalletTransferEntity
         PlatformEntity::class,
         WalletEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

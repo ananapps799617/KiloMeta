@@ -1,17 +1,19 @@
 package com.ananapps.kilometa.data.mapper
 
+import com.ananapps.kilometa.core.util.IconCatalog
 import com.ananapps.kilometa.data.local.entity.PlatformEntity
 import com.ananapps.kilometa.domain.model.Platform
 
 /**
  * Mapeadores bidireccionales entre PlatformEntity (Room) y Platform (Dominio).
- * Garantiza inmutabilidad y tipado 100% estricto.
+ * Garantiza inmutabilidad y tipado 100% estricto (Orden #055).
  */
 fun PlatformEntity.toDomain(): Platform {
     return Platform(
         id = this.id,
         name = this.name,
         monogram = this.monogram,
+        iconName = this.iconName.ifBlank { IconCatalog.DEFAULT_PLATFORM_ICON },
         brandColorHex = this.brandColorHex,
         defaultCommissionPct = this.defaultCommissionPct,
         disbursementDay = this.disbursementDay,
@@ -26,6 +28,7 @@ fun Platform.toEntity(): PlatformEntity {
         id = this.id,
         name = this.name,
         monogram = this.monogram,
+        iconName = this.iconName.ifBlank { IconCatalog.DEFAULT_PLATFORM_ICON },
         brandColorHex = this.brandColorHex,
         defaultCommissionPct = this.defaultCommissionPct,
         disbursementDay = this.disbursementDay,

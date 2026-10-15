@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/HomeScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla principal y Cockpit de cabina para el conductor en KiloMeta.
-// Integra el Semáforo Financiero dinámico, la tarjeta de Bolsa Semanal prorrateada,
+// Pantalla principal y Cockpit de cabina para el conductor en KiloMeta (Orden #055).
+// Integra el Semáforo Financiero dinámico, la tarjeta de Bolsillos dinámicos,
 // el badge táctil de sincronización en la nube (Cloud Sync) y modales de captura express.
 // ==============================================================================
 
@@ -73,6 +73,7 @@ fun HomeScreen(
     val vehicle by viewModel.vehicleProfile.collectAsState()
     val lastKnownOdometer by viewModel.lastKnownOdometer.collectAsState()
     val dayContinuousTimeline by viewModel.dayContinuousTimeline.collectAsState()
+    val activeWallets by viewModel.activeWallets.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -131,6 +132,7 @@ fun HomeScreen(
                         vehicle = vehicle,
                         lastKnownOdometer = lastKnownOdometer,
                         timelineSummary = dayContinuousTimeline,
+                        wallets = activeWallets,
                         weeklyProgress = weeklyProgress,
                         auditSummary = auditSummary,
                         cashSettlement = cashSettlement,

@@ -2,11 +2,11 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/ContinuousTimelineCockpitView.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Vista principal continua de cabina inspirada en KiloMeta (Orden #038).
+// Vista principal continua de cabina inspirada en KiloMeta (Orden #038 / #055).
 // Descongestiona radicalmente la pantalla Ruta manteniendo únicamente:
 // 1. Encabezado de vehículo y odómetro real.
 // 2. Tarjeta DayHeroCard (neto, meta diaria limpia, telemetría y subtotales).
-// 3. Tarjeta CockpitWalletsCard (4 bolsillos soberanos y transferencias).
+// 3. Tarjeta CockpitWalletsCard (bolsillos soberanos dinámicos y transferencias).
 // 4. Feed de actividades sobre la pista de asfalto continua Drivvo.
 // ==============================================================================
 
@@ -35,6 +35,7 @@ fun ContinuousTimelineCockpitView(
     vehicle: VehicleProfile,
     lastKnownOdometer: Int,
     timelineSummary: DayContinuousSummary,
+    wallets: List<Wallet> = emptyList(),
     cashSettlement: CashSettlementSummary? = null,
     weeklyProgress: WeeklyQuotaProgress? = null,
     auditSummary: AccountingAuditSummary? = null,
@@ -133,15 +134,16 @@ fun ContinuousTimelineCockpitView(
             onOpenDayOdometerDialog = onOpenDayOdometerDialog
         )
 
-        // 4. Tarjeta CockpitWalletsCard (Saldos de los 5 bolsillos con ciclo semanal y aire)
+        // 4. Tarjeta CockpitWalletsCard (Saldos dinámicos o legados con ciclo semanal y aire)
         CockpitWalletsCard(
             settlement = effectiveSettlement,
+            wallets = wallets,
             cycleLabel = timelineSummary.cycleLabel,
             onTransferClick = onTransferClick,
             onPocketClick = onPocketClick
         )
 
-        // 4. Feed de Actividades de Hoy sobre la Pista de Asfalto Continua
+        // 5. Feed de Actividades de Hoy sobre la Pista de Asfalto Continua
         DayActivityFeedCard(
             events = timelineSummary.events,
             onDeleteTrip = onDeleteTrip,

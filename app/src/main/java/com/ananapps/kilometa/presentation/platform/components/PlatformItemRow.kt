@@ -19,8 +19,8 @@ import com.ananapps.kilometa.domain.model.Platform
 import com.ananapps.kilometa.presentation.theme.*
 
 /**
- * Renglón desacoplado para representar una plataforma en el catálogo (Orden #054).
- * Touch target vehicular >= 48dp y contraste certificado WCAG AAA/AA.
+ * Renglón desacoplado para representar una plataforma en el catálogo (Orden #054 / #055).
+ * Touch target vehicular >= 48dp, iconografía y contraste certificado WCAG AAA/AA.
  */
 @Composable
 fun PlatformItemRow(
@@ -47,20 +47,30 @@ fun PlatformItemRow(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar con Monograma de 2 letras (44x44dp)
+            // Avatar con Icono Vehicular y Monograma de 2 letras (44x44dp)
             Box(
                 modifier = Modifier
                     .size(44.dp)
                     .background(brandColor, shape = RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = platform.monogram.take(2).uppercase(),
-                    color = contentColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                    fontFamily = FontFamily.Monospace
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = platform.iconName.ifBlank { "🚘" },
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = platform.monogram.take(2).uppercase(),
+                        color = contentColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        lineHeight = 11.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(14.dp))

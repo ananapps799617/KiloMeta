@@ -12,7 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementación de WalletRepository con blindaje de ciberseguridad MND-04 (Orden #054).
+ * Implementación de WalletRepository con blindaje de ciberseguridad MND-04 / MND-DG-02 (Orden #054 / #055).
  * Protege de forma inmutable los bolsillos del sistema y previene saldos huérfanos.
  */
 @Singleton
@@ -33,7 +33,9 @@ class WalletRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveWallet(wallet: Wallet): Result<Unit> = runCatching {
-        walletDao.insertWallet(wallet.toEntity())
+        val isProtected = wallet.id in listOf("cash_physical", "digital_wallet") || wallet.isSystemProtected
+        val safeWallet = wallet.copy(isSystemProtected = isProtected)
+        walletDao.insertWallet(safeWallet.toEntity())
     }
 
     override suspend fun toggleWalletStatus(id: String, isActive: Boolean): Result<Unit> = runCatching {

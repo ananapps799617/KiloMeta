@@ -1,15 +1,10 @@
 package com.ananapps.kilometa.presentation.platform.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,19 +12,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ananapps.kilometa.core.util.ColorUtils
+import com.ananapps.kilometa.core.util.IconCatalog
 import com.ananapps.kilometa.domain.model.Platform
+import com.ananapps.kilometa.presentation.common.components.VehicularColorSelector
+import com.ananapps.kilometa.presentation.common.components.VehicularIconSelector
 import com.ananapps.kilometa.presentation.theme.*
 
-private val PALETTE_COLORS = listOf(
-    "#FFFFFF", "#FF5C00", "#B2D95D", "#7145D6",
-    "#FF004F", "#00E5FF", "#FFD700", "#3F51B5"
-)
 private val DISBURSEMENT_DAYS = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Inmediato")
 
+/**
+ * Hoja modal inferior para crear o editar plataformas de transporte (Orden #054 / #055).
+ * Modularidad estricta con selectores vehiculares desacoplados (< 200 LOC).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlatformEditSheet(
@@ -40,7 +36,8 @@ fun PlatformEditSheet(
 ) {
     var name by remember(platform) { mutableStateOf(platform?.name.orEmpty()) }
     var monogram by remember(platform) { mutableStateOf(platform?.monogram.orEmpty()) }
-    var colorHex by remember(platform) { mutableStateOf(platform?.brandColorHex ?: "#FF5C00") }
+    var iconName by remember(platform) { mutableStateOf(platform?.iconName ?: IconCatalog.DEFAULT_PLATFORM_ICON) }
+    var colorHex by remember(platform) { mutableStateOf(platform?.brandColorHex ?: "#1C1C1E") }
     var commission by remember(platform) { mutableDoubleStateOf(platform?.defaultCommissionPct ?: 20.0) }
     var disbursementDay by remember(platform) { mutableStateOf(platform?.disbursementDay ?: "Lunes") }
 
@@ -105,26 +102,22 @@ fun PlatformEditSheet(
             )
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Paleta rápida de colores
+            // Selector de Icono Vehicular
+            Text("Icono vehicular", color = TextSecondary, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            VehicularIconSelector(
+                selectedIcon = iconName,
+                onIconSelected = { iconName = it }
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Selector de Color Vehicular Oficial
             Text("Color corporativo", color = TextSecondary, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PALETTE_COLORS.forEach { hex ->
-                    val color = ColorUtils.parseHexColor(hex)
-                    val isSelected = colorHex.equals(hex, ignoreCase = true)
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(color, CircleShape)
-                            .border(
-                                width = if (isSelected) 3.dp else 1.dp,
-                                color = if (isSelected) ElectricBluePrimary else ObsidianBorder,
-                                shape = CircleShape
-                            )
-                            .clickable { colorHex = hex }
-                    )
-                }
-            }
+            VehicularColorSelector(
+                selectedColorHex = colorHex,
+                onColorSelected = { colorHex = it }
+            )
             Spacer(modifier = Modifier.height(14.dp))
 
             // Comisión estimada con botones +/-
@@ -168,6 +161,7 @@ fun PlatformEditSheet(
                     val p = platform?.copy(
                         name = name.trim(),
                         monogram = monogram.trim().take(2).uppercase(),
+                        iconName = iconName,
                         brandColorHex = colorHex,
                         defaultCommissionPct = commission,
                         disbursementDay = disbursementDay
@@ -175,6 +169,7 @@ fun PlatformEditSheet(
                         id = name.lowercase().trim().replace("\\s+".toRegex(), "_"),
                         name = name.trim(),
                         monogram = monogram.trim().take(2).uppercase(),
+                        iconName = iconName,
                         brandColorHex = colorHex,
                         defaultCommissionPct = commission,
                         disbursementDay = disbursementDay,
