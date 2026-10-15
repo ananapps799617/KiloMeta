@@ -67,6 +67,7 @@ fun ProfileStepContent(
                 )
                 else -> OnboardingFinancialStep(
                     tenureType = state.tenureType,
+                    onTenureChange = { state.tenureType = it },
                     quotaAmount = state.quotaAmount,
                     onQuotaAmountChange = { state.quotaAmount = it },
                     quotaPeriodicity = state.quotaPeriodicity,

@@ -59,6 +59,7 @@ import com.ananapps.kilometa.presentation.profile.components.ProfileStepContent
 import com.ananapps.kilometa.presentation.profile.components.ProfileTopBar
 import com.ananapps.kilometa.presentation.profile.components.rememberDriverProfileFormState
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
+import com.ananapps.kilometa.presentation.theme.EmeraldPrimary
 import com.ananapps.kilometa.presentation.theme.StatusGreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -179,19 +180,20 @@ fun DriverProfileScreen(
                         onBackClick = { if (currentStep > 0) currentStep-- },
                         onNextClick = { if (currentStep < 2) currentStep++ },
                         onFinishClick = onCommitSave,
-                        isNextEnabled = isNextValid
+                        isNextEnabled = isNextValid,
+                        onExitOnboarding = onNavigateBack
                     )
                 } else {
                     Button(
                         onClick = onCommitSave,
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Text(
                             text = "💾 Guardar Perfil y Regresar",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = DeepObsidianBackground
+                            color = androidx.compose.ui.graphics.Color.White
                         )
                     }
                 }

@@ -58,6 +58,10 @@ class FakeAuthRepository : AuthRepository {
         sessionFlow.value = null
         return Result.success(Unit)
     }
+
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return Result.success(Unit)
+    }
 }
 
 // ------------------------------------------------------------------------------

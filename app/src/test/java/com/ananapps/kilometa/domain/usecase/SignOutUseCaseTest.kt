@@ -44,6 +44,7 @@ private class FakeSignOutAuthRepo : AuthRepository {
         isSignedOut = true
         return Result.success(Unit)
     }
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> = Result.success(Unit)
 }
 
 private class FakeLocalProfileRepo : DriverProfileRepository {
