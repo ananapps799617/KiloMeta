@@ -46,4 +46,8 @@ class AuthenticateUserUseCase @Inject constructor(
     suspend fun getCurrentUser(): UserSession? {
         return authRepository.getCurrentUser()
     }
+
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return authRepository.sendPasswordResetEmail(email)
+    }
 }

@@ -109,6 +109,7 @@ private fun MainAppHost(
             onSignInWithGoogleToken = { viewModel.signInWithGoogle(it) },
             onGoogleSignInError = { viewModel.setAuthError(it) },
             onSignInWithEmail = { email, pass -> viewModel.signInWithEmail(email, pass) },
+            onSendPasswordReset = { viewModel.sendPasswordResetEmail(it) },
             authError = authError, isLoading = isAuthLoading
         )
         return

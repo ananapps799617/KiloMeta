@@ -66,4 +66,10 @@ class AuthRepositoryImpl @Inject constructor(
             authDataSource.signOut()
         }
     }
+
+    override suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return withContext(dispatchers.io) {
+            authDataSource.sendPasswordResetEmail(email)
+        }
+    }
 }

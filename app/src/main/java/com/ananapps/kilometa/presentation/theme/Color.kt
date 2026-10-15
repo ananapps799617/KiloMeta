@@ -43,6 +43,11 @@ val ElectricBluePrimary: Color = Color(0xFF2979FF) // Azul Eléctrico Primario
 val CyanSavings: Color = Color(0xFF00E5FF)          // Cian Ahorro GNV
 val CyanSavingsContainer: Color = Color(0xFF002B33) // Fondo cian obsidiana
 
+// Tokens Esmeralda Cockpit Dark (Inicio de Sesión y Rentabilidad)
+val EmeraldPrimary: Color = Color(0xFF16A344)       // Verde Esmeralda Primario (#16A344)
+val EmeraldAccent: Color = Color(0xFF10B981)        // Verde Menta Neón (#10B981)
+val EmeraldContainer: Color = Color(0xFF0F3D26)     // Contenedor Esmeralda Obsidiana
+
 // ------------------------------------------------------------------------------
 // BLOQUE 5: TOKENS IDENTITARIOS DE PLATAFORMAS DE TRANSPORTE
 // ------------------------------------------------------------------------------

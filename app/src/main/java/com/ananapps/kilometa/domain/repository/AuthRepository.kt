@@ -54,4 +54,9 @@ interface AuthRepository {
      * Cierra la sesión activa actual en el dispositivo.
      */
     suspend fun signOut(): Result<Unit>
+
+    /**
+     * Envía un correo con el enlace oficial de restablecimiento de contraseña.
+     */
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit>
 }

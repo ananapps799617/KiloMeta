@@ -84,4 +84,8 @@ class HomeAuthDelegate @Inject constructor(
     fun signOut(scope: CoroutineScope) = scope.launch {
         signOutUseCase()
     }
+
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> {
+        return authenticateUserUseCase.sendPasswordResetEmail(email)
+    }
 }

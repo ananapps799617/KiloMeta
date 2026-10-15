@@ -2,45 +2,41 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/auth/LoginScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla de bienvenida y autenticación estilo "Tesla Cockpit" (Orden #052).
-// Integra halo de encendido, ticker dinámico de telemetría y botón Google oficial (< 280 LOC).
+// Pantalla de bienvenida y autenticación vehicular "Cockpit Dark" con fondo automotriz nocturno,
+// iluminación esmeralda, formulario expuesto, recuperación por correo y pilares de confianza (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.auth
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.R
-import com.ananapps.kilometa.presentation.auth.components.EmailLoginSection
-import com.ananapps.kilometa.presentation.auth.components.GoogleSignInButton
 import com.ananapps.kilometa.presentation.auth.components.LoginCockpitHeader
-import com.ananapps.kilometa.presentation.auth.components.LoginDynamicTicker
-import com.ananapps.kilometa.presentation.theme.CyanSavings
+import com.ananapps.kilometa.presentation.auth.components.LoginFormSection
+import com.ananapps.kilometa.presentation.auth.components.LoginTrustPillars
+import com.ananapps.kilometa.presentation.auth.components.PasswordResetDialog
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
-import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
 import com.ananapps.kilometa.presentation.theme.StatusRed
-import com.ananapps.kilometa.presentation.theme.TextSecondary
+import com.ananapps.kilometa.presentation.theme.StatusRedContainer
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -50,10 +46,13 @@ fun LoginScreen(
     onSignInWithGoogleToken: (idToken: String) -> Unit,
     onGoogleSignInError: (errorMessage: String) -> Unit,
     onSignInWithEmail: (email: String, pass: String) -> Unit,
+    onSendPasswordReset: suspend (email: String) -> Result<Unit> = { Result.success(Unit) },
     authError: String? = null,
     isLoading: Boolean = false
 ) {
     val context = LocalContext.current
+    var showResetDialog by remember { mutableStateOf(false) }
+    var resetDialogEmail by remember { mutableStateOf("") }
 
     // Launcher oficial de Play Services para Google Sign-In
     val googleSignInLauncher = rememberLauncherForActivityResult(
@@ -77,95 +76,120 @@ fun LoginScreen(
         }
     }
 
+    val launchGoogleSignIn: () -> Unit = {
+        val webClientId = runCatching {
+            context.getString(R.string.default_web_client_id)
+        }.getOrNull()
+
+        if (webClientId.isNullOrBlank()) {
+            onGoogleSignInError("Configuración de Google no encontrada en el dispositivo.")
+        } else {
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(webClientId)
+                .requestEmail()
+                .build()
+
+            GoogleSignIn.getClient(context, gso).apply {
+                signOut().addOnCompleteListener {
+                    googleSignInLauncher.launch(signInIntent)
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F1722),
-                        DeepObsidianBackground,
-                        DeepObsidianBackground
+            .background(DeepObsidianBackground)
+    ) {
+        // 1. Imagen de fondo automotriz con estela esmeralda (Cabina Nocturna)
+        Image(
+            painter = painterResource(id = R.drawable.bg_cockpit_car_top),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .align(Alignment.TopCenter)
+        )
+
+        // Degradado oscuro para transición suave hacia la superficie de cabina
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .align(Alignment.TopCenter)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.20f),
+                            DeepObsidianBackground.copy(alpha = 0.70f),
+                            DeepObsidianBackground
+                        )
                     )
                 )
-            )
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-    ) {
+        )
+
+        // 2. Contenido desplazable principal
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. Cabecera Cockpit con Halo y Logo Start/Stop
+            // Cabecera con Logotipo Oficial, Halo Esmeralda y Lema
             LoginCockpitHeader()
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // 2. Cápsula Dinámica Glassmorphism de Telemetría
-            LoginDynamicTicker()
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // 3. Alerta de error si aplica
+            // Banner de Alerta de Error de Firebase si aplica
             if (authError != null) {
-                Text(
-                    text = "⚠️ $authError",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = StatusRed,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Surface(
+                    color = StatusRedContainer,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = "⚠️ $authError",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StatusRed,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                    )
+                }
             }
 
-            // 4. Botón de Google Oficial (56dp Thumb Zone)
-            GoogleSignInButton(
-                onClick = {
-                    val webClientId = runCatching {
-                        context.getString(R.string.default_web_client_id)
-                    }.getOrNull()
-
-                    if (webClientId.isNullOrBlank()) {
-                        onGoogleSignInError("Configuración de Google no encontrada en el dispositivo.")
-                        return@GoogleSignInButton
-                    }
-
-                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestIdToken(webClientId)
-                        .requestEmail()
-                        .build()
-
-                    GoogleSignIn.getClient(context, gso).apply {
-                        signOut().addOnCompleteListener {
-                            googleSignInLauncher.launch(signInIntent)
-                        }
-                    }
+            // Formulario Expuesto de Acceso y Botones
+            LoginFormSection(
+                onSignInWithEmail = onSignInWithEmail,
+                onGoogleSignInClick = launchGoogleSignIn,
+                onForgotPasswordClick = { email ->
+                    resetDialogEmail = email
+                    showResetDialog = true
                 },
                 isLoading = isLoading
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // 5. Acceso tradicional por correo electrónico
-            EmailLoginSection(
-                onSignInWithEmail = onSignInWithEmail,
-                isLoading = isLoading
-            )
+            // Pilares de Confianza y Firma Oficial "Una creación de AnAnApps"
+            LoginTrustPillars()
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
 
-            // 6. Footer de Confianza y Ciberseguridad
-            Text(
-                text = "🔒 Cifrado Local · Datos Protegidos en Cabina",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary.copy(alpha = 0.65f),
-                textAlign = TextAlign.Center
+        // 3. Diálogo Modal de Recuperación de Contraseña
+        if (showResetDialog) {
+            PasswordResetDialog(
+                initialEmail = resetDialogEmail,
+                onDismiss = { showResetDialog = false },
+                onSendResetEmail = onSendPasswordReset
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

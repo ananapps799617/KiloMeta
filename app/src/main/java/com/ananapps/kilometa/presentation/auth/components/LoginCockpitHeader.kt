@@ -34,8 +34,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.R
-import com.ananapps.kilometa.presentation.theme.CyanSavings
-import com.ananapps.kilometa.presentation.theme.ElectricBluePrimary
+import com.ananapps.kilometa.presentation.theme.EmeraldAccent
+import com.ananapps.kilometa.presentation.theme.EmeraldPrimary
 import com.ananapps.kilometa.presentation.theme.TextPrimary
 import com.ananapps.kilometa.presentation.theme.TextSecondary
 
@@ -47,61 +47,61 @@ fun LoginCockpitHeader(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Halo Neón y Badge "Start/Stop Engine"
+        // 1. Halo Neón Esmeralda y Badge "Start/Stop Engine"
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 4.dp)
         ) {
             // Halo de brillo difuso de fondo
             Box(
                 modifier = Modifier
-                    .size(126.dp)
+                    .size(118.dp)
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                CyanSavings.copy(alpha = 0.28f),
-                                ElectricBluePrimary.copy(alpha = 0.12f),
+                                EmeraldAccent.copy(alpha = 0.32f),
+                                EmeraldPrimary.copy(alpha = 0.15f),
                                 Color.Transparent
                             )
                         ),
-                        shape = RoundedCornerShape(34.dp)
+                        shape = RoundedCornerShape(32.dp)
                     )
             )
 
-            // Contenedor del Logo con borde pulido
+            // Contenedor del Logo con borde pulido esmeralda
             Box(
                 modifier = Modifier
-                    .size(108.dp)
-                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(26.dp), spotColor = CyanSavings)
+                    .size(100.dp)
+                    .shadow(elevation = 16.dp, shape = RoundedCornerShape(24.dp), spotColor = EmeraldAccent)
                     .border(
                         width = 1.5.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                CyanSavings.copy(alpha = 0.8f),
-                                ElectricBluePrimary.copy(alpha = 0.4f),
-                                Color.White.copy(alpha = 0.15f)
+                                EmeraldAccent.copy(alpha = 0.85f),
+                                EmeraldPrimary.copy(alpha = 0.45f),
+                                Color.White.copy(alpha = 0.2f)
                             )
                         ),
-                        shape = RoundedCornerShape(26.dp)
+                        shape = RoundedCornerShape(24.dp)
                     )
-                    .clip(RoundedCornerShape(26.dp))
+                    .clip(RoundedCornerShape(24.dp))
                     .background(Color(0xFF131922)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.app_logo),
                     contentDescription = "Logo KiloMeta Cockpit",
-                    modifier = Modifier.size(92.dp)
+                    modifier = Modifier.size(84.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // 2. Marca y Lema de Telemetría
+        // 2. Marca y Lema de Cabina
         Text(
             text = "KiloMeta",
-            style = MaterialTheme.typography.headlineLarge.copy(
+            style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.8.sp
             ),
@@ -109,21 +109,22 @@ fun LoginCockpitHeader(
         )
 
         Text(
-            text = "Tu Copiloto Financiero en Cabina",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.SemiBold
+            text = "TU ESFUERZO · TU CONTROL · TU META",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
             ),
-            color = ElectricBluePrimary,
+            color = EmeraldAccent,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 2.dp)
+            modifier = Modifier.padding(top = 4.dp)
         )
 
         Text(
-            text = "Telemetría y control financiero en tiempo real para conductores profesionales.",
+            text = "Inicia sesión para continuar en tu cabina financiera.",
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 6.dp, start = 20.dp, end = 20.dp)
+            modifier = Modifier.padding(top = 4.dp, start = 20.dp, end = 20.dp)
         )
     }
 }

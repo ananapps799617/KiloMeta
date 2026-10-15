@@ -108,4 +108,10 @@ class FirebaseAuthDataSource @Inject constructor(
             ?: throw IllegalStateException("⚠️ PENDIENTE DE CONEXIÓN REAL: FirebaseAuth no inicializado")
         auth.signOut()
     }
+
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
+        val auth = getAuthSafe()
+            ?: throw IllegalStateException("⚠️ PENDIENTE DE CONEXIÓN REAL: FirebaseAuth no inicializado")
+        auth.sendPasswordResetEmail(email.trim()).await()
+    }
 }

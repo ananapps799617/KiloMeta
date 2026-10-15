@@ -248,6 +248,7 @@ class HomeViewModel @Inject constructor(
     fun signInWithEmail(email: String, pass: String) = authDelegate.signInWithEmail(viewModelScope, email, pass)
     fun signInAnonymously() = authDelegate.signInAnonymously(viewModelScope)
     fun signOut() = authDelegate.signOut(viewModelScope)
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> = authDelegate.sendPasswordResetEmail(email)
 
     fun onToggleAutoSync(enabled: Boolean) {
         _syncPreferences.value = _syncPreferences.value.copy(isAutoSyncEnabled = enabled)
