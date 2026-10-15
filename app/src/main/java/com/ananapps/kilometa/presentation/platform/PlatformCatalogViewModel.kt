@@ -3,6 +3,7 @@ package com.ananapps.kilometa.presentation.platform
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.domain.model.Platform
+import com.ananapps.kilometa.domain.usecase.platform.DeleteCustomPlatformUseCase
 import com.ananapps.kilometa.domain.usecase.platform.GetAllPlatformsUseCase
 import com.ananapps.kilometa.domain.usecase.platform.SavePlatformUseCase
 import com.ananapps.kilometa.domain.usecase.platform.TogglePlatformStatusUseCase
@@ -16,14 +17,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel para la administración del catálogo dinámico multi-país de plataformas (Orden #054).
+ * ViewModel para la administración del catálogo dinámico multi-país de plataformas (Orden #054 / #056).
  * Regla inquebrantable: Modularidad estricta < 280 líneas de código.
  */
 @HiltViewModel
 class PlatformCatalogViewModel @Inject constructor(
     getAllPlatformsUseCase: GetAllPlatformsUseCase,
     private val savePlatformUseCase: SavePlatformUseCase,
-    private val togglePlatformStatusUseCase: TogglePlatformStatusUseCase
+    private val togglePlatformStatusUseCase: TogglePlatformStatusUseCase,
+    private val deleteCustomPlatformUseCase: DeleteCustomPlatformUseCase
 ) : ViewModel() {
 
     val platforms: StateFlow<List<Platform>> = getAllPlatformsUseCase()
@@ -71,6 +73,18 @@ class PlatformCatalogViewModel @Inject constructor(
     fun savePlatform(platform: Platform) {
         viewModelScope.launch {
             savePlatformUseCase(platform)
+                .onSuccess {
+                    closeSheet()
+                }
+                .onFailure { error ->
+                    _errorMessage.value = error.message
+                }
+        }
+    }
+
+    fun deletePlatform(id: String) {
+        viewModelScope.launch {
+            deleteCustomPlatformUseCase(id)
                 .onSuccess {
                     closeSheet()
                 }

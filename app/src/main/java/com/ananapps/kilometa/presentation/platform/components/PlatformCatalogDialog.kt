@@ -25,7 +25,7 @@ import com.ananapps.kilometa.presentation.platform.PlatformCatalogViewModel
 import com.ananapps.kilometa.presentation.theme.*
 
 /**
- * Diálogo modal para la gestión del catálogo de plataformas (Orden #054).
+ * Diálogo modal para la gestión del catálogo de plataformas (Orden #054 / #056).
  * Regla inquebrantable: Modularidad estricta < 280 líneas de código.
  */
 @Composable
@@ -92,7 +92,7 @@ fun PlatformCatalogDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = error, color = StatusRed, fontSize = 12.sp)
+                                Text(text = error, color = StatusRed, fontSize = 12.sp, modifier = Modifier.weight(1f))
                                 TextButton(onClick = { viewModel.clearError() }) {
                                     Text("OK", color = StatusRed, fontSize = 12.sp)
                                 }
@@ -150,7 +150,8 @@ fun PlatformCatalogDialog(
         PlatformEditSheet(
             platform = editingPlatform,
             onDismiss = { viewModel.closeSheet() },
-            onSave = { viewModel.savePlatform(it) }
+            onSave = { viewModel.savePlatform(it) },
+            onDelete = { viewModel.deletePlatform(it) }
         )
     }
 }

@@ -3,7 +3,7 @@
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/data/remote/firebase/FirestoreDataSource.kt
 // DESCRIPCIÓN PEDAGÓGICA:
 // Fuente de datos remota para Google Cloud Firestore. Implementa persistencia por lotes,
-// soporte completo para Mantenimientos y diagnóstico de enlace round-trip con Source.SERVER.
+// soporte completo para Mantenimientos, Plataformas, Bolsillos y diagnóstico de enlace round-trip.
 // Resiliente a caídas y ausencia de servicios de Google Play (Cero crasheos).
 // ==============================================================================
 
@@ -94,6 +94,12 @@ class FirestoreDataSource @Inject constructor(
     // BLOQUE 3: ELIMINACIÓN REMOTA EN LA NUBE (ANTI-RESURRECCIÓN)
     // --------------------------------------------------------------------------
     private suspend fun deleteUserEntity(userId: String, collection: String, entityId: String): Result<Unit> = runCatching {
+        if (collection == "wallets" && entityId in listOf("cash_physical", "digital_wallet")) {
+            throw SecurityException("Violación Cloud: No se pueden eliminar bolsillos nodriza del sistema.")
+        }
+        if (collection == "platforms" && entityId in listOf("uber", "didi", "indrive", "particular")) {
+            throw SecurityException("Violación Cloud: No se pueden eliminar plataformas nativas.")
+        }
         val db = getFirestoreSafe() ?: return@runCatching
         db.collection("users").document(userId).collection(collection).document(entityId).delete().await()
     }
@@ -104,11 +110,13 @@ class FirestoreDataSource @Inject constructor(
     suspend fun deleteShift(userId: String, shiftId: String): Result<Unit> = deleteUserEntity(userId, "shifts", shiftId)
     suspend fun deleteWalletTransfer(userId: String, transferId: String): Result<Unit> = deleteUserEntity(userId, "transfers", transferId)
     suspend fun deleteMaintenance(userId: String, maintenanceId: String): Result<Unit> = deleteUserEntity(userId, "maintenances", maintenanceId)
+    suspend fun deletePlatform(userId: String, platformId: String): Result<Unit> = deleteUserEntity(userId, "platforms", platformId)
+    suspend fun deleteWallet(userId: String, walletId: String): Result<Unit> = deleteUserEntity(userId, "wallets", walletId)
 
     suspend fun deleteAllUserData(userId: String): Result<Unit> = runCatching {
         val db = getFirestoreSafe() ?: return@runCatching
         val userDoc = db.collection("users").document(userId)
-        val subcollections = listOf("trips", "shifts", "fuelings", "expenses", "transfers", "maintenances", "profile", "diagnostic")
+        val subcollections = listOf("trips", "shifts", "fuelings", "expenses", "transfers", "maintenances", "platforms", "wallets", "profile", "diagnostic")
         for (col in subcollections) {
             val snapshot = userDoc.collection(col).get().await()
             if (!snapshot.isEmpty) {

@@ -62,6 +62,8 @@ class SyncRepositoryImpl @Inject constructor(
                     "SHIFT" -> firestoreDataSource.deleteShift(user.uid, del.entityId)
                     "WALLET_TRANSFER" -> firestoreDataSource.deleteWalletTransfer(user.uid, del.entityId)
                     "MAINTENANCE" -> firestoreDataSource.deleteMaintenance(user.uid, del.entityId)
+                    "PLATFORM" -> firestoreDataSource.deletePlatform(user.uid, del.entityId)
+                    "WALLET" -> firestoreDataSource.deleteWallet(user.uid, del.entityId)
                 }
                 database.pendingDeletionDao().deleteByEntityId(del.entityId)
             }

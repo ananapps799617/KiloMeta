@@ -3,6 +3,7 @@ package com.ananapps.kilometa.presentation.wallet
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ananapps.kilometa.domain.model.Wallet
+import com.ananapps.kilometa.domain.usecase.wallet.DeleteCustomWalletUseCase
 import com.ananapps.kilometa.domain.usecase.wallet.GetAllWalletsUseCase
 import com.ananapps.kilometa.domain.usecase.wallet.SaveWalletUseCase
 import com.ananapps.kilometa.domain.usecase.wallet.ToggleWalletStatusUseCase
@@ -16,14 +17,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel para la gestión de bolsillos y billeteras soberanas (Orden #054).
+ * ViewModel para la gestión de bolsillos y billeteras soberanas (Orden #054 / #056).
  * Regla inquebrantable: Modularidad estricta < 280 líneas de código.
  */
 @HiltViewModel
 class WalletSettingsViewModel @Inject constructor(
     getAllWalletsUseCase: GetAllWalletsUseCase,
     private val saveWalletUseCase: SaveWalletUseCase,
-    private val toggleWalletStatusUseCase: ToggleWalletStatusUseCase
+    private val toggleWalletStatusUseCase: ToggleWalletStatusUseCase,
+    private val deleteCustomWalletUseCase: DeleteCustomWalletUseCase
 ) : ViewModel() {
 
     val wallets: StateFlow<List<Wallet>> = getAllWalletsUseCase()
@@ -70,9 +72,25 @@ class WalletSettingsViewModel @Inject constructor(
 
     fun saveWallet(wallet: Wallet) {
         viewModelScope.launch {
-            saveWalletUseCase(wallet).onFailure { error ->
-                _errorMessage.value = error.message
-            }
+            saveWalletUseCase(wallet)
+                .onSuccess {
+                    closeSheet()
+                }
+                .onFailure { error ->
+                    _errorMessage.value = error.message
+                }
+        }
+    }
+
+    fun deleteWallet(id: String) {
+        viewModelScope.launch {
+            deleteCustomWalletUseCase(id)
+                .onSuccess {
+                    closeSheet()
+                }
+                .onFailure { error ->
+                    _errorMessage.value = error.message
+                }
         }
     }
 

@@ -1,6 +1,8 @@
 package com.ananapps.kilometa.data.repository
 
+import com.ananapps.kilometa.data.local.dao.PendingDeletionDao
 import com.ananapps.kilometa.data.local.dao.WalletDao
+import com.ananapps.kilometa.data.local.entity.PendingDeletionEntity
 import com.ananapps.kilometa.data.mapper.toDomain
 import com.ananapps.kilometa.data.mapper.toEntity
 import com.ananapps.kilometa.data.mapper.toWalletDomain
@@ -10,14 +12,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.abs
 
 /**
- * Implementación de WalletRepository con blindaje de ciberseguridad MND-04 / MND-DG-02 (Orden #054 / #055).
- * Protege de forma inmutable los bolsillos del sistema y previene saldos huérfanos.
+ * Implementación de WalletRepository con blindaje de ciberseguridad MND-04 / MND-DG-02 (Orden #054 / #055 / #056).
+ * Protege de forma inmutable los bolsillos del sistema, preserva saldos reales vivos y aniquila el Zombie Bug.
  */
 @Singleton
 class WalletRepositoryImpl @Inject constructor(
-    private val walletDao: WalletDao
+    private val walletDao: WalletDao,
+    private val pendingDeletionDao: PendingDeletionDao
 ) : WalletRepository {
 
     override fun observeActiveWallets(): Flow<List<Wallet>> {
@@ -33,8 +37,18 @@ class WalletRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveWallet(wallet: Wallet): Result<Unit> = runCatching {
-        val isProtected = wallet.id in listOf("cash_physical", "digital_wallet") || wallet.isSystemProtected
-        val safeWallet = wallet.copy(isSystemProtected = isProtected)
+        val existing = walletDao.getWalletById(wallet.id)
+        val currentBalance = existing?.balance ?: wallet.balance
+        val isProtected = wallet.id in listOf("cash_physical", "digital_wallet") ||
+            wallet.isSystemProtected ||
+            (existing?.isSystemProtected == true)
+
+        val safeWallet = wallet.copy(
+            isSystemProtected = isProtected,
+            balance = currentBalance
+        )
+
+        pendingDeletionDao.deleteByEntityId(wallet.id)
         walletDao.insertWallet(safeWallet.toEntity())
     }
 
@@ -46,7 +60,7 @@ class WalletRepositoryImpl @Inject constructor(
             throw SecurityException("Violación de integridad (MND-04): El bolsillo '${existing.name}' es protegido e inmutable.")
         }
 
-        if (!isActive && existing.balance != 0.0) {
+        if (!isActive && abs(existing.balance) >= 0.01) {
             throw IllegalStateException("No es posible desactivar el bolsillo '${existing.name}' porque posee un saldo de $${existing.balance}. Transfiera primero los fondos.")
         }
 
@@ -59,16 +73,24 @@ class WalletRepositoryImpl @Inject constructor(
 
     override suspend fun deleteCustomWallet(id: String): Result<Unit> = runCatching {
         val existing = walletDao.getWalletById(id)
-            ?: throw NoSuchElementException("No existe el bolsillo con identificador '$id'")
+            ?: throw NoSuchElementException("No existe el bolsillo con ID '$id'")
 
         if (existing.isSystemProtected) {
-            throw SecurityException("Violación de integridad (MND-04): El bolsillo de sistema no puede eliminarse.")
+            throw SecurityException("Violación de integridad: Los bolsillos de sistema son inmutables.")
         }
 
-        if (existing.balance != 0.0) {
-            throw IllegalStateException("El bolsillo '${existing.name}' tiene saldo pendiente. Transfiera primero sus fondos.")
+        if (abs(existing.balance) >= 0.01) {
+            throw IllegalStateException("El bolsillo '${existing.name}' tiene saldo activo.")
         }
 
         walletDao.deleteCustomWallet(id)
+        // Registro de lápida atómica Protocolo Anti-Zombie (Orden #027)
+        pendingDeletionDao.insert(
+            PendingDeletionEntity(
+                entityId = id,
+                entityType = "WALLET",
+                deletedAt = System.currentTimeMillis()
+            )
+        )
     }
 }

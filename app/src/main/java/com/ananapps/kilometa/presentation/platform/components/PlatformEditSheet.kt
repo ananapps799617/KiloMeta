@@ -1,11 +1,14 @@
 package com.ananapps.kilometa.presentation.platform.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,14 +20,15 @@ import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.core.util.IconCatalog
 import com.ananapps.kilometa.domain.model.Platform
 import com.ananapps.kilometa.presentation.common.components.VehicularColorSelector
+import com.ananapps.kilometa.presentation.common.components.VehicularDeleteConfirmationDialog
 import com.ananapps.kilometa.presentation.common.components.VehicularIconSelector
 import com.ananapps.kilometa.presentation.theme.*
 
 private val DISBURSEMENT_DAYS = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Inmediato")
 
 /**
- * Hoja modal inferior para crear o editar plataformas de transporte (Orden #054 / #055).
- * Modularidad estricta con selectores vehiculares desacoplados (< 200 LOC).
+ * Hoja modal inferior para crear o editar plataformas de transporte (Orden #054 / #055 / #056).
+ * Modularidad estricta con selectores vehiculares desacoplados (< 280 LOC).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +36,7 @@ fun PlatformEditSheet(
     platform: Platform?,
     onDismiss: () -> Unit,
     onSave: (Platform) -> Unit,
+    onDelete: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var name by remember(platform) { mutableStateOf(platform?.name.orEmpty()) }
@@ -40,6 +45,8 @@ fun PlatformEditSheet(
     var colorHex by remember(platform) { mutableStateOf(platform?.brandColorHex ?: "#1C1C1E") }
     var commission by remember(platform) { mutableDoubleStateOf(platform?.defaultCommissionPct ?: 20.0) }
     var disbursementDay by remember(platform) { mutableStateOf(platform?.disbursementDay ?: "Lunes") }
+
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
     fun updateName(newName: String) {
         name = newName
@@ -187,6 +194,41 @@ fun PlatformEditSheet(
             ) {
                 Text("Guardar Plataforma", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
+
+            // Botón Eliminar Plataforma (solo para plataformas personalizadas)
+            if (platform?.isCustom == true) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { showDeleteConfirmDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = StatusRedContainer,
+                        contentColor = StatusRed
+                    ),
+                    border = BorderStroke(1.dp, StatusRed.copy(alpha = 0.35f))
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = StatusRed)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Eliminar Plataforma", fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+    }
+
+    if (showDeleteConfirmDialog && platform != null) {
+        VehicularDeleteConfirmationDialog(
+            title = "Eliminar Plataforma",
+            message = "¿Estás seguro de que deseas eliminar la plataforma '${platform.name}'? Esta acción no se puede deshacer.",
+            confirmButtonText = "Sí, Eliminar",
+            onConfirm = {
+                showDeleteConfirmDialog = false
+                onDelete?.invoke(platform.id)
+                onDismiss()
+            },
+            onDismiss = { showDeleteConfirmDialog = false }
+        )
     }
 }

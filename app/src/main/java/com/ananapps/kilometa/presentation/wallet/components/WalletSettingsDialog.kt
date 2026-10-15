@@ -24,7 +24,8 @@ import com.ananapps.kilometa.presentation.theme.*
 import com.ananapps.kilometa.presentation.wallet.WalletSettingsViewModel
 
 /**
- * Diálogo modal para la gestión y auditoría de bolsillos y billeteras soberanas (Orden #054).
+ * Diálogo modal para la gestión y auditoría de bolsillos y billeteras soberanas (Orden #054 / #056).
+ * Permite edición visual de bolsillos del sistema y borrado definitivo de personalizados.
  * Regla inquebrantable: Modularidad estricta < 280 líneas de código.
  */
 @Composable
@@ -125,7 +126,8 @@ fun WalletSettingsDialog(
                             items(protectedWallets, key = { it.id }) { wallet ->
                                 WalletItemRow(
                                     wallet = wallet,
-                                    onToggleActive = { viewModel.toggleWalletActive(wallet.id, it) }
+                                    onToggleActive = { viewModel.toggleWalletActive(wallet.id, it) },
+                                    onClick = { viewModel.openEditWallet(wallet) }
                                 )
                             }
                         }
@@ -209,6 +211,9 @@ fun WalletSettingsDialog(
             onSave = {
                 viewModel.saveWallet(it)
                 viewModel.closeSheet()
+            },
+            onDelete = {
+                viewModel.deleteWallet(it)
             }
         )
     }
