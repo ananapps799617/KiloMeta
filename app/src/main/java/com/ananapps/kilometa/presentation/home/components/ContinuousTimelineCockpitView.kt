@@ -77,49 +77,7 @@ fun ContinuousTimelineCockpitView(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // --- 1. CABECERA SUPERIOR: MARCA KILOMETA + CAMPANA & TÍTULO CABINA ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_kilometa_cockpit),
-                contentDescription = "KiloMeta",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.height(28.dp)
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(DeepObsidianSurface)
-                    .border(1.dp, DeepObsidianBorder, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🔔", fontSize = 16.sp)
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                text = "Cabina",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 24.sp,
-                    letterSpacing = 0.2.sp
-                ),
-                color = TextPrimary
-            )
-            Text(
-                text = "Tu jornada, tus números, tu meta.",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                color = TextSecondary
-            )
-        }
-
-        // --- 2. TARJETA COMPACTA DEL VEHÍCULO ACTIVO ---
+        // --- 1. TARJETA COMPACTA DEL VEHÍCULO ACTIVO ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()

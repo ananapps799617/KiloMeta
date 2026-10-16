@@ -178,17 +178,11 @@ private fun MainAppHost(
 
     Scaffold(
         topBar = {
-            KiloMetaTopBar(
-                currentDestination = when {
-                    activeSubDestination != null -> activeSubDestination!!
-                    currentNavTab == KiloMetaNavTab.ROUTE -> AppDestination.COCKPIT
-                    currentNavTab == KiloMetaNavTab.HISTORY -> AppDestination.HISTORY
-                    currentNavTab == KiloMetaNavTab.REPORTS -> AppDestination.REPORTS
-                    currentNavTab == KiloMetaNavTab.MORE -> AppDestination.PROFILE
-                    else -> AppDestination.COCKPIT
-                },
-                onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE }
-            )
+            if (activeSubDestination == null) {
+                KiloMetaTopBar(
+                    onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE }
+                )
+            }
         },
         bottomBar = {
             KiloMetaBottomBar(
