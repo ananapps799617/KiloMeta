@@ -102,30 +102,29 @@ fun LoginScreen(
             .fillMaxSize()
             .background(DeepObsidianBackground)
     ) {
-        // 1. Imagen de fondo automotriz con estela esmeralda (Cabina Nocturna)
+        // 1. Imagen de fondo automotriz con estela esmeralda (Cabina Nocturna Limpia)
         Image(
             painter = painterResource(id = R.drawable.bg_cockpit_car_top),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(350.dp)
                 .align(Alignment.TopCenter)
         )
 
-        // Degradado oscuro para transición suave hacia la superficie de cabina
+        // Degradado calibrado: despejado en montañas/auto y transición suave hacia los inputs
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(350.dp)
                 .align(Alignment.TopCenter)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.20f),
-                            DeepObsidianBackground.copy(alpha = 0.70f),
-                            DeepObsidianBackground
-                        )
+                        0.0f to Color.Transparent,
+                        0.62f to Color.Transparent,
+                        0.85f to DeepObsidianBackground.copy(alpha = 0.65f),
+                        1.0f to DeepObsidianBackground
                     )
                 )
         )
@@ -138,9 +137,9 @@ fun LoginScreen(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Cabecera con Logotipo Oficial, Halo Esmeralda y Lema
+            // Cabecera con Logotipo Oficial Soberano y Bienvenida
             LoginCockpitHeader()
 
             Spacer(modifier = Modifier.height(18.dp))

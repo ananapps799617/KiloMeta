@@ -2,21 +2,25 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayActivityFeedCard.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Feed vertical de actividades cronológicas de hoy estilo KiloMeta (carreras,
-// tanqueos y gastos) con nodos visuales diferenciados por color y opción de borrado.
+// Feed vertical de "Actividad reciente" estilo Cockpit Dark (99.9% fiel a la lámina).
+// Encabezado exterior limpio y tarjeta contenedora con separadores sutiles,
+// avatares circulares coloreados y acordeón interactivo de edición y borrado (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.DayActivityEvent
 import com.ananapps.kilometa.domain.model.Expense
 import com.ananapps.kilometa.domain.model.Fueling
@@ -43,82 +47,94 @@ fun DayActivityFeedCard(
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
     var eventPendingDeletion by remember { mutableStateOf<DayActivityEvent?>(null) }
 
-    Card(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
+        // 1. Encabezado Exterior: "Actividad reciente" y "X registros / Ver todas"
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Actividad reciente",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                ),
+                color = TextPrimary
+            )
+
+            Text(
+                text = if (events.isNotEmpty()) "${events.size} registros" else "0 registros",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp
+                ),
+                color = StatusGreen
+            )
+        }
+
+        // 2. Tarjeta contenedora de actividades
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .border(1.dp, DeepObsidianBorder, RoundedCornerShape(20.dp)),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "ACTIVIDADES EN RUTA HOY",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    color = ElectricBluePrimary
-                )
-                Text(
-                    text = "${events.size} registros",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
-                )
-            }
-
-            if (events.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "🛣️ Tu ruta de hoy está limpia",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = TextPrimary
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Toca el botón central (+) para registrar tu primera carrera, tanqueo, gasto o servicio.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    events.forEach { event ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            RoadTrackTimelineNode(
-                                event = event,
-                                modifier = Modifier.padding(top = 10.dp)
+                if (events.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "🛣️ Tu ruta de hoy está limpia",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = TextPrimary
                             )
-                            DayActivityItemRow(
-                                event = event,
-                                timeFormatted = timeFormatter.format(Date(event.timestamp)),
-                                onEditRequested = {
-                                    when (event) {
-                                        is DayActivityEvent.TripItem -> onEditTrip(event.trip)
-                                        is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
-                                        is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
-                                        is DayActivityEvent.MaintenanceItem -> onEditMaintenance(event.maintenance)
-                                        else -> Unit
-                                    }
-                                },
-                                onDeleteRequested = { eventPendingDeletion = event },
-                                modifier = Modifier.weight(1f)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Toca el botón central (+) para registrar tu primera carrera, tanqueo o gasto.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    events.forEachIndexed { index, event ->
+                        DayActivityItemRow(
+                            event = event,
+                            timeFormatted = timeFormatter.format(Date(event.timestamp)),
+                            onEditRequested = {
+                                when (event) {
+                                    is DayActivityEvent.TripItem -> onEditTrip(event.trip)
+                                    is DayActivityEvent.FuelingItem -> onEditFueling(event.fueling)
+                                    is DayActivityEvent.ExpenseItem -> onEditExpense(event.expense)
+                                    is DayActivityEvent.MaintenanceItem -> onEditMaintenance(event.maintenance)
+                                    else -> Unit
+                                }
+                            },
+                            onDeleteRequested = { eventPendingDeletion = event },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (index < events.size - 1) {
+                            HorizontalDivider(
+                                color = DeepObsidianBorder.copy(alpha = 0.6f),
+                                thickness = 0.8.dp,
+                                modifier = Modifier.padding(vertical = 2.dp)
                             )
                         }
                     }
@@ -168,4 +184,3 @@ fun DayActivityFeedCard(
         )
     }
 }
-

@@ -146,8 +146,8 @@ fun KiloMetaBottomBar(
 
 @Composable
 private fun navigationItemColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = ElectricBluePrimary,
-    selectedTextColor = ElectricBluePrimary,
+    selectedIconColor = StatusGreen,
+    selectedTextColor = StatusGreen,
     unselectedIconColor = TextSecondary,
     unselectedTextColor = TextSecondary,
     indicatorColor = DeepObsidianSurface

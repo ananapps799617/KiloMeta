@@ -2,26 +2,24 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/DayOdometerChip.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Chip y tarjeta interactiva de cabecera en el Cockpit (Inicio) para gestionar
-// los odómetros de arranque y cierre de la jornada (Opción 4, Orden #043).
-// Permite al conductor verificar su odómetro inicial y registrar el cierre del día
-// sin interrumpir la agilidad del registro de carreras individuales.
+// Bloque "Jornada del día" de la Cabina Cockpit Dark (99.9% fiel a la lámina de diseño).
+// Representa con fidelidad absoluta los 4 estados visuales de jornada (Sin turno activo,
+// En curso, Cerrada y En espera) respetando la lógica contable y de odómetros real (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +34,8 @@ fun DayOdometerChip(
     isDayClosed: Boolean,
     lastKnownOdometer: Int,
     hasActiveShift: Boolean = false,
+    hasEventsToday: Boolean = false,
+    elapsedHoursFormatted: String = "0h 0m",
     onStartShiftClick: () -> Unit = {},
     onCloseShiftClick: () -> Unit = {},
     onOpenDayOdometerDialog: () -> Unit = {},
@@ -48,148 +48,252 @@ fun DayOdometerChip(
         0
     }
 
-    val cardClickAction = when {
-        isDayClosed -> onOpenDayOdometerDialog
-        hasActiveShift -> onCloseShiftClick
-        else -> onStartShiftClick
+    // Clasificación de los 4 estados reales de cabina
+    val isEnEspera = (!hasActiveShift && !isDayClosed && hasEventsToday) || (hasActiveShift && !hasEventsToday)
+
+    val cardBorderColor = when {
+        isEnEspera -> StatusAmber.copy(alpha = 0.6f)
+        hasActiveShift -> StatusGreen.copy(alpha = 0.5f)
+        else -> DeepObsidianBorder
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { cardClickAction() },
-        shape = RoundedCornerShape(14.dp),
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, cardBorderColor, RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = DeepObsidianSurface)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            // 1. Cabecera: Título "Jornada del día" + Estado a la derecha
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = when {
-                            isDayClosed -> "🏁 JORNADA CERRADA"
-                            hasActiveShift -> "🟢 TURNO EN CURSO"
-                            else -> "🚦 CABINA EN ESPERA"
-                        },
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        ),
-                        color = when {
-                            isDayClosed || hasActiveShift -> StatusGreen
-                            else -> ElectricBluePrimary
-                        }
-                    )
-                    if (isDayClosed && totalKmDriven > 0) {
+                Text(
+                    text = "Jornada del día",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    ),
+                    color = TextPrimary
+                )
+
+                Text(
+                    text = when {
+                        isDayClosed -> "Cerrada"
+                        isEnEspera -> "En espera"
+                        hasActiveShift -> "En curso"
+                        else -> "Sin turno activo"
+                    },
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    ),
+                    color = when {
+                        isDayClosed -> TextSecondary
+                        isEnEspera -> StatusAmber
+                        hasActiveShift -> StatusGreen
+                        else -> TextSecondary
+                    }
+                )
+            }
+
+            // 2. Contenido Contextual según el estado
+            when {
+                // ESTADO C: JORNADA CERRADA
+                isDayClosed -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(StatusGreen.copy(alpha = 0.15f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(DeepObsidianSurfaceVariant),
+                            contentAlignment = Alignment.Center
                         ) {
+                            Text(text = "🏁", fontSize = 16.sp)
+                        }
+                        Column {
                             Text(
-                                text = "$totalKmDriven km hoy",
-                                style = MaterialTheme.typography.labelSmall.copy(
+                                text = "${String.format(Locale.US, "%,d", effectiveStartOdo)} ➔ ${String.format(Locale.US, "%,d", dayEndOdometer ?: effectiveStartOdo)} km",
+                                style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 14.sp
                                 ),
-                                color = StatusGreen
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "$totalKmDriven km recorridos hoy · $elapsedHoursFormatted",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                color = TextSecondary
                             )
                         }
                     }
-                }
 
-                if (isDayClosed && dayEndOdometer != null) {
-                    Text(
-                        text = "${String.format(Locale.US, "%,d", effectiveStartOdo)} ➔ ${String.format(Locale.US, "%,d", dayEndOdometer)} km",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        color = TextPrimary
-                    )
-                } else if (hasActiveShift) {
-                    Text(
-                        text = "Inicio: ${String.format(Locale.US, "%,d", effectiveStartOdo)} km",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        color = TextPrimary
-                    )
-                } else {
-                    Text(
-                        text = "Último odómetro: ${String.format(Locale.US, "%,d", effectiveStartOdo)} km",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        color = TextPrimary
-                    )
-                }
-            }
-
-            when {
-                isDayClosed -> {
-                    IconButton(
+                    OutlinedButton(
                         onClick = onOpenDayOdometerDialog,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar Odómetro",
-                            tint = TextSecondary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                hasActiveShift -> {
-                    Button(
-                        onClick = onCloseShiftClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = StatusRed,
-                            contentColor = TextPrimary
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(DeepObsidianBorder)
                         ),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Finalizar",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                            text = "Ver resumen de jornada",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                 }
+
+                // ESTADO D: EN ESPERA
+                isEnEspera -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(StatusAmber.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "⏸", fontSize = 16.sp)
+                        }
+                        Column {
+                            Text(
+                                text = "En espera de ruta",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                ),
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Último odómetro registrado: ${String.format(Locale.US, "%,d", effectiveStartOdo)} km",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = if (hasActiveShift) onCloseShiftClick else onStartShiftClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = StatusAmber,
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        Text(
+                            text = if (hasActiveShift) "Finalizar jornada" else "Iniciar jornada",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+
+                // ESTADO B: JORNADA EN CURSO
+                hasActiveShift -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(StatusGreen.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "⏱️", fontSize = 16.sp)
+                        }
+                        Column {
+                            Text(
+                                text = elapsedHoursFormatted,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 15.sp
+                                ),
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "Odómetro inicial: ${String.format(Locale.US, "%,d", effectiveStartOdo)} km",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                color = TextSecondary
+                            )
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onCloseShiftClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                            brush = androidx.compose.ui.graphics.SolidColor(StatusGreen)
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = StatusGreen
+                        )
+                    ) {
+                        Text(
+                            text = "⏹ Finalizar jornada",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+
+                // ESTADO A: SIN TURNO ACTIVO
                 else -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "Sin turno activo",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            ),
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "Puedes iniciar tu jornada cuando estés listo.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            color = TextSecondary
+                        )
+                    }
+
                     Button(
                         onClick = onStartShiftClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = ElectricBluePrimary,
-                            contentColor = TextPrimary
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            containerColor = StatusGreen,
+                            contentColor = Color.Black
+                        )
                     ) {
                         Text(
-                            text = "Iniciar Turno 🚀",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                            text = "▷ Iniciar jornada",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                 }
