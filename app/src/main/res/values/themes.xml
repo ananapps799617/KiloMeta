@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
+  ARCHIVO: app/src/main/res/values/themes.xml
+  DESCRIPCIÓN PEDAGÓGICA:
+  Tema nativo de arranque con androidx.core.splashscreen (SplashScreen API Android 12+).
+  Erradica definitivamente el parche/círculo blanco genérico estableciendo fondo negro asfalto
+  y transición suave hacia la cabina.
+-->
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Fondo de ventana de toda la pantalla de arranque -->
+        <item name="windowSplashScreenBackground">@color/deep_obsidian_background</item>
+        <!-- Icono central flotante -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <!-- Fondo detrás del icono para erradicar el parche blanco forzado de Android 12 -->
+        <item name="windowSplashScreenIconBackgroundColor">@color/deep_obsidian_background</item>
+        <!-- Tema al que transiciona la app tras el arranque -->
+        <item name="postSplashScreenTheme">@android:style/Theme.Material.NoActionBar</item>
+    </style>
+</resources>

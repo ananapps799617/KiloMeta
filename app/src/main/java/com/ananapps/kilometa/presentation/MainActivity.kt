@@ -38,6 +38,7 @@ import com.ananapps.kilometa.presentation.reports.ReportsScreen
 import com.ananapps.kilometa.presentation.sync.CloudSyncStatusSheet
 import com.ananapps.kilometa.presentation.sync.HydrationRecoveryScreen
 import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.ananapps.kilometa.domain.model.HudConfig
 import com.ananapps.kilometa.domain.repository.HudConfigRepository
@@ -57,6 +58,13 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var hudConfigRepository: HudConfigRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen().setOnExitAnimationListener { splashScreenView ->
+            splashScreenView.view.animate()
+                .alpha(0f)
+                .setDuration(300L)
+                .withEndAction { splashScreenView.remove() }
+                .start()
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingQuickAction.value = intent.getStringExtra("EXTRA_QUICK_ACTION")
