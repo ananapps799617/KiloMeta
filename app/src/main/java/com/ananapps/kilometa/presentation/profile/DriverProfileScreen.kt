@@ -18,6 +18,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -59,8 +61,10 @@ import com.ananapps.kilometa.presentation.profile.components.ProfileStepContent
 import com.ananapps.kilometa.presentation.profile.components.ProfileTopBar
 import com.ananapps.kilometa.presentation.profile.components.rememberDriverProfileFormState
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
+import com.ananapps.kilometa.presentation.theme.DeepObsidianSurface
 import com.ananapps.kilometa.presentation.theme.EmeraldPrimary
 import com.ananapps.kilometa.presentation.theme.StatusGreen
+import com.ananapps.kilometa.presentation.theme.TextPrimary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -168,7 +172,12 @@ fun DriverProfileScreen(
             }
 
             // Barra inferior en Thumb Zone
-            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 if (isOnboardingMode) {
                     val isNextValid = when (currentStep) {
                         0 -> formState.driverName.isNotBlank()
@@ -184,9 +193,34 @@ fun DriverProfileScreen(
                         onExitOnboarding = onNavigateBack
                     )
                 } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        if (currentStep > 0) {
+                            OutlinedButton(
+                                onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); currentStep-- },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = DeepObsidianSurface, contentColor = TextPrimary)
+                            ) {
+                                Text(text = "← Anterior", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
+                            }
+                        }
+                        if (currentStep < 2) {
+                            OutlinedButton(
+                                onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); currentStep++ },
+                                modifier = Modifier.weight(1f).height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(containerColor = DeepObsidianSurface, contentColor = TextPrimary)
+                            ) {
+                                Text(text = "Siguiente ➔", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
+                            }
+                        }
+                    }
                     Button(
                         onClick = onCommitSave,
-                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
                         shape = RoundedCornerShape(14.dp)
                     ) {

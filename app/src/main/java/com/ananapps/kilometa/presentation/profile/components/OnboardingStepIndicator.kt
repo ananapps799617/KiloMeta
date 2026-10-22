@@ -57,7 +57,7 @@ fun OnboardingStepIndicator(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .wrapContentWidth()
-                    .clickable(enabled = onStepClick != null && isCompleted) {
+                    .clickable(enabled = onStepClick != null) {
                         onStepClick?.invoke(index)
                     }
             ) {
