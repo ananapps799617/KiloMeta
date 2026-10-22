@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.core.util.ColorUtils
 import com.ananapps.kilometa.domain.model.CashSettlementSummary
+import com.ananapps.kilometa.domain.model.PlatformType
 import com.ananapps.kilometa.domain.model.PocketType
 import com.ananapps.kilometa.domain.model.Wallet
 import com.ananapps.kilometa.presentation.theme.*
@@ -91,9 +92,10 @@ fun CockpitWalletsCard(
                 ) {
                     rowPair.forEach { w ->
                         val chipColor = ColorUtils.parseHexColor(w.colorHex)
+                        val dynamicBalance = resolveWalletBalance(w, settlement)
                         WalletCockpitCard(
                             name = w.name,
-                            balance = w.balance,
+                            balance = dynamicBalance,
                             iconGlyph = w.iconName.ifBlank { "💵" },
                             accentColor = chipColor,
                             modifier = Modifier.weight(1f)
@@ -190,7 +192,7 @@ private fun WalletCockpitCard(
     }
 }
 
-private fun mapWalletIdToPocketType(id: String): PocketType? = when (id) {
+private fun mapWalletIdToPocketType(id: String): PocketType? = when (id.lowercase().trim()) {
     "cash_physical" -> PocketType.CASH_PHYSICAL
     "digital_wallet" -> PocketType.DIGITAL_WALLET
     "uber" -> PocketType.UBER
@@ -198,3 +200,33 @@ private fun mapWalletIdToPocketType(id: String): PocketType? = when (id) {
     "car_quota" -> PocketType.CAR_QUOTA
     else -> null
 }
+
+/**
+ * Resuelve de forma reactiva y soberana el saldo real de cada bolsillo de cabina (Orden #062).
+ * Conecta los IDs y nombres canónicos con CashSettlementSummary sin depender de campos estáticos.
+ */
+private fun resolveWalletBalance(wallet: Wallet, settlement: CashSettlementSummary?): Double {
+    if (settlement == null) return wallet.balance
+    val id = wallet.id.lowercase().trim()
+    val name = wallet.name.lowercase().trim()
+    return when {
+        id == "cash_physical" || name.contains("efectivo") -> settlement.cashPhysicalBalance
+        id == "digital_wallet" || name.contains("nequi") || name.contains("davi") -> settlement.digitalWalletBalance
+        id == "uber" || name.contains("uber") -> settlement.uberWalletBalance
+        id == "didi" || name.contains("didi") -> settlement.didiWalletBalance
+        id == "car_quota" || name.contains("cuota") -> settlement.carQuotaWalletBalance
+        else -> {
+            val matchingPlatform = PlatformType.entries.find {
+                it.name.equals(id, ignoreCase = true) || it.displayName.equals(name, ignoreCase = true)
+            }
+            if (matchingPlatform != null) {
+                settlement.platformWallets[matchingPlatform]?.let { pwb ->
+                    (pwb.digitalGross - pwb.digitalCommission + pwb.platformSubsidy) - pwb.cashCommissionOwed
+                } ?: wallet.balance
+            } else {
+                wallet.balance
+            }
+        }
+    }
+}
+
