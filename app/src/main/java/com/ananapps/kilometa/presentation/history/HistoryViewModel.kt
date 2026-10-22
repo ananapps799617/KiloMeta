@@ -171,26 +171,17 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun onAddTrip(
-        platform: PlatformType,
-        gross: Double,
-        commission: Double,
-        payment: PaymentMethod,
-        dest: PaymentDestination,
-        timestamp: Long,
-        startOdo: Int?,
-        endOdo: Int?
+        platform: PlatformType, gross: Double, commission: Double, payment: PaymentMethod,
+        dest: PaymentDestination, timestamp: Long, startOdo: Int?, endOdo: Int?,
+        distanceKm: Double? = null, durationMinutes: Int? = null, platformPromoDiscount: Double = 0.0
     ) = viewModelScope.launch {
         val shift = manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, startOdometer = startOdo ?: 0, endOdometer = endOdo ?: 0)
         registerTripUseCase(
-            shiftId = shift.id,
-            platformType = platform,
-            grossAmount = gross,
-            commissionAmount = commission,
-            paymentMethod = payment,
-            paymentDestination = dest,
-            timestamp = timestamp,
-            startOdometer = startOdo,
-            endOdometer = endOdo
+            shiftId = shift.id, platformType = platform, grossAmount = gross, commissionAmount = commission,
+            paymentMethod = payment, paymentDestination = dest, timestamp = timestamp,
+            startOdometer = startOdo, endOdometer = endOdo,
+            distanceKm = distanceKm, durationMinutes = durationMinutes,
+            platformPromoDiscount = platformPromoDiscount
         )
     }
 

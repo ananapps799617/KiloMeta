@@ -187,6 +187,28 @@ class TripCommissionExactCalculationTest {
         }
     }
 
+    @Test
+    fun registerTrip_withTelemetry_persistsDistanceDurationAndCalculatesMetrics() {
+        runBlocking {
+            val trip = registerTripUseCase(
+                shiftId = "shift-001",
+                platformType = PlatformType.UBER,
+                grossAmount = 25000.0,
+                commissionAmount = 5000.0,
+                paymentMethod = PaymentMethod.CASH,
+                distanceKm = 10.0,
+                durationMinutes = 20
+            )
+
+            assertEquals(10.0, trip.distanceKm!!, 0.001)
+            assertEquals(20, trip.durationMinutes)
+            assertEquals(10.0, trip.tripDistanceKm!!, 0.001)
+            assertEquals(2000.0, trip.ratePerKm!!, 0.001)
+            assertEquals(60000.0, trip.ratePerHour!!, 0.001)
+            assertTrue(tripRepository.savedTrips.any { it.id == trip.id && it.distanceKm == 10.0 && it.durationMinutes == 20 })
+        }
+    }
+
     private class FakeTripRepository : TripRepository {
         val savedTrips = mutableListOf<Trip>()
 

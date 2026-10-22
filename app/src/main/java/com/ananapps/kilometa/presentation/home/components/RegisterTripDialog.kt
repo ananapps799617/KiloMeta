@@ -85,13 +85,13 @@ fun RegisterTripDialog(
         }
     }
 
-    val gross = grossAmountText.toDoubleOrNull() ?: 0.0
-    val appPart = commissionAmountText.toDoubleOrNull() ?: 0.0
+    val gross = grossAmountText.trim().toDoubleOrNull() ?: 0.0
+    val appPart = commissionAmountText.trim().toDoubleOrNull() ?: 0.0
     val net = if (isBonus) (gross + appPart) else (gross - appPart).coerceAtLeast(0.0)
     val commission = if (isBonus) 0.0 else appPart
     val promoDiscount = if (isBonus) appPart else 0.0
-    val parsedDist = distanceKmText.replace(',', '.').toDoubleOrNull()
-    val parsedDur = durationMinutesText.toIntOrNull()
+    val parsedDist = distanceKmText.trim().replace(',', '.').toDoubleOrNull()
+    val parsedDur = durationMinutesText.trim().toIntOrNull()
 
     val hasDirtyData = if (isEditing) {
         gross != existingTrip.grossAmount ||

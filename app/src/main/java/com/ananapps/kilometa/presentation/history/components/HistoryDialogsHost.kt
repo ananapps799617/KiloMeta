@@ -39,7 +39,7 @@ fun HistoryDialogsHost(
     onUpdateExpense: (Expense) -> Unit,
     onUpdateMaintenance: (MaintenanceRecord) -> Unit,
     onUpdateDayMetrics: (startOdo: Int, endOdo: Int, startTimeMillis: Long, endTimeMillis: Long) -> Unit,
-    onConfirmAddTrip: (PlatformType, Double, Double, PaymentMethod, PaymentDestination, Long, Int?, Int?) -> Unit,
+    onConfirmAddTrip: (PlatformType, Double, Double, PaymentMethod, PaymentDestination, Long, Int?, Int?, Double?, Int?, Double) -> Unit,
     onConfirmAddFueling: (FuelType, Double, Double, Int, WalletType, Long) -> Unit,
     onConfirmAddExpense: (ExpenseConcept, Double, WalletType, Long) -> Unit,
     onConfirmAddMaintenance: (MaintenanceType, Int, Double, String?, WalletType, String?, String?, Long) -> Unit
@@ -84,8 +84,8 @@ fun HistoryDialogsHost(
             lastKnownOdometer = lastKnownOdometer,
             onDismiss = onDismissRegisterTrip,
             initialTimestamp = timestamp,
-            onConfirmTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo, _, _, _ ->
-                onConfirmAddTrip(plat, gross, comm, pay, dest, time, sOdo, eOdo)
+            onConfirmTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo, distKm, durMin, promo ->
+                onConfirmAddTrip(plat, gross, comm, pay, dest, time, sOdo, eOdo, distKm, durMin, promo)
             }
         )
     }

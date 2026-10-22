@@ -255,8 +255,8 @@ fun HistoryScreen(
             }
             editingDayMetrics = null
         },
-        onConfirmAddTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo ->
-            viewModel.onAddTrip(plat, gross, comm, pay, dest, time, sOdo, eOdo)
+        onConfirmAddTrip = { plat, gross, comm, pay, dest, time, sOdo, eOdo, distKm, durMin, promo ->
+            viewModel.onAddTrip(plat, gross, comm, pay, dest, time, sOdo, eOdo, distKm, durMin, promo)
             registeringTripTimestamp = null
         },
         onConfirmAddFueling = { type, amount, vol, odo, src, time ->
