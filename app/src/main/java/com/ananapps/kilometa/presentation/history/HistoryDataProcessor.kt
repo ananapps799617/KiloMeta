@@ -36,7 +36,7 @@ class HistoryDataProcessor @Inject constructor(
     ): HistoryUiState {
         val cutoffMillis = calculatePeriodCutoff(filter, vehicle)
         val filteredShifts = if (cutoffMillis > 0L) shifts.filter { it.startTime >= cutoffMillis } else shifts
-        val days = DayHistoryMapper.mapToDays(trips, fuelings, expenses, maintenances, cutoffMillis)
+        val days = DayHistoryMapper.mapToDays(filteredShifts, trips, fuelings, expenses, maintenances, cutoffMillis)
 
         if (shifts.isEmpty() && days.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)
         if (filteredShifts.isEmpty() && days.isEmpty()) return HistoryUiState.Empty(selectedFilter = filter)

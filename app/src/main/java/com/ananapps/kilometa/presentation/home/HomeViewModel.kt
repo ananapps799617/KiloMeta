@@ -156,7 +156,7 @@ class HomeViewModel @Inject constructor(
 
     fun registerFueling(type: FuelType, amount: Double, volume: Double, odo: Int, isSporadic: Boolean = false, paymentSource: WalletType = WalletType.CASH_PHYSICAL, timestamp: Long = System.currentTimeMillis()) = viewModelScope.launch {
         val shiftId = if (isSporadic || uiState.value !is HomeUiState.ActiveShift) {
-            manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, startOdometer = odo, endOdometer = odo, notes = "Jornada diaria").id
+            manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, notes = "Jornada diaria").id
         } else {
             (uiState.value as HomeUiState.ActiveShift).summary.shiftId
         }

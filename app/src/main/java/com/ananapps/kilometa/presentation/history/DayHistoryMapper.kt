@@ -15,6 +15,7 @@ import java.util.*
 object DayHistoryMapper {
 
     fun mapToDays(
+        shifts: List<ShiftFinancialSummary>,
         trips: List<Trip>,
         fuelings: List<Fueling>,
         expenses: List<Expense>,
@@ -40,7 +41,7 @@ object DayHistoryMapper {
 
         val grouped = allEvents.groupBy { dayKeyFormatter.format(Date(it.timestamp)) }
 
-        return grouped.map { (_, events) ->
+        return grouped.map { (dayKey, events) ->
             val sortedEvents = events.sortedByDescending { it.timestamp }
             val firstEventTime = sortedEvents.minOf { it.timestamp }
             val lastEventTime = sortedEvents.maxOf { it.timestamp }
@@ -57,26 +58,38 @@ object DayHistoryMapper {
             val expensesCost = dayExpenses.sumOf { it.amount } + dayMaintenances.sumOf { it.costCop }
             val netProfit = netTrips - fuelCost - expensesCost
 
-            val odos = (dayTrips.mapNotNull { it.startOdometer } + dayTrips.mapNotNull { it.endOdometer } +
-                    dayFuelings.map { it.odometer } + dayMaintenances.map { it.odometer }).filter { it > 0 }
+            // Prioridad Soberana SSOT: Odómetro y Horas de la Jornada del Conductor (Orden #068)
+            val matchingShift = shifts.find { s ->
+                dayKeyFormatter.format(Date(s.startTime)) == dayKey
+            }
 
-            val startOdo = odos.minOrNull() ?: 0
-            val endOdo = odos.maxOrNull() ?: startOdo
-            val odoDiff = if (endOdo >= startOdo && startOdo > 0) endOdo - startOdo else 0
             val tripKm = dayTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()
-            val distanceKm = maxOf(odoDiff, tripKm)
+            val (startOdo, endOdo, distanceKm) = if (matchingShift != null && matchingShift.startOdometer > 0) {
+                val sOdo = matchingShift.startOdometer
+                val eOdo = matchingShift.endOdometer?.takeIf { it >= sOdo } ?: sOdo
+                val diff = if (eOdo > sOdo) eOdo - sOdo else 0
+                val finalDist = if (diff > 0) diff else tripKm
+                Triple(sOdo, eOdo, finalDist)
+            } else {
+                Triple(0, 0, tripKm)
+            }
 
-            val elapsedMinutes = ((lastEventTime - firstEventTime) / 60000).coerceAtLeast(0)
+            val odoDiff = if (endOdo > startOdo && startOdo > 0) endOdo - startOdo else 0
+            val passengerKm = dayTrips.mapNotNull { it.tripDistanceKm }.sum()
+            val emptyKm = if (odoDiff > passengerKm && odoDiff > 0) odoDiff - passengerKm else 0.0
+
+            val startTimeMillis = matchingShift?.startTime ?: firstEventTime
+            val endTimeMillis = matchingShift?.endTime ?: lastEventTime
+            val elapsedMinutes = ((endTimeMillis - startTimeMillis) / 60000).coerceAtLeast(0)
             val elapsedHours = elapsedMinutes / 60
             val elapsedRemMinutes = elapsedMinutes % 60
             val elapsedFormatted = "${elapsedHours}h ${elapsedRemMinutes}m"
 
             val ratePerKm = if (distanceKm > 0) netProfit / distanceKm else 0.0
-            val passengerKm = dayTrips.mapNotNull { it.tripDistanceKm }.sum()
-            val emptyKm = if (odoDiff > 0 && odoDiff > passengerKm) odoDiff - passengerKm else 0.0
             val ratePerHour = if (elapsedMinutes > 0) netProfit / (elapsedMinutes / 60.0) else 0.0
 
-            val resolvedShiftId = dayTrips.firstOrNull()?.shiftId
+            val resolvedShiftId = matchingShift?.shiftId
+                ?: dayTrips.firstOrNull()?.shiftId
                 ?: dayFuelings.firstOrNull()?.shiftId
                 ?: dayExpenses.firstOrNull()?.shiftId
 
@@ -87,8 +100,8 @@ object DayHistoryMapper {
             }.toMap()
 
             DayHistorySummary(
-                dateMillis = firstEventTime,
-                dateFormatted = dayTitleFormatter.format(Date(firstEventTime)).replaceFirstChar { it.uppercase() },
+                dateMillis = startTimeMillis,
+                dateFormatted = dayTitleFormatter.format(Date(startTimeMillis)).replaceFirstChar { it.uppercase() },
                 netProfit = netProfit,
                 grossProduced = gross,
                 appCommissions = commissions,
@@ -97,13 +110,13 @@ object DayHistoryMapper {
                 startOdometer = startOdo,
                 endOdometer = endOdo,
                 distanceKm = distanceKm,
-                startTimeFormatted = timeFormatter.format(Date(firstEventTime)),
-                endTimeFormatted = timeFormatter.format(Date(lastEventTime)),
+                startTimeFormatted = timeFormatter.format(Date(startTimeMillis)),
+                endTimeFormatted = timeFormatter.format(Date(endTimeMillis)),
                 elapsedHoursFormatted = elapsedFormatted,
                 ratePerKm = ratePerKm,
                 events = sortedEvents,
-                startTimeMillis = firstEventTime,
-                endTimeMillis = lastEventTime,
+                startTimeMillis = startTimeMillis,
+                endTimeMillis = endTimeMillis,
                 shiftId = resolvedShiftId,
                 platformEarnings = platformEarnings,
                 passengerKm = passengerKm,
@@ -112,4 +125,12 @@ object DayHistoryMapper {
             )
         }.sortedByDescending { it.dateMillis }
     }
+
+    fun mapToDays(
+        trips: List<Trip>,
+        fuelings: List<Fueling>,
+        expenses: List<Expense>,
+        maintenances: List<MaintenanceRecord>,
+        cutoffMillis: Long = 0L
+    ): List<DayHistorySummary> = mapToDays(emptyList(), trips, fuelings, expenses, maintenances, cutoffMillis)
 }

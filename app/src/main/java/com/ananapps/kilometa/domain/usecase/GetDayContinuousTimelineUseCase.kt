@@ -133,14 +133,13 @@ class GetDayContinuousTimelineUseCase @Inject constructor(
             val tripMinOdo = todayTrips.mapNotNull { it.startOdometer ?: it.endOdometer }.minOrNull()
             val fuelMinOdo = todayFuelings.map { it.odometer }.minOrNull()
             val maintMinOdo = todayMaintenances.map { it.odometer }.minOrNull()
-            val firstOdoCandidates = listOfNotNull(shiftStartOdo, tripMinOdo, fuelMinOdo, maintMinOdo)
-            val firstOdo = firstOdoCandidates.minOrNull() ?: lastOdo ?: vehicle.initialOdometer
+            // Prioridad soberana: el odómetro inicial definido para la jornada no puede ser pisado por tanqueos intermedios
+            val firstOdo = shiftStartOdo ?: tripMinOdo ?: fuelMinOdo ?: maintMinOdo ?: lastOdo ?: vehicle.initialOdometer
 
             val tripMaxOdo = todayTrips.mapNotNull { it.endOdometer ?: it.startOdometer }.maxOrNull()
             val fuelMaxOdo = todayFuelings.map { it.odometer }.maxOrNull()
             val maintMaxOdo = todayMaintenances.map { it.odometer }.maxOrNull()
-            val lastOdoCandidates = listOfNotNull(shiftEndOdo, tripMaxOdo, fuelMaxOdo, maintMaxOdo)
-            val effectiveLastOdo = lastOdoCandidates.maxOrNull() ?: firstOdo
+            val effectiveLastOdo = shiftEndOdo ?: listOfNotNull(tripMaxOdo, fuelMaxOdo, maintMaxOdo).maxOrNull() ?: firstOdo
 
             val isDayClosed = !hasActiveShift && (primaryShift?.status == com.ananapps.kilometa.domain.model.ShiftStatus.COMPLETED && shiftEndOdo != null && shiftEndOdo >= (shiftStartOdo ?: 0))
             val sumTripKm = todayTrips.mapNotNull { it.tripDistanceKm }.sum().toInt()

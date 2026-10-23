@@ -193,7 +193,7 @@ class HistoryViewModel @Inject constructor(
         source: WalletType,
         timestamp: Long
     ) = viewModelScope.launch {
-        val shift = manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp, startOdometer = odo, endOdometer = odo)
+        val shift = manageShiftUseCase.getOrCreateShiftForDay(timestamp = timestamp)
         registerFuelingUseCase(
             shiftId = shift.id,
             fuelType = type,
