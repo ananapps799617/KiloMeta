@@ -43,6 +43,7 @@ import androidx.lifecycle.lifecycleScope
 import com.ananapps.kilometa.domain.model.HudConfig
 import com.ananapps.kilometa.domain.repository.HudConfigRepository
 import com.ananapps.kilometa.presentation.theme.DeepObsidianBackground
+import com.ananapps.kilometa.presentation.theme.LocalProfitabilityConfig
 import com.ananapps.kilometa.presentation.overlay.RideOfferOverlayManager
 import com.ananapps.kilometa.presentation.theme.KiloMetaTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -205,38 +206,40 @@ private fun MainAppHost(
         },
         containerColor = DeepObsidianBackground
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when {
-                activeSubDestination == AppDestination.PROFILE -> DriverProfileScreen(
-                    onNavigateBack = { activeSubDestination = null },
-                    isOnboardingMode = false,
-                    userEmail = userSession?.email ?: ""
-                )
-                activeSubDestination == AppDestination.PLACES -> PlacesScreen(onNavigateBack = { activeSubDestination = null })
-                activeSubDestination == AppDestination.EXPENSES -> ExpensesScreen(onNavigateBack = { activeSubDestination = null })
-                activeSubDestination == AppDestination.MAINTENANCE -> MaintenanceScreen(onNavigateBack = { activeSubDestination = null })
-                activeSubDestination == AppDestination.HUD_SETTINGS -> com.ananapps.kilometa.presentation.more.HudSettingsScreen(onNavigateBack = { activeSubDestination = null })
-                currentNavTab == KiloMetaNavTab.ROUTE -> HomeScreen(
-                    viewModel = viewModel, showTopBar = false,
-                    triggerQuickTrip = triggerQuickTrip, onResetQuickTripTrigger = { triggerQuickTrip = false },
-                    triggerQuickFueling = triggerQuickFueling, onResetQuickFuelingTrigger = { triggerQuickFueling = false },
-                    triggerQuickExpense = triggerQuickExpense, onResetQuickExpenseTrigger = { triggerQuickExpense = false },
-                    triggerQuickMaintenance = triggerQuickMaintenance, onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
-                )
-                currentNavTab == KiloMetaNavTab.HISTORY -> HistoryScreen()
-                currentNavTab == KiloMetaNavTab.REPORTS -> ReportsScreen()
-                currentNavTab == KiloMetaNavTab.MORE -> MoreScreen(
-                    onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE },
-                    onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
-                    onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
-                    onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
-                    onNavigateToHudSettings = { activeSubDestination = AppDestination.HUD_SETTINGS },
-                    onNavigateToSync = { showSyncSheet = true }, onSignOut = { viewModel.signOut() }
-                )
+        CompositionLocalProvider(LocalProfitabilityConfig provides hudConfig) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                when {
+                    activeSubDestination == AppDestination.PROFILE -> DriverProfileScreen(
+                        onNavigateBack = { activeSubDestination = null },
+                        isOnboardingMode = false,
+                        userEmail = userSession?.email ?: ""
+                    )
+                    activeSubDestination == AppDestination.PLACES -> PlacesScreen(onNavigateBack = { activeSubDestination = null })
+                    activeSubDestination == AppDestination.EXPENSES -> ExpensesScreen(onNavigateBack = { activeSubDestination = null })
+                    activeSubDestination == AppDestination.MAINTENANCE -> MaintenanceScreen(onNavigateBack = { activeSubDestination = null })
+                    activeSubDestination == AppDestination.HUD_SETTINGS -> com.ananapps.kilometa.presentation.more.HudSettingsScreen(onNavigateBack = { activeSubDestination = null })
+                    currentNavTab == KiloMetaNavTab.ROUTE -> HomeScreen(
+                        viewModel = viewModel, showTopBar = false,
+                        triggerQuickTrip = triggerQuickTrip, onResetQuickTripTrigger = { triggerQuickTrip = false },
+                        triggerQuickFueling = triggerQuickFueling, onResetQuickFuelingTrigger = { triggerQuickFueling = false },
+                        triggerQuickExpense = triggerQuickExpense, onResetQuickExpenseTrigger = { triggerQuickExpense = false },
+                        triggerQuickMaintenance = triggerQuickMaintenance, onResetQuickMaintenanceTrigger = { triggerQuickMaintenance = false }
+                    )
+                    currentNavTab == KiloMetaNavTab.HISTORY -> HistoryScreen()
+                    currentNavTab == KiloMetaNavTab.REPORTS -> ReportsScreen()
+                    currentNavTab == KiloMetaNavTab.MORE -> MoreScreen(
+                        onNavigateToProfile = { activeSubDestination = AppDestination.PROFILE },
+                        onNavigateToPlaces = { activeSubDestination = AppDestination.PLACES },
+                        onNavigateToMaintenance = { activeSubDestination = AppDestination.MAINTENANCE },
+                        onNavigateToExpenses = { activeSubDestination = AppDestination.EXPENSES },
+                        onNavigateToHudSettings = { activeSubDestination = AppDestination.HUD_SETTINGS },
+                        onNavigateToSync = { showSyncSheet = true }, onSignOut = { viewModel.signOut() }
+                    )
+                }
             }
         }
     }

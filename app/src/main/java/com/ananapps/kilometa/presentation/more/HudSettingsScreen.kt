@@ -2,15 +2,12 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/more/HudSettingsScreen.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Pantalla completa de calibración de parámetros del Copiloto Flotante (Orden #047).
-// Permite ajustar umbrales del semáforo, distancia máxima de recogida, combustible y comisiones.
+// Pantalla minimalista para calibración de Umbrales de Rentabilidad del Conductor (Orden #066).
+// Permite ajustar el semáforo ($/km y $/hora) purgando controles y permisos obsoletos (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.more
 
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,12 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.ananapps.kilometa.presentation.more.components.HudPermissionsCard
 import com.ananapps.kilometa.presentation.theme.*
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,10 +38,13 @@ fun HudSettingsScreen(
 ) {
     val config by viewModel.config.collectAsState()
     val context = LocalContext.current
+    val currencyFormatter = remember {
+        NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply { maximumFractionDigits = 0 }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.saveSuccess.collect {
-            Toast.makeText(context, "Parámetros del Copiloto guardados", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Umbrales de rentabilidad actualizados", Toast.LENGTH_SHORT).show()
             onNavigateBack()
         }
     }
@@ -50,7 +52,7 @@ fun HudSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Configuración del Copiloto", fontWeight = FontWeight.Bold, color = TextPrimary) },
+                title = { Text("Umbrales de Rentabilidad", fontWeight = FontWeight.Bold, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = TextPrimary)
@@ -68,181 +70,164 @@ fun HudSettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Sección 0: Estado de Permisos del Copiloto Flotante
+            // 1. Card Explicativo Minimalista
             item {
-                HudPermissionsCard(
-                    onSimulateOffer = { viewModel.simulateTestOffer() }
-                )
-            }
-
-            // Sección 1: Umbrales del Semáforo
-            item {
-                SectionCard(title = "🚦 Semáforo de Rentabilidad") {
-                    NumberSliderSetting(
-                        label = "Mínimo Verde Rentable ($/km)",
-                        value = config.minProfitPerKm,
-                        range = 1500f..4500f,
-                        step = 100f,
-                        unit = "COP/km",
-                        onValueChange = { viewModel.updateConfig { c -> c.copy(minProfitPerKm = it) } }
-                    )
-                    NumberSliderSetting(
-                        label = "Mínimo Verde Rentable ($/hora)",
-                        value = config.minProfitPerHour,
-                        range = 15000f..50000f,
-                        step = 1000f,
-                        unit = "COP/h",
-                        onValueChange = { viewModel.updateConfig { c -> c.copy(minProfitPerHour = it) } }
-                    )
-                    NumberSliderSetting(
-                        label = "Umbral Amarillo Punto de Equilibrio ($/km)",
-                        value = config.breakEvenPerKm,
-                        range = 1000f..2500f,
-                        step = 100f,
-                        unit = "COP/km",
-                        onValueChange = { viewModel.updateConfig { c -> c.copy(breakEvenPerKm = it) } }
-                    )
-                }
-            }
-
-            // Sección 2: Recogida Máxima
-            item {
-                SectionCard(title = "📍 Filtro de Recogida") {
-                    NumberSliderSetting(
-                        label = "Distancia Máxima al Pasajero",
-                        value = config.maxPickupDistanceKm,
-                        range = 1.0f..6.0f,
-                        step = 0.5f,
-                        unit = "km",
-                        onValueChange = { viewModel.updateConfig { c -> c.copy(maxPickupDistanceKm = it) } }
-                    )
-                    Text(
-                        text = "Carreras con recogida superior se marcarán automáticamente como NO RENTABLES (Rojo).",
-                        color = TextSecondary,
-                        fontSize = 11.sp
-                    )
-                }
-            }
-
-            // Sección 3: Costo de Combustible
-            item {
-                SectionCard(title = "⛽ Costo de Combustible Aplicado") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Usar costo del vehículo activo", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            Text("Calculado según GNV vs Gasolina en perfil", color = TextSecondary, fontSize = 11.sp)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = DeepObsidianSurface,
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TextSecondary.copy(alpha = 0.15f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("🚦", fontSize = 20.sp)
+                            Text("Semáforo de Rentabilidad Personalizado", fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 15.sp)
                         }
-                        Switch(
-                            checked = config.useAutoFuelCost,
-                            onCheckedChange = { viewModel.updateConfig { c -> c.copy(useAutoFuelCost = it) } }
+                        Text(
+                            text = "Calibra tus estándares mínimos de ganancia en cabina. KiloMeta evaluará cada carrera registrada comparando su $/km y proyección por hora con estos valores.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            lineHeight = 18.sp
                         )
                     }
-                    if (!config.useAutoFuelCost) {
-                        NumberSliderSetting(
-                            label = "Costo Fijo Manual por Kilómetro",
-                            value = config.customFuelCostPerKm,
-                            range = 150f..900f,
-                            step = 25f,
+                }
+            }
+
+            // 2. Controles Deslizantes de Umbrales
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = DeepObsidianSurface,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        ThresholdSlider(
+                            label = "Tarifa Mínima Rentable ($/km)",
+                            value = config.minProfitPerKm,
+                            range = 1000f..4500f,
+                            step = 100f,
                             unit = "COP/km",
-                            onValueChange = { viewModel.updateConfig { c -> c.copy(customFuelCostPerKm = it) } }
+                            color = StatusGreen,
+                            formatter = currencyFormatter,
+                            onValueChange = { viewModel.updateConfig { c -> c.copy(minProfitPerKm = it) } }
+                        )
+
+                        ThresholdSlider(
+                            label = "Proyección Mínima Rentable ($/hora)",
+                            value = config.minProfitPerHour,
+                            range = 10000f..50000f,
+                            step = 1000f,
+                            unit = "COP/h",
+                            color = StatusGreen,
+                            formatter = currencyFormatter,
+                            onValueChange = { viewModel.updateConfig { c -> c.copy(minProfitPerHour = it) } }
+                        )
+
+                        ThresholdSlider(
+                            label = "Punto de Equilibrio Mínimo ($/km)",
+                            value = config.breakEvenPerKm,
+                            range = 800f..3000f,
+                            step = 100f,
+                            unit = "COP/km",
+                            color = StatusAmber,
+                            formatter = currencyFormatter,
+                            onValueChange = { viewModel.updateConfig { c -> c.copy(breakEvenPerKm = it) } }
                         )
                     }
                 }
             }
 
-            // Sección 4: Comportamiento y Permisos
+            // 3. Previsualizador del Semáforo en Vivo
             item {
-                SectionCard(title = "⚙️ Comportamiento de la Burbuja") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Activar burbuja flotante", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            Text("Muestra el botón flotante sobre otras apps", color = TextSecondary, fontSize = 11.sp)
-                        }
-                        Switch(
-                            checked = config.isFloatingBubbleEnabled,
-                            onCheckedChange = { viewModel.updateConfig { c -> c.copy(isFloatingBubbleEnabled = it) } }
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = DeepObsidianSurfaceVariant,
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("VISTA PREVIA DEL SEMÁFORO", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = TextSecondary)
+
+                        PreviewTierRow(
+                            emoji = "🟢",
+                            name = "RENTABLE",
+                            desc = "≥ ${currencyFormatter.format(config.minProfitPerKm)}/km y ≥ ${currencyFormatter.format(config.minProfitPerHour)}/h",
+                            color = StatusGreen
                         )
-                    }
-                    HorizontalDivider(color = TextSecondary.copy(alpha = 0.2f))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Auto-abrir al iniciar turno", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            Text("Aparece automáticamente al arrancar jornada", color = TextSecondary, fontSize = 11.sp)
-                        }
-                        Switch(
-                            checked = config.autoStartWithShift,
-                            onCheckedChange = { viewModel.updateConfig { c -> c.copy(autoStartWithShift = it) } }
+                        PreviewTierRow(
+                            emoji = "🟡",
+                            name = "EQUILIBRIO",
+                            desc = "Entre ${currencyFormatter.format(config.breakEvenPerKm)} y ${currencyFormatter.format(config.minProfitPerKm)}/km",
+                            color = StatusAmber
+                        )
+                        PreviewTierRow(
+                            emoji = "🔴",
+                            name = "NO RENTABLE",
+                            desc = "< ${currencyFormatter.format(config.breakEvenPerKm)}/km (Bajo rendimiento)",
+                            color = StatusRed
                         )
                     }
                 }
             }
 
-            // Botón Guardar Cambios
+            // 4. Botón Guardar Umbrales
             item {
                 Button(
                     onClick = { viewModel.saveConfig() },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = StatusGreen),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Guardar Parámetros", color = DeepObsidianBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("💾 GUARDAR UMBRALES", color = DeepObsidianBackground, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
 }
 
 @Composable
-private fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = DeepObsidianSurface,
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content
-        )
-    }
-}
-
-@Composable
-private fun NumberSliderSetting(
+private fun ThresholdSlider(
     label: String,
     value: Double,
     range: ClosedFloatingPointRange<Float>,
     step: Float,
     unit: String,
+    color: Color,
+    formatter: NumberFormat,
     onValueChange: (Double) -> Unit
 ) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(text = label, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Text(text = "${value.toInt()} $unit", color = StatusGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(text = label, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = "${formatter.format(value)} / ${unit.substringAfter('/')}",
+                color = color,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace
+            )
         }
         Slider(
-            value = value.toFloat(),
+            value = value.toFloat().coerceIn(range),
             onValueChange = { onValueChange(it.toDouble()) },
             valueRange = range,
-            steps = ((range.endInclusive - range.start) / step).toInt() - 1,
-            colors = SliderDefaults.colors(thumbColor = StatusGreen, activeTrackColor = StatusGreen)
+            steps = (((range.endInclusive - range.start) / step).toInt() - 1).coerceAtLeast(0),
+            colors = SliderDefaults.colors(thumbColor = color, activeTrackColor = color)
         )
+    }
+}
+
+@Composable
+private fun PreviewTierRow(emoji: String, name: String, desc: String, color: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(emoji, fontSize = 14.sp)
+            Text(name, color = color, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        }
+        Text(desc, color = TextSecondary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
     }
 }

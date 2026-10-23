@@ -54,15 +54,22 @@ data class Trip(
         get() = durationMinutes?.takeIf { it > 0 }?.let { (netAmount / it) * 60.0 }
 
     val profitabilityTier: TripProfitabilityTier?
-        get() {
-            val rKm = ratePerKm ?: return null
-            val rH  = ratePerHour
-            return when {
-                rKm >= 1700.0 && (rH == null || rH >= 25000.0) -> TripProfitabilityTier.HIGH
-                rKm < 1400.0  || (rH != null && rH < 15000.0)  -> TripProfitabilityTier.LOW
-                else                                            -> TripProfitabilityTier.MEDIUM
-            }
+        get() = calculateProfitabilityTier()
+
+    fun calculateProfitabilityTier(
+        minPerKm: Double = 1700.0,
+        minPerHour: Double = 25000.0,
+        breakEvenPerKm: Double = 1400.0
+    ): TripProfitabilityTier? {
+        val rKm = ratePerKm ?: return null
+        val rH  = ratePerHour
+        val lowHour = minPerHour * 0.6
+        return when {
+            rKm >= minPerKm && (rH == null || rH >= minPerHour) -> TripProfitabilityTier.HIGH
+            rKm < breakEvenPerKm || (rH != null && rH < lowHour) -> TripProfitabilityTier.LOW
+            else -> TripProfitabilityTier.MEDIUM
         }
+    }
 
 
     val commissionRatePercentage: Double

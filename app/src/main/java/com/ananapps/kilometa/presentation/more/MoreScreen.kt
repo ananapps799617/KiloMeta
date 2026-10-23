@@ -153,21 +153,10 @@ fun MoreScreen(
         }
 
         item {
-            MoreOptionSwitchItem(
-                icon = Icons.Default.PlayArrow,
-                title = "Burbuja Flotante en Pantalla",
-                subtitle = if (hudConfig.isFloatingBubbleEnabled) "Visible sobre Uber, DiDi y mapas" else "Desactivada (no invade tu pantalla)",
-                checked = hudConfig.isFloatingBubbleEnabled,
-                onCheckedChange = { viewModel.toggleFloatingBubble(it) },
-                tint = if (hudConfig.isFloatingBubbleEnabled) StatusGreen else TextSecondary
-            )
-        }
-
-        item {
             MoreOptionItem(
                 icon = Icons.Default.Settings,
-                title = "Copiloto & Calibración HUD",
-                subtitle = "Semáforo de rentabilidad, combustible y comisiones",
+                title = "Umbrales de Rentabilidad",
+                subtitle = "Calibra el semáforo ($/km y $/hora) según tus propios estándares",
                 tint = ElectricBluePrimary,
                 onClick = onNavigateToHudSettings
             )

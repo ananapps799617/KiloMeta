@@ -49,6 +49,10 @@ fun DayActivityItemRow(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val hudConfig = LocalProfitabilityConfig.current
+    val tripTier = if (event is DayActivityEvent.TripItem) {
+        event.trip.calculateProfitabilityTier(hudConfig.minProfitPerKm, hudConfig.minProfitPerHour, hudConfig.breakEvenPerKm)
+    } else null
 
     Column(
         modifier = modifier
@@ -116,11 +120,10 @@ fun DayActivityItemRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val subText = if (event is DayActivityEvent.TripItem && event.trip.profitabilityTier != null) {
-                val tier = event.trip.profitabilityTier!!
+            val subText = if (event is DayActivityEvent.TripItem && tripTier != null) {
                 val d = event.trip.tripDistanceKm
                 val dStr = if (d != null && d > 0) "${if (d % 1.0 == 0.0) d.toInt() else "%.1f".format(d)} km · " else ""
-                "${event.subtitle} · $dStr${tier.emoji} ${tier.displayName}"
+                "${event.subtitle} · $dStr${tripTier.emoji} ${tripTier.displayName}"
             } else {
                 event.subtitle
             }
@@ -172,7 +175,7 @@ fun DayActivityItemRow(
                     trip.ratePerHour?.let { rH ->
                         DetailRow("PROYECCIÓN / HORA", "$ ${String.format(Locale.US, "%,.0f", rH)} / h")
                     }
-                    trip.profitabilityTier?.let { tier ->
+                    tripTier?.let { tier ->
                         DetailRow("RENTABILIDAD", "${tier.emoji} ${tier.displayName.uppercase()}", isHighlight = tier == com.ananapps.kilometa.domain.model.TripProfitabilityTier.HIGH)
                     }
                     DetailRow("MEDIO DE PAGO", trip.paymentMethod.displayName)
