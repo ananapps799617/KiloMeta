@@ -54,7 +54,7 @@ fun TripPlatformSelector(
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(50.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .border(
                             width = if (isSelected) 2.dp else 1.dp,
@@ -65,17 +65,31 @@ fun TripPlatformSelector(
                     color = if (isSelected) token.backgroundColor else DeepObsidianSurfaceVariant,
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = token.badgeLabel,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                fontSize = 13.sp
+                            text = token.monogram,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                             ),
-                            color = if (isSelected) token.contentColor else TextSecondary
+                            color = if (isSelected) token.contentColor else token.brandColor
+                        )
+                        Text(
+                            text = token.badgeLabel,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 11.sp
+                            ),
+                            color = if (isSelected) token.contentColor else TextSecondary,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                 }

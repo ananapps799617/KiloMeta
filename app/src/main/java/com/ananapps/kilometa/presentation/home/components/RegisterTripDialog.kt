@@ -2,27 +2,20 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/RegisterTripDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Diálogo modal flotante unificado para Registro y Edición simétrica de Carreras (Orden #041/#050).
-// Integra telemetría completa (distancia y duración) para cálculo del semáforo de rentabilidad (< 280 LOC).
+// Diálogo modal flotante unificado para Registro y Edición simétrica de Carreras (Orden #041/#050/#071).
+// Integra telemetría completa y Hero Card financiero Cockpit Minimalista (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.ananapps.kilometa.domain.model.*
 import com.ananapps.kilometa.presentation.common.CockpitFloatingScaffold
 import com.ananapps.kilometa.presentation.theme.*
+import java.text.NumberFormat
+import java.util.Locale
 
 private val TripGreenHeader = Color(0xFF1B5E20)
 
@@ -50,6 +43,12 @@ fun RegisterTripDialog(
     initialTimestamp: Long? = null,
     modifier: Modifier = Modifier
 ) {
+    val currencyFormatter = remember {
+        NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
+            maximumFractionDigits = 0
+        }
+    }
+
     val isEditing = existingTrip != null
     val initialPlatform = existingTrip?.platformType ?: PlatformType.UBER
     val initialTime = existingTrip?.timestamp ?: initialTimestamp ?: System.currentTimeMillis()
@@ -98,16 +97,23 @@ fun RegisterTripDialog(
     val isFormValid = gross > 0.0 && (isBonus || appPart <= gross)
 
     val dialogTitle = if (isEditing) "🏁 Editar Carrera" else "🏁 Nueva Carrera"
+    val vehicleSubtitle = if (vehicleProfile.model.isNotBlank()) {
+        "🚗 ${vehicleProfile.model} (${vehicleProfile.vehiclePlate.ifBlank { vehicleProfile.brand }})"
+    } else {
+        "🚗 BYD S6 · HQX882"
+    }
+
     val buttonText = if (isEditing) {
         "GUARDAR CAMBIOS"
-    } else if (gross > 0.0) {
-        "GUARDAR (+)"
+    } else if (net > 0.0) {
+        "GUARDAR (${currencyFormatter.format(net)})"
     } else {
         "GUARDAR CARRERA"
     }
 
     CockpitFloatingScaffold(
         title = dialogTitle,
+        subtitle = vehicleSubtitle,
         headerColor = TripGreenHeader,
         onDismiss = onDismiss,
         confirmButtonText = buttonText,

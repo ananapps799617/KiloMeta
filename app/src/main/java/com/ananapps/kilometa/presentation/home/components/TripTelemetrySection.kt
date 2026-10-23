@@ -2,8 +2,8 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripTelemetrySection.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Sección de telemetría de carrera estilo Cockpit KiloMeta: vehículo activo, fecha/hora y
-// casillas de distancia (km) y duración (min) editables para cálculos de rentabilidad (Orden #050).
+// Sección de telemetría de carrera estilo Cockpit KiloMeta: fecha/hora compacta en 1 toque
+// y casillas simétricas de distancia (km) y duración (min) editables (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ananapps.kilometa.domain.model.VehicleProfile
 import com.ananapps.kilometa.presentation.theme.*
 import java.text.SimpleDateFormat
@@ -37,7 +36,7 @@ import java.util.Locale
 
 @Composable
 fun TripTelemetrySection(
-    vehicleProfile: VehicleProfile,
+    vehicleProfile: VehicleProfile = VehicleProfile(),
     selectedDateTimeMillis: Long,
     onDateTimeSelected: (Long) -> Unit,
     distanceKmText: String = "",
@@ -54,43 +53,19 @@ fun TripTelemetrySection(
     val dateFormatter = remember { SimpleDateFormat("dd/MMM/yyyy", Locale("es", "CO")) }
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale("es", "CO")) }
 
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // 1. Vehículo Activo (Formato Flat List Cockpit KiloMeta con icono dinámico)
-        Surface(
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // 1. Fila Compacta de Fecha & Hora (42dp de alto para máxima ergonomía visual)
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            color = DeepObsidianSurfaceVariant,
-            shape = RoundedCornerShape(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(text = vehicleProfile.vehicleType.icon, fontSize = 22.sp)
-                Column {
-                    Text(
-                        text = "Vehículo",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
-                    )
-                    Text(
-                        text = if (vehicleProfile.model.isNotBlank()) "${vehicleProfile.model} (${vehicleProfile.brand}) (${vehicleProfile.vehiclePlate})" else "S6 (BYD) (HQX882)",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary
-                    )
-                }
-            }
-        }
-
-        // 2. Fila Fecha & Hora Interactivas
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             // Selector Fecha
             Surface(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .border(1.dp, TextSecondary.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                    .weight(1.1f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(1.dp, TextSecondary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                     .clickable {
                         DatePickerDialog(
                             context,
@@ -108,25 +83,33 @@ fun TripTelemetrySection(
                 color = DeepObsidianSurfaceVariant
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(Icons.Default.DateRange, contentDescription = null, tint = ElectricBluePrimary, modifier = Modifier.size(18.dp))
-                    Column {
-                        Text("Fecha", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text(dateFormatter.format(Date(selectedDateTimeMillis)), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                    }
+                    Icon(
+                        Icons.Default.DateRange,
+                        contentDescription = null,
+                        tint = ElectricBluePrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = dateFormatter.format(Date(selectedDateTimeMillis)),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color = TextPrimary
+                    )
                 }
             }
 
             // Selector Hora
             Surface(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .border(1.dp, TextSecondary.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                    .weight(0.9f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(1.dp, TextSecondary.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                     .clickable {
                         TimePickerDialog(
                             context,
@@ -143,27 +126,45 @@ fun TripTelemetrySection(
                 color = DeepObsidianSurfaceVariant
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = ElectricBluePrimary, modifier = Modifier.size(18.dp))
-                    Column {
-                        Text("Hora", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text(timeFormatter.format(Date(selectedDateTimeMillis)), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                    }
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = ElectricBluePrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = timeFormatter.format(Date(selectedDateTimeMillis)),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                        color = TextPrimary
+                    )
                 }
             }
         }
 
-        // 3. Fila Telemetría de Carrera: Distancia (km) y Tiempo (minutos)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        // 2. Fila Telemetría de Carrera: Distancia (km) y Tiempo (minutos)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             OutlinedTextField(
                 value = distanceKmText,
                 onValueChange = onDistanceKmChange,
                 label = { Text("Distancia", style = MaterialTheme.typography.labelSmall) },
                 placeholder = { Text("0.0", color = TextSecondary.copy(alpha = 0.5f)) },
-                trailingIcon = { Text("km", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 8.dp)) },
+                trailingIcon = {
+                    Text(
+                        "km",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -183,7 +184,14 @@ fun TripTelemetrySection(
                 onValueChange = onDurationMinutesChange,
                 label = { Text("Duración", style = MaterialTheme.typography.labelSmall) },
                 placeholder = { Text("0", color = TextSecondary.copy(alpha = 0.5f)) },
-                trailingIcon = { Text("min", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 8.dp)) },
+                trailingIcon = {
+                    Text(
+                        "min",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 colors = OutlinedTextFieldDefaults.colors(

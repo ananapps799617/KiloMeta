@@ -2,13 +2,13 @@
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/home/components/TripFinancialSection.kt
 // DESCRIPCIÓN PEDAGÓGICA:
-// Sección financiera ergonómica estilo Cockpit KiloMeta: captura directa de "¿Cuánto recibí?"
-// y "¿Cuánto descuentan?", cálculo reactivo de ganancia neta y selección de medio de pago.
+// Módulo financiero Cockpit Minimalista: Hero Card integrado con "TU GANANCIA LIMPIA",
+// captura dual de cobro y comisión/bono, y selector ergonómico de medio de pago (< 280 LOC).
 // ==============================================================================
 
 package com.ananapps.kilometa.presentation.home.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -55,121 +55,135 @@ fun TripFinancialSection(
     val pctFormatted = if (realPct > 0.0) String.format(Locale.US, "%.1f", realPct) else null
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // 1. Campos de Monto Recibido y Descuento/Bono de App
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedTextField(
-                value = grossAmountText,
-                onValueChange = onGrossAmountChange,
-                label = { Text("¿Cuánto cobraste?") },
-                placeholder = { Text("Ej: 15000") },
-                prefix = { Text("$ ", fontWeight = FontWeight.Bold, color = StatusGreen) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = StatusGreen,
-                    unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                modifier = Modifier.weight(1.1f)
-            )
-
-            OutlinedTextField(
-                value = commissionAmountText,
-                onValueChange = { input ->
-                    if (input.contains("+")) {
-                        if (!isBonus) onIsBonusToggle()
-                    } else if (input.contains("-")) {
-                        if (isBonus) onIsBonusToggle()
-                    }
-                    val cleanDigits = input.filter { it.isDigit() }
-                    onCommissionAmountChange(cleanDigits)
-                },
-                label = { Text(if (effectiveBonus) "Bono App (+)" else "Parte de la App (-)") },
-                placeholder = { Text("Comisión / Bono $") },
-                prefix = {
-                    Surface(
-                        onClick = onIsBonusToggle,
-                        shape = RoundedCornerShape(4.dp),
-                        color = if (effectiveBonus) StatusGreen.copy(alpha = 0.2f) else StatusAmber.copy(alpha = 0.2f)
-                    ) {
-                        Text(
-                            text = if (effectiveBonus) "+$ " else "-$ ",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
-                            color = if (effectiveBonus) StatusGreen else StatusRed,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (effectiveBonus) StatusGreen else StatusAmber,
-                    unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
-                ),
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // 2. Card Hero de Ganancia Neta Real
+        // 1. Hero Card Financiero Unificado (Monto limpio + Inputs en un solo contenedor sólido)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = DeepObsidianSurfaceVariant,
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, StatusGreen.copy(alpha = 0.4f))
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(
+                width = 1.dp,
+                color = if (net > 0.0) StatusGreen.copy(alpha = 0.45f) else TextSecondary.copy(alpha = 0.2f)
+            )
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column {
-                    Text(
-                        text = "TU GANANCIA LIMPIA",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = TextSecondary
-                    )
-                    Text(
-                        text = currencyFormatter.format(net),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                        color = StatusGreen
-                    )
+                // Fila Superior: Trofeo de Ganancia Limpia
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "TU GANANCIA LIMPIA",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = TextSecondary
+                        )
+                        Text(
+                            text = currencyFormatter.format(net),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                            color = if (net > 0.0) StatusGreen else TextPrimary
+                        )
+                    }
+
+                    if (gross > 0.0 && appPart > 0.0) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (effectiveBonus) StatusGreen.copy(alpha = 0.15f) else StatusAmber.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                text = if (effectiveBonus) "+$pctFormatted% bono" else "-$pctFormatted% app",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (effectiveBonus) StatusGreen else StatusAmber,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
 
-                if (effectiveBonus && appPart > 0.0) {
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = if (pctFormatted != null) "Abono (+$pctFormatted%)" else "Abono App",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
-                        )
-                        Text(
-                            text = "+${currencyFormatter.format(appPart)}",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = StatusGreen
-                        )
-                    }
-                } else if (!effectiveBonus && appPart > 0.0) {
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = if (pctFormatted != null) "Comisión ($pctFormatted%)" else "Descuento",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
-                        )
-                        Text(
-                            text = "-${currencyFormatter.format(appPart)}",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = StatusAmber
-                        )
-                    }
+                HorizontalDivider(color = TextSecondary.copy(alpha = 0.15f), thickness = 1.dp)
+
+                // Fila de Entradas: Cobrado y Comisión/Bono
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = grossAmountText,
+                        onValueChange = onGrossAmountChange,
+                        label = { Text("¿Cuánto cobraste?", style = MaterialTheme.typography.labelSmall) },
+                        placeholder = { Text("Ej: 15000", color = TextSecondary.copy(alpha = 0.4f)) },
+                        prefix = { Text("$ ", fontWeight = FontWeight.Bold, color = StatusGreen) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = DeepObsidianSurface,
+                            unfocusedContainerColor = DeepObsidianSurface,
+                            focusedBorderColor = StatusGreen,
+                            unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1.1f)
+                    )
+
+                    OutlinedTextField(
+                        value = commissionAmountText,
+                        onValueChange = { input ->
+                            if (input.contains("+")) {
+                                if (!isBonus) onIsBonusToggle()
+                            } else if (input.contains("-")) {
+                                if (isBonus) onIsBonusToggle()
+                            }
+                            val cleanDigits = input.filter { it.isDigit() }
+                            onCommissionAmountChange(cleanDigits)
+                        },
+                        label = {
+                            Text(
+                                if (effectiveBonus) "Bono App (+)" else "Parte App (-)",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
+                        placeholder = { Text("0", color = TextSecondary.copy(alpha = 0.4f)) },
+                        prefix = {
+                            Surface(
+                                onClick = onIsBonusToggle,
+                                shape = RoundedCornerShape(4.dp),
+                                color = if (effectiveBonus) StatusGreen.copy(alpha = 0.2f) else StatusAmber.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = if (effectiveBonus) "+$ " else "-$ ",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 12.sp,
+                                    color = if (effectiveBonus) StatusGreen else StatusRed,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                )
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = DeepObsidianSurface,
+                            unfocusedContainerColor = DeepObsidianSurface,
+                            focusedBorderColor = if (effectiveBonus) StatusGreen else StatusAmber,
+                            unfocusedBorderColor = TextSecondary.copy(alpha = 0.3f),
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
 
-        // 3. Medio de Recaudo (Efectivo vs Nequi vs Saldo en App)
+        // 2. Medio de Recaudo (Segmented Control Cockpit de 3 estados)
         val isCash = selectedPaymentMethod == PaymentMethod.CASH
         val isNequi = selectedPaymentMethod == PaymentMethod.NEQUI
         val isAppWallet = selectedPaymentMethod == PaymentMethod.APP_WALLET
@@ -191,7 +205,7 @@ fun TripFinancialSection(
                     Surface(
                         modifier = Modifier
                             .weight(if (method == PaymentMethod.NEQUI) 1.15f else 1f)
-                            .height(48.dp)
+                            .height(44.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .border(
                                 width = if (selected) 2.dp else 1.dp,
@@ -220,7 +234,7 @@ fun TripFinancialSection(
             val promoAmount = if (platformPromoDiscount > 0.0) platformPromoDiscount else if (effectiveBonus) appPart else 0.0
             if (promoAmount > 0.0) {
                 Text(
-                    text = "🎁 $appLabel abonó ${currencyFormatter.format(promoAmount)} a favor directamente en tu Billetera $appLabel.",
+                    text = "🎁 $appLabel abonó ${currencyFormatter.format(promoAmount)} a favor en tu Billetera $appLabel.",
                     style = MaterialTheme.typography.labelSmall,
                     color = ElectricBluePrimary
                 )
@@ -240,4 +254,3 @@ fun TripFinancialSection(
         }
     }
 }
-

@@ -40,6 +40,7 @@ fun CockpitFloatingScaffold(
     confirmButtonColor: Color,
     isConfirmEnabled: Boolean,
     onConfirm: () -> Unit,
+    subtitle: String? = null,
     hasDirtyData: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
@@ -82,11 +83,20 @@ fun CockpitFloatingScaffold(
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
                             }
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Color.White
-                            )
+                            Column {
+                                Text(
+                                    text = title,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                                if (!subtitle.isNullOrBlank()) {
+                                    Text(
+                                        text = subtitle,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.White.copy(alpha = 0.85f)
+                                    )
+                                }
+                            }
                         }
                         IconButton(onClick = { if (hasDirtyData) showDiscardDialog = true else onDismiss() }) {
                             Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)

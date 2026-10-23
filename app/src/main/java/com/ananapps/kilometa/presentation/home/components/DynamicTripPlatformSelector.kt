@@ -87,7 +87,7 @@ private fun DynamicPlatformChip(
 
     Surface(
         modifier = modifier
-            .height(48.dp)
+            .height(50.dp)
             .clip(RoundedCornerShape(10.dp))
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
@@ -98,41 +98,32 @@ private fun DynamicPlatformChip(
         color = if (isSelected) brandColor else DeepObsidianSurfaceVariant,
         shape = RoundedCornerShape(10.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            ) {
-                Text(
-                    text = platform.iconName.ifBlank { "🚘" },
-                    fontSize = 13.sp
-                )
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(
-                    text = platform.monogram.take(2).uppercase(),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace
-                    ),
-                    color = if (isSelected) contentColor else TextPrimary
-                )
-                Spacer(modifier = Modifier.width(3.dp))
-                Text(
-                    text = platform.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                        fontSize = 12.sp
-                    ),
-                    color = if (isSelected) contentColor else TextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = platform.monogram.take(2).uppercase(),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace
+                ),
+                color = if (isSelected) contentColor else brandColor
+            )
+            Text(
+                text = platform.name,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 11.sp
+                ),
+                color = if (isSelected) contentColor else TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
