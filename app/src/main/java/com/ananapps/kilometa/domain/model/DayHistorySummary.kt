@@ -34,5 +34,13 @@ data class DayHistorySummary(
     val platformEarnings: Map<PlatformType, Double> = emptyMap(),
     val passengerKm: Double = 0.0,
     val emptyKm: Double = 0.0,
-    val ratePerHour: Double = 0.0
+    val ratePerHour: Double = 0.0,
+    val breakMinutes: Int = 0,
+    val effectiveWorkMinutes: Int = 0,
+    val passengerTimeMinutes: Int = 0,
+    val emptyTimeMinutes: Int = 0,
+    val breakHoursFormatted: String = "0m",
+    val effectiveHoursFormatted: String = "",
+    val passengerTimeFormatted: String = "",
+    val emptyTimeFormatted: String = ""
 )

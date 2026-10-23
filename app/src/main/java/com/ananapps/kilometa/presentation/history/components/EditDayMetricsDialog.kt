@@ -1,4 +1,4 @@
-﻿// ==============================================================================
+// ==============================================================================
 // PROYECTO: KiloMeta (Ecosistema AnAnApps v2.0)
 // ARCHIVO: app/src/main/java/com/ananapps/kilometa/presentation/history/components/EditDayMetricsDialog.kt
 // DESCRIPCIÓN PEDAGÓGICA:
@@ -30,13 +30,14 @@ import com.ananapps.kilometa.presentation.theme.*
 fun EditDayMetricsDialog(
     day: DayHistorySummary,
     onDismiss: () -> Unit,
-    onConfirmSave: (startOdo: Int, endOdo: Int, startTimeMillis: Long, endTimeMillis: Long) -> Unit,
+    onConfirmSave: (startOdo: Int, endOdo: Int, startTimeMillis: Long, endTimeMillis: Long, breakMinutes: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var startOdoText by remember(day) { mutableStateOf(if (day.startOdometer > 0) day.startOdometer.toString() else "") }
     var endOdoText by remember(day) { mutableStateOf(if (day.endOdometer > 0) day.endOdometer.toString() else "") }
     var startTime by remember(day) { mutableStateOf(day.startTimeMillis) }
     var endTime by remember(day) { mutableStateOf(day.endTimeMillis) }
+    var breakMinutes by remember(day) { mutableIntStateOf(day.breakMinutes) }
 
     val startOdo = startOdoText.filter { it.isDigit() }.toIntOrNull() ?: 0
     val endOdo = endOdoText.filter { it.isDigit() }.toIntOrNull() ?: startOdo
@@ -46,7 +47,8 @@ fun EditDayMetricsDialog(
     val hasDirtyData = startOdo != day.startOdometer ||
             endOdo != day.endOdometer ||
             startTime != day.startTimeMillis ||
-            endTime != day.endTimeMillis
+            endTime != day.endTimeMillis ||
+            breakMinutes != day.breakMinutes
 
     CockpitFloatingScaffold(
         title = "📅 Ajustar Horario y Km",
@@ -57,7 +59,7 @@ fun EditDayMetricsDialog(
         isConfirmEnabled = isFormValid,
         onConfirm = {
             if (isFormValid) {
-                onConfirmSave(startOdo, endOdo, startTime, endTime)
+                onConfirmSave(startOdo, endOdo, startTime, endTime, breakMinutes)
                 onDismiss()
             }
         },
@@ -154,6 +156,16 @@ fun EditDayMetricsDialog(
                 selectedDateTimeMillis = endTime,
                 onDateTimeSelected = { endTime = it },
                 accentColor = ElectricBluePrimary
+            )
+
+            HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.5f))
+
+            // Sección Pausas y Descansos (Orden #069)
+            val grossMinutes = ((endTime - startTime) / 60000).coerceAtLeast(0).toInt()
+            DayBreaksEditorSection(
+                breakMinutes = breakMinutes,
+                onBreakMinutesChange = { breakMinutes = it },
+                grossMinutes = grossMinutes
             )
         }
     }

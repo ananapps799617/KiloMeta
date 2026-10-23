@@ -80,13 +80,27 @@ object DayHistoryMapper {
 
             val startTimeMillis = matchingShift?.startTime ?: firstEventTime
             val endTimeMillis = matchingShift?.endTime ?: lastEventTime
-            val elapsedMinutes = ((endTimeMillis - startTimeMillis) / 60000).coerceAtLeast(0)
-            val elapsedHours = elapsedMinutes / 60
-            val elapsedRemMinutes = elapsedMinutes % 60
-            val elapsedFormatted = "${elapsedHours}h ${elapsedRemMinutes}m"
+            val grossElapsedMinutes = ((endTimeMillis - startTimeMillis) / 60000).coerceAtLeast(0).toInt()
+            val breakMinutes = parseBreakMinutes(matchingShift?.notes)
+            val effectiveWorkMinutes = (grossElapsedMinutes - breakMinutes).coerceAtLeast(0)
+
+            val elapsedFormatted = formatDuration(grossElapsedMinutes)
+            val effectiveHoursFormatted = formatDuration(effectiveWorkMinutes)
+            val breakHoursFormatted = formatDuration(breakMinutes)
+
+            val passengerTimeMinutes = dayTrips.mapNotNull { it.durationMinutes }.sum()
+            val emptyTimeMinutes = (effectiveWorkMinutes - passengerTimeMinutes).coerceAtLeast(0)
+            val passengerTimeFormatted = formatDuration(passengerTimeMinutes)
+            val emptyTimeFormatted = formatDuration(emptyTimeMinutes)
 
             val ratePerKm = if (distanceKm > 0) netProfit / distanceKm else 0.0
-            val ratePerHour = if (elapsedMinutes > 0) netProfit / (elapsedMinutes / 60.0) else 0.0
+            val ratePerHour = if (effectiveWorkMinutes > 0) {
+                netProfit / (effectiveWorkMinutes / 60.0)
+            } else if (grossElapsedMinutes > 0) {
+                netProfit / (grossElapsedMinutes / 60.0)
+            } else {
+                0.0
+            }
 
             val resolvedShiftId = matchingShift?.shiftId
                 ?: dayTrips.firstOrNull()?.shiftId
@@ -121,9 +135,29 @@ object DayHistoryMapper {
                 platformEarnings = platformEarnings,
                 passengerKm = passengerKm,
                 emptyKm = emptyKm,
-                ratePerHour = ratePerHour
+                ratePerHour = ratePerHour,
+                breakMinutes = breakMinutes,
+                effectiveWorkMinutes = effectiveWorkMinutes,
+                passengerTimeMinutes = passengerTimeMinutes,
+                emptyTimeMinutes = emptyTimeMinutes,
+                breakHoursFormatted = breakHoursFormatted,
+                effectiveHoursFormatted = effectiveHoursFormatted,
+                passengerTimeFormatted = passengerTimeFormatted,
+                emptyTimeFormatted = emptyTimeFormatted
             )
         }.sortedByDescending { it.dateMillis }
+    }
+
+    private fun parseBreakMinutes(notes: String?): Int {
+        if (notes.isNullOrBlank()) return 0
+        val match = Regex("BREAKS:(\\d+)").find(notes)
+        return match?.groupValues?.get(1)?.toIntOrNull() ?: 0
+    }
+
+    private fun formatDuration(totalMins: Int): String {
+        val h = totalMins / 60
+        val m = totalMins % 60
+        return if (h > 0) "${h}h ${m}m" else "${m}m"
     }
 
     fun mapToDays(

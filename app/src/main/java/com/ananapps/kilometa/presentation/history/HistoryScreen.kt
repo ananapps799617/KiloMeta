@@ -249,9 +249,9 @@ fun HistoryScreen(
         onUpdateFueling = { viewModel.onUpdateFueling(it); editingFueling = null },
         onUpdateExpense = { viewModel.onUpdateExpense(it); editingExpense = null },
         onUpdateMaintenance = { viewModel.onUpdateMaintenance(it); editingMaintenance = null },
-        onUpdateDayMetrics = { sOdo, eOdo, sTime, eTime ->
+        onUpdateDayMetrics = { sOdo, eOdo, sTime, eTime, breakMins ->
             editingDayMetrics?.let { day ->
-                viewModel.onUpdateDayMetrics(day.dateMillis, sOdo, eOdo, sTime, eTime)
+                viewModel.onUpdateDayMetrics(day.dateMillis, sOdo, eOdo, sTime, eTime, breakMins)
             }
             editingDayMetrics = null
         },

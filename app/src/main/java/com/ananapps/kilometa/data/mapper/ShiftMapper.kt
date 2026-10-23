@@ -120,7 +120,8 @@ fun ShiftWithDetails.toFinancialSummary(): ShiftFinancialSummary {
         netIncomePerKilometer = netPerKm,
         tripsCount = trips.size,
         fuelingsCount = fuelings.size,
-        expensesCount = expenses.size
+        expensesCount = expenses.size,
+        notes = shift.notes
     )
 }
 

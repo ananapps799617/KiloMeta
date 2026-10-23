@@ -38,7 +38,7 @@ fun HistoryDialogsHost(
     onUpdateFueling: (Fueling) -> Unit,
     onUpdateExpense: (Expense) -> Unit,
     onUpdateMaintenance: (MaintenanceRecord) -> Unit,
-    onUpdateDayMetrics: (startOdo: Int, endOdo: Int, startTimeMillis: Long, endTimeMillis: Long) -> Unit,
+    onUpdateDayMetrics: (startOdo: Int, endOdo: Int, startTimeMillis: Long, endTimeMillis: Long, breakMinutes: Int) -> Unit,
     onConfirmAddTrip: (PlatformType, Double, Double, PaymentMethod, PaymentDestination, Long, Int?, Int?, Double?, Int?, Double) -> Unit,
     onConfirmAddFueling: (FuelType, Double, Double, Int, WalletType, Long) -> Unit,
     onConfirmAddExpense: (ExpenseConcept, Double, WalletType, Long) -> Unit,

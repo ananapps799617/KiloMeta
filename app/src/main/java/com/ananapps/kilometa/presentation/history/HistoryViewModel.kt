@@ -157,15 +157,25 @@ class HistoryViewModel @Inject constructor(
         startOdo: Int,
         endOdo: Int,
         startTimeMillis: Long,
-        endTimeMillis: Long
+        endTimeMillis: Long,
+        breakMinutes: Int = 0
     ) = viewModelScope.launch {
         val shift = manageShiftUseCase.getOrCreateShiftForDay(timestamp = dateMillis, startOdometer = startOdo, endOdometer = endOdo)
+        val existingNotes = shift.notes.orEmpty()
+        val newNotes = if (existingNotes.contains("BREAKS:")) {
+            existingNotes.replace(Regex("BREAKS:\\d+"), "BREAKS:$breakMinutes")
+        } else if (existingNotes.isBlank()) {
+            "BREAKS:$breakMinutes"
+        } else {
+            "$existingNotes | BREAKS:$breakMinutes"
+        }
         updateShiftUseCase(
             shift.copy(
                 startOdometer = startOdo,
                 endOdometer = endOdo,
                 startTime = startTimeMillis,
-                endTime = endTimeMillis
+                endTime = endTimeMillis,
+                notes = newNotes
             )
         )
     }

@@ -39,7 +39,8 @@ data class ShiftFinancialSummary(
     val netIncomePerKilometer: Double,
     val tripsCount: Int,
     val fuelingsCount: Int,
-    val expensesCount: Int
+    val expensesCount: Int,
+    val notes: String? = null
 ) {
     // --------------------------------------------------------------------------
     // BLOQUE 2: PROPIEDADES DERIVADAS

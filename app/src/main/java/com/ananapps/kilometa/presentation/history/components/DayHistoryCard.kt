@@ -113,87 +113,11 @@ fun DayHistoryCard(
             if (isExpanded) {
                 HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.5f))
 
-                // 1. FICHA TÉCNICA FINANCIERA Y OPERATIVA DEL DÍA
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = DeepObsidianSurfaceVariant
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "📊 BALANCE DEL DÍA",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = ElectricBluePrimary
-                            )
-                            Text(
-                                text = "✏️ Ajustar Horas y Km",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = ElectricBluePrimary,
-                                modifier = Modifier.clickable { onEditDayMetrics(day) }
-                            )
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Odómetros:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            Text("${day.startOdometer} ➔ ${day.endOdometer} (${day.distanceKm} km)", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Km de Ruta:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            val kmDetail = if (day.startOdometer > 0 && day.endOdometer > day.startOdometer) {
-                                "Pasajero: ${day.passengerKm.toInt()} km · Vacíos: ${day.emptyKm.toInt()} km"
-                            } else {
-                                "Pasajero: ${day.passengerKm.toInt()} km"
-                            }
-                            Text(kmDetail, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Horas de Ruta:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                            Text("${day.startTimeFormatted} ➔ ${day.endTimeFormatted} (${day.elapsedHoursFormatted})", style = MaterialTheme.typography.bodySmall, color = TextPrimary)
-                        }
-
-                        HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 2.dp))
-
-                        FinancialRow("Producido Bruto:", day.grossProduced, TextPrimary)
-                        FinancialRow("Comisiones Apps:", -day.appCommissions, StatusRed)
-                        FinancialRow("Combustible:", -day.fuelSpent, StatusRed)
-                        FinancialRow("Gastos de Ruta:", -day.expensesSpent, StatusRed)
-
-                        day.platformEarnings.forEach { (platform, amount) ->
-                            FinancialRow("Ingresos ${platform.visualToken.badgeLabel}:", amount, StatusGreen)
-                        }
-
-                        HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 2.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Ganancia Neta Libre:", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
-                            Text(
-                                "$ %,.0f".format(Locale.US, day.netProfit),
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace),
-                                color = if (day.netProfit >= 0) StatusGreen else StatusRed
-                            )
-                        }
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Rendimiento:", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            val perfText = if (day.ratePerHour > 0.0) {
-                                "$ %,.0f / km  ·  $ %,.0f / h".format(Locale.US, day.ratePerKm, day.ratePerHour)
-                            } else {
-                                "$ %,.0f / km".format(Locale.US, day.ratePerKm)
-                            }
-                            Text(perfText, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = ElectricBluePrimary)
-                        }
-                    }
-                }
+                // 1. FICHA TÉCNICA FINANCIERA Y OPERATIVA DEL DÍA (Modular Orden #069)
+                DayBalanceDetailsBox(
+                    day = day,
+                    onEditDayMetrics = onEditDayMetrics
+                )
 
                 // 2. BOTONES DE ACCIÓN RÁPIDA (Reubicados entre Balance y Actividades a solicitud de Gerencia)
                 DayQuickActionRow(
@@ -249,17 +173,5 @@ fun DayHistoryCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun FinancialRow(label: String, amount: Double, color: Color) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-        Text(
-            "$ %,.0f".format(Locale.US, amount),
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold),
-            color = color
-        )
     }
 }
