@@ -46,9 +46,13 @@ fun DayActivityItemRow(
     timeFormatted: String,
     onEditRequested: () -> Unit,
     onDeleteRequested: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean? = null,
+    onToggleExpand: (() -> Unit)? = null
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var internalExpanded by remember { mutableStateOf(false) }
+    val expanded = isExpanded ?: internalExpanded
+    val toggleAction = onToggleExpand ?: { internalExpanded = !internalExpanded }
     val hudConfig = LocalProfitabilityConfig.current
     val tripTier = if (event is DayActivityEvent.TripItem) {
         event.trip.calculateProfitabilityTier(hudConfig.minProfitPerKm, hudConfig.minProfitPerHour, hudConfig.breakEvenPerKm)
@@ -59,7 +63,7 @@ fun DayActivityItemRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(DeepObsidianSurfaceVariant)
-            .clickable { expanded = !expanded }
+            .clickable { toggleAction() }
             .animateContentSize()
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)

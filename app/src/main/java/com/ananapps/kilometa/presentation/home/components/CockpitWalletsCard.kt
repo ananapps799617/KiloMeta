@@ -82,10 +82,9 @@ fun CockpitWalletsCard(
             )
         }
 
-        // 2. Grilla 2x2 de Bolsillos Individuales
+        // 2. Grilla Dinámica en Pares de Bolsillos Individuales (Orden #067)
         if (wallets.isNotEmpty()) {
-            val displayWallets = wallets.take(4)
-            displayWallets.chunked(2).forEach { rowPair ->
+            wallets.chunked(2).forEach { rowPair ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)

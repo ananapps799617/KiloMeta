@@ -72,6 +72,9 @@ object DayHistoryMapper {
             val elapsedFormatted = "${elapsedHours}h ${elapsedRemMinutes}m"
 
             val ratePerKm = if (distanceKm > 0) netProfit / distanceKm else 0.0
+            val passengerKm = dayTrips.mapNotNull { it.tripDistanceKm }.sum()
+            val emptyKm = if (odoDiff > 0 && odoDiff > passengerKm) odoDiff - passengerKm else 0.0
+            val ratePerHour = if (elapsedMinutes > 0) netProfit / (elapsedMinutes / 60.0) else 0.0
 
             val resolvedShiftId = dayTrips.firstOrNull()?.shiftId
                 ?: dayFuelings.firstOrNull()?.shiftId
@@ -102,7 +105,10 @@ object DayHistoryMapper {
                 startTimeMillis = firstEventTime,
                 endTimeMillis = lastEventTime,
                 shiftId = resolvedShiftId,
-                platformEarnings = platformEarnings
+                platformEarnings = platformEarnings,
+                passengerKm = passengerKm,
+                emptyKm = emptyKm,
+                ratePerHour = ratePerHour
             )
         }.sortedByDescending { it.dateMillis }
     }

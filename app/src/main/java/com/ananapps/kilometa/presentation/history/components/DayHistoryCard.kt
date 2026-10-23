@@ -147,6 +147,16 @@ fun DayHistoryCard(
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Km de Ruta:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            val kmDetail = if (day.startOdometer > 0 && day.endOdometer > day.startOdometer) {
+                                "Pasajero: ${day.passengerKm.toInt()} km · Vacíos: ${day.emptyKm.toInt()} km"
+                            } else {
+                                "Pasajero: ${day.passengerKm.toInt()} km"
+                            }
+                            Text(kmDetail, style = MaterialTheme.typography.bodySmall, color = TextPrimary)
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Horas de Ruta:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                             Text("${day.startTimeFormatted} ➔ ${day.endTimeFormatted} (${day.elapsedHoursFormatted})", style = MaterialTheme.typography.bodySmall, color = TextPrimary)
                         }
@@ -175,7 +185,12 @@ fun DayHistoryCard(
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Rendimiento:", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            Text("$ %,.0f / km".format(Locale.US, day.ratePerKm), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = ElectricBluePrimary)
+                            val perfText = if (day.ratePerHour > 0.0) {
+                                "$ %,.0f / km  ·  $ %,.0f / h".format(Locale.US, day.ratePerKm, day.ratePerHour)
+                            } else {
+                                "$ %,.0f / km".format(Locale.US, day.ratePerKm)
+                            }
+                            Text(perfText, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = ElectricBluePrimary)
                         }
                     }
                 }
@@ -191,7 +206,7 @@ fun DayHistoryCard(
 
                 HorizontalDivider(color = DeepObsidianBorder.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 2.dp))
 
-                // 3. LÍNEA DE ACTIVIDADES CRONOLÓGICAS DEL DÍA
+                // 3. LÍNEA DE ACTIVIDADES CRONOLÓGICAS DEL DÍA (Acordeón Exclusivo - Orden #067)
                 Text(
                     text = "ACTIVIDADES EN CARRETERA (${day.events.size})",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
@@ -199,11 +214,18 @@ fun DayHistoryCard(
                     modifier = Modifier.padding(top = 2.dp)
                 )
 
+                var expandedEventId by remember { mutableStateOf<String?>(null) }
+
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     day.events.forEach { event ->
+                        val isItemExpanded = expandedEventId == event.id
                         DayActivityItemRow(
                             event = event,
                             timeFormatted = timeFormatter.format(Date(event.timestamp)),
+                            isExpanded = isItemExpanded,
+                            onToggleExpand = {
+                                expandedEventId = if (isItemExpanded) null else event.id
+                            },
                             onEditRequested = {
                                 when (event) {
                                     is DayActivityEvent.TripItem -> onEditTrip(event.trip)

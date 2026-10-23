@@ -114,10 +114,16 @@ fun DayActivityFeedCard(
                         }
                     }
                 } else {
+                    var expandedEventId by remember { mutableStateOf<String?>(null) }
                     events.forEachIndexed { index, event ->
+                        val isItemExpanded = expandedEventId == event.id
                         DayActivityItemRow(
                             event = event,
                             timeFormatted = timeFormatter.format(Date(event.timestamp)),
+                            isExpanded = isItemExpanded,
+                            onToggleExpand = {
+                                expandedEventId = if (isItemExpanded) null else event.id
+                            },
                             onEditRequested = {
                                 when (event) {
                                     is DayActivityEvent.TripItem -> onEditTrip(event.trip)
