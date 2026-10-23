@@ -39,6 +39,7 @@ fun TripFinancialSection(
     platformPromoDiscount: Double = 0.0,
     isBonus: Boolean = false,
     onIsBonusToggle: () -> Unit = {},
+    platformName: String = "la app",
     modifier: Modifier = Modifier
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("es", "CO")).apply {
@@ -49,6 +50,9 @@ fun TripFinancialSection(
     val appPart = commissionAmountText.toDoubleOrNull() ?: 0.0
     val effectiveBonus = isBonus || platformPromoDiscount > 0.0
     val net = if (effectiveBonus) (gross + appPart) else (gross - appPart).coerceAtLeast(0.0)
+
+    val realPct = if (gross > 0.0 && appPart > 0.0) (appPart / gross) * 100.0 else 0.0
+    val pctFormatted = if (realPct > 0.0) String.format(Locale.US, "%.1f", realPct) else null
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // 1. Campos de Monto Recibido y Descuento/Bono de App
@@ -138,7 +142,7 @@ fun TripFinancialSection(
                 if (effectiveBonus && appPart > 0.0) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "Abono App",
+                            text = if (pctFormatted != null) "Abono (+$pctFormatted%)" else "Abono App",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
@@ -151,7 +155,7 @@ fun TripFinancialSection(
                 } else if (!effectiveBonus && appPart > 0.0) {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "Descuento",
+                            text = if (pctFormatted != null) "Comisión ($pctFormatted%)" else "Descuento",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
@@ -212,21 +216,23 @@ fun TripFinancialSection(
                 }
             }
 
-            if (platformPromoDiscount > 0.0) {
+            val appLabel = platformName.ifBlank { "la app" }
+            val promoAmount = if (platformPromoDiscount > 0.0) platformPromoDiscount else if (effectiveBonus) appPart else 0.0
+            if (promoAmount > 0.0) {
                 Text(
-                    text = "🎁 DiDi abonó ${currencyFormatter.format(platformPromoDiscount)} a favor directamente en tu Billetera DiDi.",
+                    text = "🎁 $appLabel abonó ${currencyFormatter.format(promoAmount)} a favor directamente en tu Billetera $appLabel.",
                     style = MaterialTheme.typography.labelSmall,
                     color = ElectricBluePrimary
                 )
             } else if ((isCash || isNequi) && appPart > 0.0) {
                 Text(
-                    text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(appPart)} queda como deuda pendiente con la app.",
+                    text = "⚠️ Al cobrar en ${if (isCash) "efectivo" else "Nequi/Daviplata"}, la comisión de ${currencyFormatter.format(appPart)} queda como deuda pendiente con $appLabel.",
                     style = MaterialTheme.typography.labelSmall,
                     color = StatusAmber
                 )
             } else if (isAppWallet && appPart > 0.0) {
                 Text(
-                    text = "ℹ️ La app descuenta su comisión en la fuente. ${currencyFormatter.format(net)} netos ingresan a tu saldo en la app.",
+                    text = "ℹ️ $appLabel descuenta su comisión en la fuente. ${currencyFormatter.format(net)} netos ingresan a tu saldo en $appLabel.",
                     style = MaterialTheme.typography.labelSmall,
                     color = ElectricBluePrimary
                 )

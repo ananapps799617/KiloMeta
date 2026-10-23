@@ -76,15 +76,6 @@ fun RegisterTripDialog(
     var distanceKmText by remember(existingTrip) { mutableStateOf(initialDistance) }
     var durationMinutesText by remember(existingTrip) { mutableStateOf(initialDuration) }
 
-    fun updateSuggestedCommission(grossStr: String, platform: PlatformType) {
-        val g = grossStr.toDoubleOrNull() ?: 0.0
-        if (g > 0.0) {
-            val rule = PlatformConfig.getRule(platform)
-            val suggested = (g * (rule.referenceCommissionPct / 100.0)).toInt()
-            commissionAmountText = suggested.toString()
-        }
-    }
-
     val gross = grossAmountText.trim().toDoubleOrNull() ?: 0.0
     val appPart = commissionAmountText.trim().toDoubleOrNull() ?: 0.0
     val net = if (isBonus) (gross + appPart) else (gross - appPart).coerceAtLeast(0.0)
@@ -177,7 +168,6 @@ fun RegisterTripDialog(
                         else -> PlatformType.PRIVATE
                     }
                     selectedPlatform = resolved
-                    updateSuggestedCommission(grossAmountText, resolved)
                 }
             )
         } else {
@@ -185,7 +175,6 @@ fun RegisterTripDialog(
                 selectedPlatform = selectedPlatform,
                 onPlatformSelected = { newPlatform ->
                     selectedPlatform = newPlatform
-                    updateSuggestedCommission(grossAmountText, newPlatform)
                 }
             )
         }
@@ -202,22 +191,15 @@ fun RegisterTripDialog(
 
         TripFinancialSection(
             grossAmountText = grossAmountText,
-            onGrossAmountChange = {
-                grossAmountText = it
-                if (!isBonus) updateSuggestedCommission(it, selectedPlatform)
-            },
+            onGrossAmountChange = { grossAmountText = it },
             commissionAmountText = commissionAmountText,
             onCommissionAmountChange = { commissionAmountText = it },
             selectedPaymentMethod = selectedPaymentMethod,
-            onPaymentMethodSelected = {
-                selectedPaymentMethod = it
-                if (!isBonus && commissionAmountText.isBlank() && grossAmountText.isNotBlank()) {
-                    updateSuggestedCommission(grossAmountText, selectedPlatform)
-                }
-            },
+            onPaymentMethodSelected = { selectedPaymentMethod = it },
             platformPromoDiscount = promoDiscount,
             isBonus = isBonus,
-            onIsBonusToggle = { isBonus = !isBonus }
+            onIsBonusToggle = { isBonus = !isBonus },
+            platformName = selectedPlatform.displayName
         )
     }
 }

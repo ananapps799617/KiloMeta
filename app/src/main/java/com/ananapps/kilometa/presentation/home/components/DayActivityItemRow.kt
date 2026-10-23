@@ -153,10 +153,12 @@ fun DayActivityItemRow(
                     val trip = event.trip
                     DetailRow("TARIFA BRUTA", "$ ${String.format(Locale.US, "%,.0f", trip.grossAmount)}")
                     if (trip.commissionAmount > 0) {
-                        DetailRow("COMISIÓN DESCONTADA", "- $ ${String.format(Locale.US, "%,.0f", trip.commissionAmount)}")
+                        val pctStr = String.format(Locale.US, "%.1f", trip.commissionRatePercentage)
+                        DetailRow("COMISIÓN DESCONTADA", "- $ ${String.format(Locale.US, "%,.0f", trip.commissionAmount)} ($pctStr%)")
                     }
                     if (trip.platformPromoDiscount > 0) {
-                        DetailRow("ABONO / SUBSIDIO APP", "+ $ ${String.format(Locale.US, "%,.0f", trip.platformPromoDiscount)}", isHighlight = true)
+                        val bonusPctStr = if (trip.grossAmount > 0) String.format(Locale.US, "%.1f", (trip.platformPromoDiscount / trip.grossAmount) * 100.0) else "0.0"
+                        DetailRow("ABONO / SUBSIDIO APP", "+ $ ${String.format(Locale.US, "%,.0f", trip.platformPromoDiscount)} (+$bonusPctStr%)", isHighlight = true)
                     }
                     DetailRow("GANANCIA LIMPIA", "$ ${String.format(Locale.US, "%,.0f", trip.netAmount)}", isHighlight = true)
                     trip.tripDistanceKm?.let { dist ->

@@ -33,6 +33,7 @@ class UpdateTripUseCase @Inject constructor(
         require(trip.id.isNotBlank()) { "El identificador de la carrera no puede estar vacío" }
         require(trip.grossAmount >= 0.0) { "El valor cobrado no puede ser negativo" }
         require(trip.commissionAmount >= 0.0) { "La comisión no puede ser negativa" }
+        require(trip.platformPromoDiscount >= 0.0) { "El bono/subsidio no puede ser negativo" }
         require(trip.grossAmount >= trip.commissionAmount) {
             "El valor cobrado (${trip.grossAmount}) no puede ser menor a la comisión (${trip.commissionAmount})"
         }
@@ -54,7 +55,7 @@ class UpdateTripUseCase @Inject constructor(
             PaymentMethod.CASH, PaymentMethod.NEQUI -> PaymentDestination.CASH_IN_HAND
         }
 
-        val calculatedNet = trip.grossAmount - trip.commissionAmount
+        val calculatedNet = (trip.grossAmount - trip.commissionAmount + trip.platformPromoDiscount).coerceAtLeast(0.0)
         val normalizedTrip = trip.copy(
             netAmount = calculatedNet,
             paymentDestination = expectedDestination
