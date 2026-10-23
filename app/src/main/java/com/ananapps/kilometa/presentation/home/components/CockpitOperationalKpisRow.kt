@@ -46,16 +46,27 @@ fun CockpitOperationalKpisRow(
         "0.0 h"
     }
 
+    // Rendimiento Operativo Real en Carretera (Orden #070)
     val ratePerKm = if (summary.distanceTraversedKm > 0) {
-        summary.pocketNet / summary.distanceTraversedKm
+        summary.netOperationalMargin / summary.distanceTraversedKm
     } else {
         0.0
     }
 
-    val rateFormatted = if (ratePerKm > 0.0) {
-        "$ ${String.format(Locale.US, "%,.0f", ratePerKm)}/km"
+    val rateFormatted = if (summary.distanceTraversedKm > 0) {
+        if (ratePerKm >= 0.0) {
+            "$ ${String.format(Locale.US, "%,.0f", ratePerKm)}/km"
+        } else {
+            "-$ ${String.format(Locale.US, "%,.0f", kotlin.math.abs(ratePerKm))}/km"
+        }
     } else {
         "$ 0/km"
+    }
+
+    val rateColor = when {
+        ratePerKm > 0.0 -> StatusGreen
+        ratePerKm < 0.0 -> StatusRed
+        else -> TextPrimary
     }
 
     Row(
@@ -83,6 +94,7 @@ fun CockpitOperationalKpisRow(
             icon = "📈",
             label = "Rendimiento",
             value = rateFormatted,
+            valueColor = rateColor,
             modifier = Modifier.weight(1f)
         )
     }
@@ -93,6 +105,7 @@ private fun KpiMiniCard(
     icon: String,
     label: String,
     value: String,
+    valueColor: androidx.compose.ui.graphics.Color = TextPrimary,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -130,7 +143,7 @@ private fun KpiMiniCard(
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace
                 ),
-                color = TextPrimary,
+                color = valueColor,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
