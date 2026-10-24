@@ -57,7 +57,12 @@ fun TripEntity.toDomain(): Trip {
 }
 
 fun Trip.toEntity(): TripEntity {
-    val pName = if (this.platformId.isNotBlank()) this.platformId.lowercase() else this.platformType.name.lowercase()
+    val pName = when (this.platformType) {
+        PlatformType.UBER -> "uber"
+        PlatformType.DIDI -> "didi"
+        PlatformType.INDRIVE -> "indrive"
+        PlatformType.PRIVATE -> if (this.platformId.isNotBlank()) this.platformId.lowercase() else "private"
+    }
     return TripEntity(
         id = this.id,
         shiftId = this.shiftId,

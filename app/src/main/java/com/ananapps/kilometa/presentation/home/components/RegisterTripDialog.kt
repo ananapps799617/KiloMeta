@@ -51,6 +51,9 @@ fun RegisterTripDialog(
 
     val isEditing = existingTrip != null
     val initialPlatform = existingTrip?.platformType ?: PlatformType.UBER
+    val initialPlatformId = existingTrip?.platformId?.ifBlank { null }
+        ?: existingTrip?.platformType?.name?.lowercase()
+        ?: "uber"
     val initialTime = existingTrip?.timestamp ?: initialTimestamp ?: System.currentTimeMillis()
     val initialGross = existingTrip?.grossAmount?.toLong()?.toString() ?: ""
     val initialIsBonus = existingTrip?.platformPromoDiscount?.let { it > 0.0 } ?: false
@@ -67,6 +70,7 @@ fun RegisterTripDialog(
     val initialDuration = existingTrip?.durationMinutes?.toString() ?: ""
 
     var selectedPlatform by remember(existingTrip) { mutableStateOf(initialPlatform) }
+    var selectedPlatformId by remember(existingTrip) { mutableStateOf(initialPlatformId) }
     var selectedDateTimeMillis by remember(existingTrip, initialTimestamp) { mutableStateOf(initialTime) }
     var grossAmountText by remember(existingTrip) { mutableStateOf(initialGross) }
     var commissionAmountText by remember(existingTrip) { mutableStateOf(initialComm) }
@@ -88,6 +92,7 @@ fun RegisterTripDialog(
                 commission != existingTrip.commissionAmount ||
                 promoDiscount != existingTrip.platformPromoDiscount ||
                 selectedPlatform != existingTrip.platformType ||
+                selectedPlatformId != initialPlatformId ||
                 selectedPaymentMethod != existingTrip.paymentMethod ||
                 distanceKmText != initialDistance ||
                 durationMinutesText != initialDuration
@@ -130,6 +135,7 @@ fun RegisterTripDialog(
                     onConfirmUpdate(
                         existingTrip.copy(
                             platformType = selectedPlatform,
+                            platformId = selectedPlatformId,
                             grossAmount = gross,
                             commissionAmount = commission,
                             netAmount = net,
@@ -165,7 +171,7 @@ fun RegisterTripDialog(
         if (availablePlatforms.isNotEmpty()) {
             DynamicTripPlatformSelector(
                 platforms = availablePlatforms,
-                selectedPlatformId = selectedPlatform.name.lowercase(),
+                selectedPlatformId = selectedPlatformId,
                 onPlatformSelected = { platform ->
                     val resolved = when (platform.id.lowercase()) {
                         "uber" -> PlatformType.UBER
@@ -174,6 +180,7 @@ fun RegisterTripDialog(
                         else -> PlatformType.PRIVATE
                     }
                     selectedPlatform = resolved
+                    selectedPlatformId = platform.id.lowercase()
                 }
             )
         } else {
@@ -181,6 +188,7 @@ fun RegisterTripDialog(
                 selectedPlatform = selectedPlatform,
                 onPlatformSelected = { newPlatform ->
                     selectedPlatform = newPlatform
+                    selectedPlatformId = newPlatform.name.lowercase()
                 }
             )
         }
